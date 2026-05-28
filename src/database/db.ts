@@ -1,0 +1,446 @@
+import Database from '@tauri-apps/plugin-sql';
+
+let dbInstance: Database | null = null;
+
+/**
+ * Retorna a instância singleton do banco de dados SQLite local.
+ * Se o banco de dados ainda não tiver sido carregado, ele será inicializado.
+ */
+export async function getDatabase(): Promise<Database> {
+  if (dbInstance) return dbInstance;
+  dbInstance = await Database.load('sqlite:financer.db');
+  return dbInstance;
+}
+
+/**
+ * Inicializa o banco de dados local.
+ * Cria todas as tabelas necessárias de forma compatível com o SQLite
+ * e insere dados padrão (categorias e taxas de câmbio) caso não existam.
+ */
+export async function initDatabase(): Promise<void> {
+  try {
+    const db = await getDatabase();
+    console.log('Inicializando banco de dados SQLite local com versionamento...');
+
+    // Habilita suporte a chaves estrangeiras no SQLite
+    await db.execute('PRAGMA foreign_keys = ON;');
+
+    // Consulta a versão atual do banco
+    const versionRes = await db.select<any[]>('PRAGMA user_version;');
+    const versionObj = versionRes[0] || {};
+    let currentVersion = versionObj.user_version !== undefined 
+      ? versionObj.user_version 
+      : (versionObj.USER_VERSION !== undefined ? versionObj.USER_VERSION : 0);
+
+    console.log(`Versão atual do banco de dados (PRAGMA user_version): ${currentVersion}`);
+
+    // MIGRATION 1: Criação básica do esquema inicial (Versão 1)
+    if (currentVersion < 1) {
+      console.log('Executando migração: Versão 1 (Esquema Inicial)...');
+      
+      // Profiles (Perfis dos usuários)
+      await db.execute(`
+        CREATE TABLE IF NOT EXISTS profiles (
+          id TEXT PRIMARY KEY,
+          full_name TEXT,
+          avatar_url TEXT,
+          password TEXT,
+          updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+        );
+      `);
+
+      // Accounts (Contas financeiras)
+      await db.execute(`
+        CREATE TABLE IF NOT EXISTS accounts (
+          id TEXT PRIMARY KEY,
+          user_id TEXT NOT NULL,
+          name TEXT NOT NULL,
+          type TEXT NOT NULL,
+          category TEXT NOT NULL,
+          currency TEXT NOT NULL DEFAULT 'AOA',
+          balance REAL DEFAULT 0.00,
+          status TEXT DEFAULT 'active',
+          color TEXT,
+          icon TEXT,
+          institution TEXT,
+          is_main INTEGER DEFAULT 0,
+          hide_from_total INTEGER DEFAULT 0,
+          min_balance_limit REAL,
+          created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY(user_id) REFERENCES profiles(id) ON DELETE CASCADE
+        );
+      `);
+
+      // Categories (Categorias de transações)
+      await db.execute(`
+        CREATE TABLE IF NOT EXISTS categories (
+          id TEXT PRIMARY KEY,
+          user_id TEXT,
+          name TEXT NOT NULL,
+          icon TEXT,
+          color TEXT,
+          type TEXT NOT NULL,
+          created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY(user_id) REFERENCES profiles(id) ON DELETE CASCADE
+        );
+      `);
+
+      // Transactions (Transações)
+      await db.execute(`
+        CREATE TABLE IF NOT EXISTS transactions (
+          id TEXT PRIMARY KEY,
+          user_id TEXT NOT NULL,
+          account_id TEXT NOT NULL,
+          destination_account_id TEXT,
+          category TEXT NOT NULL,
+          amount REAL NOT NULL,
+          currency TEXT NOT NULL DEFAULT 'AOA',
+          type TEXT NOT NULL,
+          description TEXT,
+          date TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          status TEXT DEFAULT 'paid',
+          created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY(user_id) REFERENCES profiles(id) ON DELETE CASCADE,
+          FOREIGN KEY(account_id) REFERENCES accounts(id) ON DELETE CASCADE,
+          FOREIGN KEY(destination_account_id) REFERENCES accounts(id) ON DELETE CASCADE
+        );
+      `);
+
+      // Budgets (Orçamentos)
+      await db.execute(`
+        CREATE TABLE IF NOT EXISTS budgets (
+          id TEXT PRIMARY KEY,
+          user_id TEXT NOT NULL,
+          name TEXT NOT NULL,
+          period TEXT DEFAULT 'monthly',
+          type TEXT DEFAULT 'category',
+          currency TEXT NOT NULL DEFAULT 'AOA',
+          category TEXT,
+          amount REAL NOT NULL,
+          account_id TEXT,
+          notify_at TEXT DEFAULT '[50, 80, 100]',
+          auto_renew INTEGER DEFAULT 1,
+          status TEXT DEFAULT 'active',
+          start_date TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          end_date TEXT,
+          created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY(user_id) REFERENCES profiles(id) ON DELETE CASCADE,
+          FOREIGN KEY(account_id) REFERENCES accounts(id) ON DELETE SET NULL
+        );
+      `);
+
+      // Goals (Metas financeiras)
+      await db.execute(`
+        CREATE TABLE IF NOT EXISTS goals (
+          id TEXT PRIMARY KEY,
+          user_id TEXT NOT NULL,
+          name TEXT NOT NULL,
+          category TEXT NOT NULL,
+          target_amount REAL NOT NULL,
+          current_amount REAL DEFAULT 0.00,
+          currency TEXT NOT NULL DEFAULT 'AOA',
+          deadline TEXT,
+          account_id TEXT,
+          priority TEXT DEFAULT 'medium',
+          type TEXT DEFAULT 'deadline',
+          status TEXT DEFAULT 'active',
+          color TEXT,
+          icon TEXT,
+          created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY(user_id) REFERENCES profiles(id) ON DELETE CASCADE,
+          FOREIGN KEY(account_id) REFERENCES accounts(id) ON DELETE SET NULL
+        );
+      `);
+
+      // Subscriptions (Assinaturas e serviços recorrentes)
+      await db.execute(`
+        CREATE TABLE IF NOT EXISTS subscriptions (
+          id TEXT PRIMARY KEY,
+          user_id TEXT NOT NULL,
+          name TEXT NOT NULL,
+          category TEXT NOT NULL,
+          amount REAL NOT NULL,
+          currency TEXT NOT NULL DEFAULT 'AOA',
+          cycle TEXT DEFAULT 'monthly',
+          start_date TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          next_billing_date TEXT NOT NULL,
+          auto_renew INTEGER DEFAULT 1,
+          status TEXT DEFAULT 'active',
+          account_id TEXT,
+          icon TEXT,
+          color TEXT,
+          reminder_days INTEGER DEFAULT 3,
+          notes TEXT,
+          created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY(user_id) REFERENCES profiles(id) ON DELETE CASCADE,
+          FOREIGN KEY(account_id) REFERENCES accounts(id) ON DELETE SET NULL
+        );
+      `);
+
+      // Investments (Investimentos)
+      await db.execute(`
+        CREATE TABLE IF NOT EXISTS investments (
+          id TEXT PRIMARY KEY,
+          user_id TEXT NOT NULL,
+          name TEXT NOT NULL,
+          type TEXT NOT NULL,
+          invested_amount REAL NOT NULL,
+          current_value REAL NOT NULL,
+          currency TEXT NOT NULL DEFAULT 'AOA',
+          purchase_date TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          quantity REAL,
+          unit_price REAL,
+          fees REAL DEFAULT 0.00,
+          account_id TEXT,
+          broker TEXT,
+          risk TEXT DEFAULT 'Médio',
+          status TEXT DEFAULT 'active',
+          goal_id TEXT,
+          created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY(user_id) REFERENCES profiles(id) ON DELETE CASCADE,
+          FOREIGN KEY(account_id) REFERENCES accounts(id) ON DELETE SET NULL,
+          FOREIGN KEY(goal_id) REFERENCES goals(id) ON DELETE SET NULL
+        );
+      `);
+
+      // Loans (Empréstimos)
+      await db.execute(`
+        CREATE TABLE IF NOT EXISTS loans (
+          id TEXT PRIMARY KEY,
+          user_id TEXT NOT NULL,
+          type TEXT NOT NULL,
+          counterparty TEXT NOT NULL,
+          institution TEXT,
+          category TEXT NOT NULL,
+          principal_amount REAL NOT NULL,
+          current_balance REAL NOT NULL,
+          currency TEXT NOT NULL DEFAULT 'AOA',
+          interest_rate REAL DEFAULT 0.00,
+          interest_type TEXT DEFAULT 'simple',
+          start_date TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          due_date TEXT,
+          frequency TEXT DEFAULT 'monthly',
+          status TEXT DEFAULT 'active',
+          description TEXT,
+          account_id TEXT,
+          created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY(user_id) REFERENCES profiles(id) ON DELETE CASCADE,
+          FOREIGN KEY(account_id) REFERENCES accounts(id) ON DELETE SET NULL
+        );
+      `);
+
+      // Loan Payments (Pagamentos de empréstimos)
+      await db.execute(`
+        CREATE TABLE IF NOT EXISTS loan_payments (
+          id TEXT PRIMARY KEY,
+          loan_id TEXT NOT NULL,
+          amount REAL NOT NULL,
+          date TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          note TEXT,
+          created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY(loan_id) REFERENCES loans(id) ON DELETE CASCADE
+        );
+      `);
+
+      // Exchange Rates (Taxas de câmbio)
+      await db.execute(`
+        CREATE TABLE IF NOT EXISTS exchange_rates (
+          id TEXT PRIMARY KEY,
+          from_currency TEXT NOT NULL,
+          to_currency TEXT NOT NULL,
+          rate REAL NOT NULL,
+          updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          UNIQUE(from_currency, to_currency)
+        );
+      `);
+
+      // Savings (Poupanças)
+      await db.execute(`
+        CREATE TABLE IF NOT EXISTS savings (
+          id TEXT PRIMARY KEY,
+          user_id TEXT NOT NULL,
+          name TEXT NOT NULL,
+          description TEXT,
+          amount REAL NOT NULL,
+          currency TEXT NOT NULL DEFAULT 'AOA',
+          interest_rate REAL DEFAULT 0.00,
+          target_amount REAL,
+          start_date TEXT,
+          created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY(user_id) REFERENCES profiles(id) ON DELETE CASCADE
+        );
+      `);
+
+      // User Preferences (Preferências de Usuário)
+      await db.execute(`
+        CREATE TABLE IF NOT EXISTS user_preferences (
+          user_id TEXT PRIMARY KEY,
+          base_currency TEXT DEFAULT 'AOA',
+          language TEXT DEFAULT 'pt-AO',
+          date_format TEXT DEFAULT 'DD/MM/YYYY',
+          theme TEXT DEFAULT 'light',
+          notifications TEXT,
+          security TEXT,
+          FOREIGN KEY(user_id) REFERENCES profiles(id) ON DELETE CASCADE
+        );
+      `);
+
+      await db.execute('PRAGMA user_version = 1;');
+      currentVersion = 1;
+      console.log('Migração para Versão 1 concluída.');
+    }
+
+    // MIGRATION 2: Garantir que a coluna password existe na tabela profiles (Versão 2)
+    if (currentVersion < 2) {
+      console.log('Executando migração: Versão 2 (Garantir campo password em profiles)...');
+      try {
+        await db.execute('ALTER TABLE profiles ADD COLUMN password TEXT;');
+        console.log('Coluna password adicionada à tabela profiles com sucesso.');
+      } catch (e) {
+        // Ignora se a coluna já existir
+        console.log('Coluna password já existia na tabela profiles.');
+      }
+      await db.execute('PRAGMA user_version = 2;');
+      currentVersion = 2;
+      console.log('Migração para Versão 2 concluída.');
+    }
+
+    // Preenche categorias padrões se estiverem vazias
+    const existingCats = await db.select('SELECT count(*) as count FROM categories');
+    const catCount = (existingCats as any)[0]?.count || 0;
+    if (catCount === 0) {
+      console.log('Inserindo categorias padrão...');
+      const defaultCategories = [
+        { id: 'cat-alimentacao', name: 'Alimentação', icon: 'Utensils', color: '#EF4444', type: 'expense' },
+        { id: 'cat-transporte', name: 'Transporte', icon: 'Car', color: '#3B82F6', type: 'expense' },
+        { id: 'cat-moradia', name: 'Moradia', icon: 'Home', color: '#10B981', type: 'expense' },
+        { id: 'cat-lazer', name: 'Lazer', icon: 'Gamepad', color: '#F59E0B', type: 'expense' },
+        { id: 'cat-saude', name: 'Saúde', icon: 'Heart', color: '#EC4899', type: 'expense' },
+        { id: 'cat-educacao', name: 'Educação', icon: 'GraduationCap', color: '#8B5CF6', type: 'expense' },
+        { id: 'cat-salario', name: 'Salário', icon: 'Briefcase', color: '#10B981', type: 'income' },
+        { id: 'cat-investimentos', name: 'Investimentos', icon: 'TrendingUp', color: '#6366F1', type: 'income' },
+        { id: 'cat-outros', name: 'Outros', icon: 'Plus', color: '#6B7280', type: 'income' }
+      ];
+
+      for (const cat of defaultCategories) {
+        await db.execute(
+          'INSERT INTO categories (id, name, icon, color, type) VALUES ($1, $2, $3, $4, $5)',
+          [cat.id, cat.name, cat.icon, cat.color, cat.type]
+        );
+      }
+    }
+
+    // Preenche taxas de câmbio padrões se estiverem vazias
+    const existingRates = await db.select('SELECT count(*) as count FROM exchange_rates');
+    const rateCount = (existingRates as any)[0]?.count || 0;
+    if (rateCount === 0) {
+      console.log('Inserindo taxas de câmbio padrão...');
+      const defaultRates = [
+        { id: 'rate-aoa', from_currency: 'AOA', to_currency: 'AOA', rate: 1.0 },
+        { id: 'rate-usd', from_currency: 'USD', to_currency: 'AOA', rate: 900.0 },
+        { id: 'rate-eur', from_currency: 'EUR', to_currency: 'AOA', rate: 980.0 },
+        { id: 'rate-zar', from_currency: 'ZAR', to_currency: 'AOA', rate: 50.0 }
+      ];
+
+      for (const rate of defaultRates) {
+        await db.execute(
+          'INSERT INTO exchange_rates (id, from_currency, to_currency, rate) VALUES ($1, $2, $3, $4)',
+          [rate.id, rate.from_currency, rate.to_currency, rate.rate]
+        );
+      }
+    }
+
+    console.log('Banco de dados SQLite inicializado com sucesso.');
+  } catch (error) {
+    console.error('Erro ao inicializar o banco de dados SQLite:', error);
+    throw error;
+  }
+}
+
+/**
+ * Exporta todas as tabelas do banco de dados SQLite para uma string JSON.
+ */
+export async function exportDatabaseToJson(): Promise<string> {
+  const db = await getDatabase();
+  const tables = [
+    'profiles',
+    'accounts',
+    'categories',
+    'transactions',
+    'budgets',
+    'goals',
+    'subscriptions',
+    'investments',
+    'loans',
+    'loan_payments',
+    'exchange_rates',
+    'savings',
+    'user_preferences'
+  ];
+
+  const backup: Record<string, any[]> = {};
+  for (const table of tables) {
+    try {
+      const rows = await db.select<any[]>(`SELECT * FROM ${table}`);
+      backup[table] = rows || [];
+    } catch (e) {
+      console.warn(`Tabela ${table} não pôde ser exportada ou não existe:`, e);
+      backup[table] = [];
+    }
+  }
+  return JSON.stringify(backup);
+}
+
+/**
+ * Importa dados a partir de uma string JSON, substituindo o conteúdo atual.
+ */
+export async function importDatabaseFromJson(jsonStr: string): Promise<void> {
+  const db = await getDatabase();
+  const backup = JSON.parse(jsonStr);
+
+  await db.execute('PRAGMA foreign_keys = OFF;');
+
+  const tables = [
+    'profiles',
+    'accounts',
+    'categories',
+    'transactions',
+    'budgets',
+    'goals',
+    'subscriptions',
+    'investments',
+    'loans',
+    'loan_payments',
+    'exchange_rates',
+    'savings',
+    'user_preferences'
+  ];
+
+  try {
+    // Limpa todas as tabelas
+    for (const table of tables) {
+      await db.execute(`DELETE FROM ${table};`);
+    }
+
+    // Insere os registros do backup
+    for (const table of tables) {
+      const rows = backup[table];
+      if (!Array.isArray(rows) || rows.length === 0) continue;
+
+      const keys = Object.keys(rows[0]);
+      const columns = keys.join(', ');
+      const placeholders = keys.map((_, idx) => `$${idx + 1}`).join(', ');
+      const sql = `INSERT INTO ${table} (${columns}) VALUES (${placeholders})`;
+
+      for (const row of rows) {
+        const values = keys.map(k => row[k]);
+        await db.execute(sql, values);
+      }
+    }
+  } catch (error) {
+    console.error('Erro durante a restauração do backup JSON:', error);
+    throw error;
+  } finally {
+    await db.execute('PRAGMA foreign_keys = ON;');
+  }
+}

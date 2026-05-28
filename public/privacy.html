@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Política de Privacidade - VukaPay</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            color: #374151;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 2rem 1rem;
+            background-color: #f9fafb;
+        }
+        .container {
+            background-color: #ffffff;
+            padding: 2.5rem;
+            border-radius: 0.5rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+        h1 { color: #1e1b4b; border-bottom: 2px solid #e5e7eb; padding-bottom: 0.5rem; }
+        h2 { color: #312e81; margin-top: 1.5rem; }
+        p, li { color: #4b5563; }
+        ul { padding-left: 1.5rem; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Política de Privacidade — VukaPay</h1>
+        <p><strong>Última atualização:</strong> 28 de maio de 2026</p>
+        
+        <p>O VukaPay é um aplicativo de controle financeiro pessoal focado em privacidade. Esta política descreve como tratamos as suas informações ao utilizar nosso sistema e a integração com o Google OAuth.</p>
+        
+        <h2>1. Armazenamento Local de Dados</h2>
+        <p>Todos os seus dados financeiros (transações, contas, orçamentos, metas) são armazenados localmente e criptografados no seu próprio computador utilizando um banco de dados SQLite. Nós não enviamos suas informações financeiras para nenhum servidor externo de nossa propriedade.</p>
+        
+        <h2>2. Autenticação e Integração com Google</h2>
+        <p>O VukaPay permite o login com a conta Google exclusivamente para duas finalidades:</p>
+        <ul>
+            <li><strong>Autenticação:</strong> Identificar e criar o seu perfil de usuário local com segurança.</li>
+            <li><strong>Backup no Google Drive:</strong> Permitir que você envie uma cópia do seu banco de dados local para a sua conta pessoal do Google Drive, facilitando a recuperação em caso de perda ou troca de dispositivo.</li>
+        </ul>
+        
+        <h2>3. Escopo Google Drive (drive.file)</h2>
+        <p>Nós solicitamos apenas o escopo restrito <code>https://www.googleapis.com/auth/drive.file</code>. Isso significa que:</p>
+        <ul>
+            <li>O VukaPay <strong>só possui acesso aos arquivos que ele mesmo criou</strong> (o arquivo <code>vukapay_backup.json</code>).</li>
+            <li>O VukaPay <strong>não pode ver, editar, baixar ou excluir</strong> nenhum outro arquivo, documento ou imagem do seu Google Drive pessoal.</li>
+        </ul>
+        
+        <h2>4. Compartilhamento de Dados</h2>
+        <p>Nós não vendemos, alugamos, compartilhamos ou transmitimos quaisquer dados pessoais ou financeiros a terceiros. A comunicação com as APIs da Google ocorre diretamente entre o seu dispositivo e os servidores da Google.</p>
+        
+        <h2>5. Seus Direitos e Exclusão de Dados</h2>
+        <p>Como todos os dados residem no seu próprio computador e no seu Google Drive pessoal, você possui controle absoluto sobre eles. Você pode remover os backups a qualquer momento acessando o seu Google Drive e excluindo o arquivo <code>vukapay_backup.json</code> ou revogando o acesso do app nas configurações da sua conta Google.</p>
+        
+        <h2>6. Contato</h2>
+        <p>Caso tenha dúvidas sobre a privacidade dos seus dados, entre em contato através do e-mail de suporte fornecido no console da aplicação.</p>
+    </div>
+</body>
+</html>

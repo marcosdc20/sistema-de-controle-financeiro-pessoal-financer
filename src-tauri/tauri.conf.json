@@ -1,0 +1,58 @@
+{
+  "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
+  "productName": "VukaPay",
+  "version": "1.0.0",
+  "identifier": "com.vukapay.app",
+  "build": {
+    "frontendDist": "../dist",
+    "devUrl": "http://localhost:1420",
+    "beforeDevCommand": "npm run dev",
+    "beforeBuildCommand": "npm run build"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "VukaPay - Controle Financeiro Pessoal",
+        "width": 1200,
+        "height": 800,
+        "resizable": true,
+        "fullscreen": false
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": true,
+    "createUpdaterArtifacts": true,
+    "targets": ["nsis", "msi"],
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "android": {
+      "debugApplicationIdSuffix": ".debug"
+    },
+    "windows": {
+      "nsis": {
+        "installMode": "both",
+        "startMenuFolder": "VukaPay",
+        "installerHooks": "./windows/hooks.nsh",
+        "languages": ["Portuguese", "English"],
+        "compression": "lzma"
+      }
+    }
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDRDQTcxOTZDRDM5MDJDRjIKUldUeUxKRFRiQm1uVEtOQm9DYTYvd1djRGNQVWhCNDdQRmhsbGp5eFYyUUNDeXVOYnY5UlNrNVYK",
+      "endpoints": [
+        "https://raw.githubusercontent.com/marcosdc20/sistema-de-controle-financeiro-pessoal-financer/main/updater.json"
+      ]
+    }
+  }
+}

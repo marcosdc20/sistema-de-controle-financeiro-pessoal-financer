@@ -1,25 +1,77 @@
 import Database from '@tauri-apps/plugin-sql';
 
 let dbInstance: Database | null = null;
+let activeDbPath: string | null = null;
 
 /**
- * Retorna a instância singleton do banco de dados SQLite local.
- * Se o banco de dados ainda não tiver sido carregado, ele será inicializado.
+ * Retorna o caminho do banco de dados específico para o usuário logado.
+ * Se for o usuário local principal ('local-user'), mantém 'sqlite:financer.db'
+ * para preservar dados antigos.
+ */
+function getDatabasePath(): string {
+  try {
+    const savedUser = localStorage.getItem('vukapay_user');
+    if (savedUser) {
+      const user = JSON.parse(savedUser);
+      if (user && user.id) {
+        if (user.id === 'local-user') {
+          return 'sqlite:financer.db';
+        }
+        // Limpa caracteres especiais para manter o nome do arquivo válido
+        const safeId = user.id.replace(/[^a-zA-Z0-9_-]/g, '_');
+        return `sqlite:financer_${safeId}.db`;
+      }
+    }
+  } catch (e) {
+    console.error('[Database] Erro ao ler usuário do localStorage:', e);
+  }
+  return 'sqlite:financer.db'; // Fallback padrão
+}
+
+/**
+ * Retorna a instância do banco de dados SQLite local correspondente ao usuário ativo.
+ * Se o usuário mudar, fecha a conexão antiga e abre a nova dinamicamente.
  */
 export async function getDatabase(): Promise<Database> {
-  if (dbInstance) return dbInstance;
-  dbInstance = await Database.load('sqlite:financer.db');
+  const targetPath = getDatabasePath();
+
+  if (dbInstance) {
+    if (activeDbPath === targetPath) {
+      return dbInstance;
+    }
+    console.log(`[Database] Mudança de usuário detectada. Fechando conexão antiga (${activeDbPath}) para abrir (${targetPath})`);
+    try {
+      await dbInstance.close();
+    } catch (e) {
+      console.warn('[Database] Erro ao fechar banco de dados antigo:', e);
+    }
+    dbInstance = null;
+    activeDbPath = null;
+  }
+
+  console.log(`[Database] Abrindo conexão com: ${targetPath}`);
+  dbInstance = await Database.load(targetPath);
+  activeDbPath = targetPath;
+
+  // Inicializa a estrutura do banco (tabelas e migrações) de forma isolada para este arquivo
+  await initDatabaseInstance(dbInstance);
+
   return dbInstance;
 }
 
 /**
- * Inicializa o banco de dados local.
- * Cria todas as tabelas necessárias de forma compatível com o SQLite
- * e insere dados padrão (categorias e taxas de câmbio) caso não existam.
+ * Inicializa o banco de dados ativo.
  */
 export async function initDatabase(): Promise<void> {
+  // getDatabase() automaticamente abre e inicializa o banco correto
+  await getDatabase();
+}
+
+/**
+ * Inicializa uma instância específica do banco de dados (tabelas e migrações).
+ */
+async function initDatabaseInstance(db: Database): Promise<void> {
   try {
-    const db = await getDatabase();
     console.log('Inicializando banco de dados SQLite local com versionamento...');
 
     // Habilita suporte a chaves estrangeiras no SQLite

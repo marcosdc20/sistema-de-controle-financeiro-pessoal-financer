@@ -210,7 +210,7 @@ export default function Investments() {
     const totalDividends = transactions
       .filter(t => t.category === 'Investimento' && t.type === 'income')
       .reduce((acc, t) => {
-        const rate = CURRENCIES[t.currency as keyof typeof CURRENCIES].rate;
+        const rate = getRate(t.currency);
         return acc + (t.amount * rate);
       }, 0);
 

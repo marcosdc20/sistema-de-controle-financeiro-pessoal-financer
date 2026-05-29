@@ -732,7 +732,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
       const srcRate = srcAcc ? getRate(transaction.currency, srcAcc.currency) : 1;
       const srcChange = Number(transaction.amount) * srcRate;
 
-      if (transaction.type === 'income') {
+      if (transaction.type === 'income' || transaction.type === 'adjustment') {
         await adjustAccountBalance(db, transaction.account_id, srcChange);
       } else if (transaction.type === 'expense') {
         await adjustAccountBalance(db, transaction.account_id, -srcChange);
@@ -763,7 +763,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
         const oldSrcRate = oldSrcAcc ? getRate(old.currency, oldSrcAcc.currency) : 1;
         const oldSrcChange = Number(old.amount) * oldSrcRate;
 
-        if (old.type === 'income') {
+        if (old.type === 'income' || old.type === 'adjustment') {
           await adjustAccountBalance(db, old.account_id, -oldSrcChange);
         } else if (old.type === 'expense') {
           await adjustAccountBalance(db, old.account_id, oldSrcChange);
@@ -785,7 +785,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
           const newSrcRate = newSrcAcc ? getRate(updated.currency, newSrcAcc.currency) : 1;
           const newSrcChange = Number(updated.amount) * newSrcRate;
 
-          if (updated.type === 'income') {
+          if (updated.type === 'income' || updated.type === 'adjustment') {
             await adjustAccountBalance(db, updated.account_id, newSrcChange);
           } else if (updated.type === 'expense') {
             await adjustAccountBalance(db, updated.account_id, -newSrcChange);
@@ -816,7 +816,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
         const oldSrcRate = oldSrcAcc ? getRate(old.currency, oldSrcAcc.currency) : 1;
         const oldSrcChange = Number(old.amount) * oldSrcRate;
 
-        if (old.type === 'income') {
+        if (old.type === 'income' || old.type === 'adjustment') {
           await adjustAccountBalance(db, old.account_id, -oldSrcChange);
         } else if (old.type === 'expense') {
           await adjustAccountBalance(db, old.account_id, oldSrcChange);

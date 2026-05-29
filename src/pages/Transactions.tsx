@@ -281,9 +281,10 @@ export default function Transactions() {
                         <td className={cn(
                           "px-6 py-4 text-right font-semibold",
                           t.type === 'income' ? "text-emerald-600" :
-                            t.type === 'expense' ? "text-gray-900" : "text-blue-600"
+                            t.type === 'expense' ? "text-gray-900" :
+                              t.type === 'adjustment' ? (t.amount >= 0 ? "text-emerald-600" : "text-red-600") : "text-blue-600"
                         )}>
-                          {t.type === 'income' ? '+' : t.type === 'expense' ? '-' : ''}
+                          {t.type === 'income' ? '+' : t.type === 'expense' ? '-' : t.type === 'adjustment' ? (t.amount >= 0 ? '+' : '') : ''}
                           {formatCurrency(t.amount, t.currency)}
                         </td>
                         <td className="px-6 py-4 text-center">

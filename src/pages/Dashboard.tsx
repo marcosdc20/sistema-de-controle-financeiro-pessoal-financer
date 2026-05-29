@@ -766,9 +766,10 @@ export default function Dashboard() {
                       </td>
                       <td className={cn(
                         "px-6 py-4 text-right font-bold",
-                        t.type === 'income' ? "text-emerald-600" : "text-gray-900"
+                        t.type === 'income' ? "text-emerald-600" :
+                          t.type === 'adjustment' ? (t.amount >= 0 ? "text-emerald-600" : "text-red-600") : "text-gray-900"
                       )}>
-                        {t.type === 'income' ? '+' : '-'}
+                        {t.type === 'income' ? '+' : t.type === 'adjustment' ? (t.amount >= 0 ? '+' : '') : '-'}
                         {new Intl.NumberFormat('pt-AO', { style: 'currency', currency: t.currency }).format(t.amount)}
                       </td>
                     </tr>

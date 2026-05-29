@@ -10,7 +10,8 @@ export default function Accounts() {
   const {
     accounts, addAccount, updateAccount, deleteAccount,
     transactions, totalBalanceInBaseCurrency, loading,
-    getRate, formatCurrency, formatDate, preferences
+    getRate, formatCurrency, formatDate, preferences,
+    addTransaction
   } = useFinance();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isStatementOpen, setIsStatementOpen] = useState(false);
@@ -18,6 +19,9 @@ export default function Accounts() {
   const [filterCategory, setFilterCategory] = useState('all');
   const [selectedAccountForStatement, setSelectedAccountForStatement] = useState<Account | null>(null);
   const [editingAccountId, setEditingAccountId] = useState<string | null>(null);
+  const [isAdjustModalOpen, setIsAdjustModalOpen] = useState(false);
+  const [selectedAccountForAdjustment, setSelectedAccountForAdjustment] = useState<Account | null>(null);
+  const [newBalanceValue, setNewBalanceValue] = useState('');
 
   // Form State - must be declared before any conditional returns (React Hooks rules)
   const [name, setName] = useState('');
@@ -89,6 +93,39 @@ export default function Accounts() {
     if (window.confirm('Tem certeza que deseja excluir esta conta? Todas as transações associadas também serão excluídas.')) {
       deleteAccount(id);
     }
+  };
+
+  const openAdjustBalanceModal = (account: Account) => {
+    setSelectedAccountForAdjustment(account);
+    setNewBalanceValue(account.balance.toString());
+    setIsAdjustModalOpen(true);
+  };
+
+  const handleAdjustBalance = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedAccountForAdjustment) return;
+
+    const currentBalance = selectedAccountForAdjustment.balance;
+    const targetBalance = Number(newBalanceValue);
+    const difference = targetBalance - currentBalance;
+
+    if (difference === 0) {
+      setIsAdjustModalOpen(false);
+      return;
+    }
+
+    await addTransaction({
+      description: 'Ajuste manual de saldo',
+      amount: difference,
+      type: 'adjustment',
+      category: 'Ajuste',
+      currency: selectedAccountForAdjustment.currency,
+      account_id: selectedAccountForAdjustment.id,
+      date: new Date().toISOString(),
+      status: 'paid'
+    });
+
+    setIsAdjustModalOpen(false);
   };
 
   const handleViewStatement = (account: Account) => {
@@ -316,6 +353,11 @@ export default function Accounts() {
                       triggerClassName="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-50 rounded-lg transition-colors"
                       items={[
                         {
+                          label: 'Ajustar Saldo',
+                          icon: <Settings2 className="w-4 h-4 text-indigo-600" />,
+                          onClick: () => openAdjustBalanceModal(account),
+                        },
+                        {
                           label: 'Editar',
                           icon: <Edit2 className="w-4 h-4" />,
                           onClick: () => openEditModal(account),
@@ -516,6 +558,63 @@ export default function Accounts() {
             </div>
           )}
 
+          {/* Adjust Balance Modal */}
+          {isAdjustModalOpen && selectedAccountForAdjustment && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 overflow-y-auto">
+              <div className="bg-white rounded-[2rem] w-full max-w-md p-8 shadow-2xl relative my-8 animate-in fade-in zoom-in-95 duration-200">
+                <button
+                  onClick={() => setIsAdjustModalOpen(false)}
+                  className="absolute top-6 right-6 p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+                <h2 className="text-2xl font-semibold text-gray-950 mb-2 tracking-tight">Ajustar Saldo</h2>
+                <p className="text-gray-500 text-sm mb-6 leading-relaxed">
+                  Insira o saldo atualizado da conta <span className="font-semibold">{selectedAccountForAdjustment.name}</span>. O sistema gerará uma transação de ajuste automaticamente.
+                </p>
+
+                <form onSubmit={handleAdjustBalance} className="space-y-5">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Novo Saldo</label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                        <span className="text-gray-500 font-medium">{selectedAccountForAdjustment.currency}</span>
+                      </div>
+                      <input
+                        type="number"
+                        required
+                        step="0.01"
+                        value={newBalanceValue}
+                        onChange={(e) => setNewBalanceValue(e.target.value)}
+                        className="w-full pl-16 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all text-gray-900 font-medium"
+                        placeholder="0.00"
+                      />
+                    </div>
+                    <p className="text-xs text-gray-400 mt-2">
+                      Saldo atual registrado: {formatCurrency(selectedAccountForAdjustment.balance, selectedAccountForAdjustment.currency)}
+                    </p>
+                  </div>
+
+                  <div className="flex gap-3 mt-8 pt-6 border-t border-gray-100">
+                    <button
+                      type="button"
+                      onClick={() => setIsAdjustModalOpen(false)}
+                      className="flex-1 px-4 py-3.5 bg-white border border-gray-200 text-gray-700 rounded-xl font-medium hover:bg-gray-50 transition-colors"
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      type="submit"
+                      className="flex-1 px-4 py-3.5 bg-indigo-600 text-white rounded-xl font-medium hover:bg-indigo-700 transition-colors"
+                    >
+                      Confirmar
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+
           {/* Statement Modal */}
           {isStatementOpen && selectedAccountForStatement && (
             <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 overflow-y-auto">
@@ -569,8 +668,8 @@ export default function Accounts() {
                     <tbody className="divide-y divide-gray-100">
                       {accountTransactions.length > 0 ? (
                         accountTransactions.map((t) => {
-                          const isOutgoing = t.type === 'expense' || (t.type === 'transfer' && t.accountId === selectedAccountForStatement.id);
-                          const isIncoming = t.type === 'income' || (t.type === 'transfer' && t.destinationAccountId === selectedAccountForStatement.id);
+                          const isOutgoing = t.type === 'expense' || (t.type === 'transfer' && t.accountId === selectedAccountForStatement.id) || (t.type === 'adjustment' && t.amount < 0);
+                          const isIncoming = t.type === 'income' || (t.type === 'transfer' && t.destinationAccountId === selectedAccountForStatement.id) || (t.type === 'adjustment' && t.amount >= 0);
 
                           return (
                             <tr key={t.id} className="hover:bg-gray-50/50 transition-colors">

@@ -24,6 +24,7 @@ export default function TransactionModal({ isOpen, onClose, editingTransaction }
     const [destinationAccountId, setDestinationAccountId] = useState('');
     const [status, setStatus] = useState<TransactionStatus>('paid');
     const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+    const [paymentMethod, setPaymentMethod] = useState('Express');
 
     // AI Scanner State
     const [isScanning, setIsScanning] = useState(false);
@@ -39,6 +40,7 @@ export default function TransactionModal({ isOpen, onClose, editingTransaction }
             setDestinationAccountId(editingTransaction.destinationAccountId || '');
             setStatus(editingTransaction.status);
             setDate(editingTransaction.date.split('T')[0]);
+            setPaymentMethod(editingTransaction.paymentMethod || 'Express');
         } else {
             setDescription('');
             setAmount('');
@@ -49,6 +51,7 @@ export default function TransactionModal({ isOpen, onClose, editingTransaction }
             setDestinationAccountId('');
             setStatus('paid');
             setDate(new Date().toISOString().split('T')[0]);
+            setPaymentMethod('Express');
         }
     }, [editingTransaction, isOpen, accounts]);
 
@@ -80,7 +83,8 @@ export default function TransactionModal({ isOpen, onClose, editingTransaction }
             account_id: accountId,
             destination_account_id: type === 'transfer' ? destinationAccountId : undefined,
             date: new Date(date).toISOString(),
-            status
+            status,
+            payment_method: paymentMethod
         };
 
         if (editingTransaction?.id) {
@@ -218,6 +222,19 @@ export default function TransactionModal({ isOpen, onClose, editingTransaction }
                                     onChange={(e) => setDate(e.target.value)}
                                     className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all text-gray-900"
                                 />
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">Forma de Pagamento</label>
+                                <select
+                                    value={paymentMethod}
+                                    onChange={(e) => setPaymentMethod(e.target.value)}
+                                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all text-gray-900"
+                                >
+                                    <option value="Express">Multicaixa Express</option>
+                                    <option value="Cash">Dinheiro Físico (Cash)</option>
+                                    <option value="Transferência">Transferência Bancária</option>
+                                </select>
                             </div>
                         </div>
 

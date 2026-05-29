@@ -7,6 +7,29 @@ import PageTransition from '@/components/PageTransition';
 import { cn } from '@/lib/utils';
 import { ActionMenu } from '@/components/ActionMenu';
 
+const getNextCouponDate = (purchaseDateStr: string, maturityDateStr: string | undefined, frequency: string | undefined) => {
+  if (!maturityDateStr) return null;
+  const purchase = new Date(purchaseDateStr);
+  const maturity = new Date(maturityDateStr);
+  const today = new Date();
+
+  if (today > maturity) return null; // Já venceu
+
+  let monthsStep = 6;
+  if (frequency === 'anual') monthsStep = 12;
+  if (frequency === 'mensal') monthsStep = 1;
+
+  let nextCoupon = new Date(purchase);
+  while (nextCoupon <= today) {
+    nextCoupon.setMonth(nextCoupon.getMonth() + monthsStep);
+  }
+
+  if (nextCoupon > maturity) {
+    return maturity;
+  }
+  return nextCoupon;
+};
+
 export default function Investments() {
   const { investments, addInvestment, updateInvestment, deleteInvestment, addInvestmentTransaction, accounts, goals, transactions, loading, getRate } = useFinance();
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -32,6 +55,11 @@ export default function Investments() {
   const [broker, setBroker] = useState('');
   const [risk, setRisk] = useState<InvestmentRisk>('Médio');
 
+  // Coupon / Treasury states
+  const [maturityDate, setMaturityDate] = useState('');
+  const [interestRate, setInterestRate] = useState('');
+  const [paymentFrequency, setPaymentFrequency] = useState('semestral');
+
   // Form State - Transaction
   const [transactionType, setTransactionType] = useState<'aporte' | 'resgate' | 'dividendo'>('aporte');
   const [transactionAmount, setTransactionAmount] = useState('');
@@ -55,6 +83,9 @@ export default function Investments() {
     setGoalId(investment.goalId || '');
     setBroker(investment.broker || '');
     setRisk(investment.risk);
+    setMaturityDate(investment.maturityDate ? investment.maturityDate.split('T')[0] : '');
+    setInterestRate(investment.interestRate?.toString() || '');
+    setPaymentFrequency(investment.paymentFrequency || 'semestral');
     setIsModalOpen(true);
     setOpenActionId(null);
   };
@@ -74,6 +105,9 @@ export default function Investments() {
     setGoalId('');
     setBroker('');
     setRisk('Médio');
+    setMaturityDate('');
+    setInterestRate('');
+    setPaymentFrequency('semestral');
     setIsModalOpen(true);
   };
 
@@ -124,6 +158,9 @@ export default function Investments() {
       goal_id: goalId || undefined,
       broker: broker || undefined,
       risk,
+      maturity_date: type === 'Obrigações' && maturityDate ? new Date(maturityDate).toISOString() : undefined,
+      interest_rate: type === 'Obrigações' && interestRate ? Number(interestRate) : undefined,
+      payment_frequency: type === 'Obrigações' ? paymentFrequency : undefined,
     };
 
     if (editingInvestmentId) {
@@ -484,7 +521,23 @@ export default function Investments() {
                             </div>
                             <div>
                               <p className="font-medium text-gray-900">{inv.name}</p>
-                              <p className="text-xs text-gray-500">{inv.broker || 'Sem corretora'}</p>
+                              <div className="text-xs text-gray-500">
+                                <span>{inv.broker || 'Sem corretora'}</span>
+                                {inv.type === 'Obrigações' && inv.maturityDate && (
+                                  (() => {
+                                    const nextCoupon = getNextCouponDate(inv.purchaseDate, inv.maturityDate, inv.paymentFrequency);
+                                    if (nextCoupon) {
+                                      const daysLeft = Math.ceil((nextCoupon.getTime() - new Date().getTime()) / (1000 * 3600 * 24));
+                                      return (
+                                        <span className="block mt-1 text-[11px] text-indigo-600 font-semibold bg-indigo-50 px-2 py-0.5 rounded-md w-fit">
+                                          Próximo cupão: {nextCoupon.toLocaleDateString('pt-AO')} ({daysLeft} dias)
+                                        </span>
+                                      );
+                                    }
+                                    return <span className="block mt-1 text-[11px] text-red-500 bg-red-50 px-2 py-0.5 rounded-md w-fit">Vencido</span>;
+                                  })()
+                                )}
+                              </div>
                             </div>
                           </div>
                         </td>
@@ -593,13 +646,53 @@ export default function Investments() {
                         >
                           <option value="Ações">Ações</option>
                           <option value="Fundos">Fundos</option>
-                          <option value="Obrigações">Obrigações</option>
+                          <option value="Obrigações">Obrigações (Títulos do Tesouro)</option>
                           <option value="Depósito a prazo">Depósito a prazo</option>
                           <option value="Criptomoeda">Criptomoeda</option>
                           <option value="Negócio próprio">Negócio próprio</option>
                           <option value="Outro">Outro</option>
                         </select>
                       </div>
+
+                      {type === 'Obrigações' && (
+                        <div className="p-4 bg-gray-50/50 border border-gray-150 rounded-2xl space-y-4 animate-in fade-in slide-in-from-top-2 duration-200">
+                          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Parâmetros de Título Público (OT/BT)</p>
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <label className="block text-xs font-medium text-gray-700 mb-1.5">Taxa de Cupão Anual (%)</label>
+                              <input
+                                type="number"
+                                step="any"
+                                value={interestRate}
+                                onChange={(e) => setInterestRate(e.target.value)}
+                                placeholder="Ex: 15"
+                                className="w-full px-3 py-2 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-black transition-colors"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-xs font-medium text-gray-700 mb-1.5">Frequência do Juro</label>
+                              <select
+                                value={paymentFrequency}
+                                onChange={(e) => setPaymentFrequency(e.target.value)}
+                                className="w-full px-3 py-2 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-black transition-colors text-gray-900"
+                              >
+                                <option value="semestral">Semestral</option>
+                                <option value="anual">Anual</option>
+                                <option value="mensal">Mensal</option>
+                              </select>
+                            </div>
+                          </div>
+                          <div>
+                            <label className="block text-xs font-medium text-gray-700 mb-1.5">Data de Vencimento (Maturidade)</label>
+                            <input
+                              type="date"
+                              value={maturityDate}
+                              onChange={(e) => setMaturityDate(e.target.value)}
+                              className="w-full px-3 py-2 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-black transition-colors text-gray-900"
+                            />
+                          </div>
+                        </div>
+                      )}
 
                       <div className="grid grid-cols-2 gap-4">
                         <div>

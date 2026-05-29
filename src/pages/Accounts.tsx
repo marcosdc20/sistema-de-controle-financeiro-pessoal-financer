@@ -32,6 +32,7 @@ export default function Accounts() {
   const [color, setColor] = useState('bg-blue-500');
   const [isMain, setIsMain] = useState(false);
   const [hideFromTotal, setHideFromTotal] = useState(false);
+  const [institution, setInstitution] = useState('');
 
 
 
@@ -45,6 +46,7 @@ export default function Accounts() {
     setColor(account.color || 'bg-blue-500');
     setIsMain(account.isMain || false);
     setHideFromTotal(account.hideFromTotal || false);
+    setInstitution(account.institution || '');
     setIsModalOpen(true);
   };
 
@@ -56,6 +58,7 @@ export default function Accounts() {
     setBalance('');
     setIsMain(false);
     setHideFromTotal(false);
+    setInstitution('');
     setIsModalOpen(true);
   };
 
@@ -70,7 +73,8 @@ export default function Accounts() {
         balance: Number(balance),
         color,
         is_main: isMain,
-        hide_from_total: hideFromTotal
+        hide_from_total: hideFromTotal,
+        institution
       });
     } else {
       await addAccount({
@@ -83,7 +87,8 @@ export default function Accounts() {
         color,
         is_main: isMain,
         hide_from_total: hideFromTotal,
-        created_at: new Date().toISOString()
+        created_at: new Date().toISOString(),
+        institution
       });
     }
     setIsModalOpen(false);
@@ -290,7 +295,7 @@ export default function Accounts() {
                 <p className="text-xl font-semibold text-gray-900">{stats.highest?.name}</p>
               </div>
               <div className="text-right">
-                <p className="text-xl font-semibold text-emerald-600">
+                <p className="text-xl font-semibold text-emerald-600 blur-amount">
                   {stats.highest && formatCurrency(stats.highest.balance, stats.highest.currency)}
                 </p>
               </div>
@@ -301,7 +306,7 @@ export default function Accounts() {
                 <p className="text-xl font-semibold text-gray-900">{stats.lowest?.name}</p>
               </div>
               <div className="text-right">
-                <p className="text-xl font-semibold text-red-600">
+                <p className="text-xl font-semibold text-red-600 blur-amount">
                   {stats.lowest && formatCurrency(stats.lowest.balance, stats.lowest.currency)}
                 </p>
               </div>
@@ -378,7 +383,12 @@ export default function Accounts() {
                     <p className="text-sm text-gray-500 font-medium">{account.name}</p>
                     {getStatusIcon(account.status)}
                   </div>
-                  <h3 className="text-3xl font-semibold text-gray-900 tracking-tight">
+                  {account.institution && (
+                    <span className="inline-block text-[10px] bg-indigo-50 text-indigo-750 font-bold px-2 py-0.5 rounded-md mb-2">
+                      {account.institution}
+                    </span>
+                  )}
+                  <h3 className="text-3xl font-semibold text-gray-900 tracking-tight blur-amount">
                     {formatCurrency(account.balance, account.currency)}
                   </h3>
                 </div>
@@ -466,6 +476,30 @@ export default function Accounts() {
                           className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-black focus:border-black outline-none transition-all text-gray-900"
                           placeholder="Ex: Poupança, Corrente, Cofre..."
                         />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Instituição / Banco</label>
+                        <select
+                          value={institution}
+                          onChange={(e) => setInstitution(e.target.value)}
+                          className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-black focus:border-black outline-none transition-all text-gray-900 text-sm"
+                        >
+                          <option value="">Nenhuma / Outra</option>
+                          <optgroup label="Bancos de Angola">
+                            <option value="BAI">BAI (Banco Angolano de Investimentos)</option>
+                            <option value="BFA">BFA (Banco de Fomento Angola)</option>
+                            <option value="BIC">BIC (Banco BIC)</option>
+                            <option value="SOL">SOL (Banco Sol)</option>
+                            <option value="BMA">BMA (Banco Millennium Angola)</option>
+                          </optgroup>
+                          <optgroup label="Carteiras Digitais / Outros">
+                            <option value="Multicaixa Express">Multicaixa Express</option>
+                            <option value="Unitel Money">Unitel Money</option>
+                            <option value="PayPay">PayPay</option>
+                            <option value="Dinheiro Físico">Dinheiro Físico</option>
+                          </optgroup>
+                        </select>
                       </div>
                     </div>
 

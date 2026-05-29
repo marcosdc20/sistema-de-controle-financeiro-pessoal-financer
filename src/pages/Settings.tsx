@@ -22,7 +22,8 @@ export default function Settings() {
   const [tempProfile, setTempProfile] = useState({
     name: dbProfile?.full_name || '',
     email: user?.email || '',
-    avatar: dbProfile?.full_name?.substring(0, 2).toUpperCase() || '??'
+    avatar: dbProfile?.full_name?.substring(0, 2).toUpperCase() || '??',
+    avatarUrl: dbProfile?.avatar_url || ''
   });
 
   // Update tempProfile when DB profile loads
@@ -31,10 +32,25 @@ export default function Settings() {
       setTempProfile({
         name: dbProfile.full_name || '',
         email: user?.email || '',
-        avatar: dbProfile.full_name?.substring(0, 2).toUpperCase() || '??'
+        avatar: dbProfile.full_name?.substring(0, 2).toUpperCase() || '??',
+        avatarUrl: dbProfile.avatar_url || ''
       });
     }
   }, [dbProfile, user]);
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setTempProfile(prev => ({
+          ...prev,
+          avatarUrl: reader.result as string
+        }));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
   const [preferences, setPreferences] = useState({
     currency: dbPrefs?.base_currency || 'AOA',
@@ -96,6 +112,121 @@ export default function Settings() {
   const [passwordError, setPasswordError] = useState<string | null>(null);
   const [passwordSuccess, setPasswordSuccess] = useState<string | null>(null);
 
+  // PIN states
+  const [pinSetupMode, setPinSetupMode] = useState(false);
+  const [newPinCode, setNewPinCode] = useState('');
+  const [confirmPinCode, setConfirmPinCode] = useState('');
+  const [pinError, setPinError] = useState<string | null>(null);
+  const [pinSuccess, setPinSuccess] = useState<string | null>(null);
+
+  // Recovery Option states
+  const [recQuestion, setRecQuestion] = useState('Qual é o nome da sua primeira escola?');
+  const [recAnswer, setRecAnswer] = useState('');
+  const [recEmail, setRecEmail] = useState('');
+  const [recError, setRecError] = useState<string | null>(null);
+  const [recSuccess, setRecSuccess] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (dbProfile) {
+      setRecQuestion(dbProfile.security_question || 'Qual é o nome da sua primeira escola?');
+      setRecAnswer(dbProfile.security_answer || '');
+      setRecEmail(dbProfile.recovery_email || '');
+    }
+  }, [dbProfile]);
+
+  const handleUpdateRecovery = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setRecError(null);
+    setRecSuccess(null);
+
+    if (!recAnswer.trim()) {
+      setRecError('A resposta de segurança não pode estar vazia.');
+      return;
+    }
+    if (!recEmail.trim()) {
+      setRecError('O e-mail de recuperação não pode estar vazio.');
+      return;
+    }
+
+    try {
+      await updateProfile({
+        security_question: recQuestion,
+        security_answer: recAnswer.trim().toLowerCase(),
+        recovery_email: recEmail.trim()
+      });
+      setRecSuccess('Opções de recuperação atualizadas com sucesso!');
+    } catch (err) {
+      console.error(err);
+      setRecError('Erro ao salvar as opções de recuperação.');
+    }
+  };
+
+  const handleSetupPin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPinError(null);
+    setPinSuccess(null);
+
+    if (!/^\d{4,6}$/.test(newPinCode)) {
+      setPinError('O PIN deve conter de 4 a 6 dígitos numéricos.');
+      return;
+    }
+
+    if (newPinCode !== confirmPinCode) {
+      setPinError('Os códigos PIN não coincidem.');
+      return;
+    }
+
+    try {
+      await updateProfile({ pin_code: newPinCode });
+      setPinSuccess('Código PIN configurado com sucesso!');
+      setNewPinCode('');
+      setConfirmPinCode('');
+      setPinSetupMode(false);
+    } catch (err) {
+      console.error(err);
+      setPinError('Erro ao configurar o PIN.');
+    }
+  };
+
+  const handleRemovePin = async () => {
+    if (confirm('Tem a certeza que deseja desativar o acesso por PIN?')) {
+      try {
+        await updateProfile({ pin_code: '' });
+        setPinSuccess('PIN desativado com sucesso.');
+      } catch (err) {
+        console.error(err);
+        setPinError('Erro ao desativar o PIN.');
+      }
+    }
+  };
+
+  // Cofre Automático state
+  const [cofreConfig, setCofreConfig] = useState({
+    active: false,
+    rule: 100,
+    goalId: ''
+  });
+
+  useEffect(() => {
+    if (user) {
+      const cofreConfigStr = localStorage.getItem(`vukapay_cofre_${user.id}`);
+      if (cofreConfigStr) {
+        try {
+          setCofreConfig(JSON.parse(cofreConfigStr));
+        } catch (e) {
+          console.error(e);
+        }
+      }
+    }
+  }, [user]);
+
+  const handleSaveCofre = (updated: typeof cofreConfig) => {
+    setCofreConfig(updated);
+    if (user) {
+      localStorage.setItem(`vukapay_cofre_${user.id}`, JSON.stringify(updated));
+    }
+  };
+
   // -- Handlers --
 
   const handleChangePassword = async (e: React.FormEvent) => {
@@ -135,7 +266,10 @@ export default function Settings() {
   };
 
   const handleSaveProfile = async () => {
-    await updateProfile({ full_name: tempProfile.name });
+    await updateProfile({
+      full_name: tempProfile.name,
+      avatar_url: tempProfile.avatarUrl
+    });
     setIsEditingProfile(false);
   };
 
@@ -261,7 +395,8 @@ export default function Settings() {
                         setTempProfile({
                           name: dbProfile?.full_name || '',
                           email: user?.email || '',
-                          avatar: dbProfile?.full_name?.substring(0, 2).toUpperCase() || '??'
+                          avatar: dbProfile?.full_name?.substring(0, 2).toUpperCase() || '??',
+                          avatarUrl: dbProfile?.avatar_url || ''
                         });
                         setIsEditingProfile(true);
                       }}
@@ -288,8 +423,20 @@ export default function Settings() {
                 </div>
 
                 <div className="flex items-center gap-6">
-                  <div className="w-20 h-20 rounded-2xl bg-gray-900 flex items-center justify-center text-white text-2xl font-semibold shadow-sm">
-                    {tempProfile.avatar}
+                  <div className="relative group">
+                    <div className="w-20 h-20 rounded-2xl bg-gray-900 flex items-center justify-center text-white text-2xl font-semibold shadow-sm overflow-hidden border border-gray-100">
+                      {tempProfile.avatarUrl ? (
+                        <img src={tempProfile.avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+                      ) : (
+                        tempProfile.avatar
+                      )}
+                    </div>
+                    {isEditingProfile && (
+                      <label className="absolute inset-0 bg-black/50 rounded-2xl flex items-center justify-center text-white text-xs font-medium cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity">
+                        <span>Alterar</span>
+                        <input type="file" accept="image/*" className="hidden" onChange={handleImageChange} />
+                      </label>
+                    )}
                   </div>
                   <div className="flex-1">
                     {isEditingProfile ? (
@@ -388,6 +535,61 @@ export default function Settings() {
                       <div className={`w-4 h-4 bg-white rounded-full absolute top-1 shadow-sm transition-transform ${preferences.theme === 'dark' ? 'left-7' : 'left-1'}`}></div>
                     </button>
                   </div>
+                </div>
+              </div>
+
+              {/* Cofre Automático */}
+              <div className={sectionClass}>
+                <h2 className="text-lg font-semibold text-gray-900 mb-8 flex items-center">
+                  <div className="w-8 h-8 rounded-lg bg-emerald-50 flex items-center justify-center mr-3 border border-emerald-100/50">
+                    <Save className="w-4 h-4 text-emerald-600 animate-pulse" />
+                  </div>
+                  Cofre Automático (Arredondamento de Troco)
+                </h2>
+
+                <div className="space-y-6">
+                  <div className="flex items-center justify-between pb-6 border-b border-gray-100/50">
+                    <div>
+                      <p className="font-medium text-gray-900">Ativar Arredondamento</p>
+                      <p className="text-sm text-gray-500 mt-1">Arredondar transações manuais (Express/Cash) e poupar o troco</p>
+                    </div>
+                    <button
+                      onClick={() => handleSaveCofre({ ...cofreConfig, active: !cofreConfig.active })}
+                      className={`w-12 h-6 rounded-full relative transition-colors ${cofreConfig.active ? 'bg-gray-900' : 'bg-gray-200'}`}
+                    >
+                      <div className={`w-4 h-4 bg-white rounded-full absolute top-1 shadow-sm transition-transform ${cofreConfig.active ? 'left-7' : 'left-1'}`}></div>
+                    </button>
+                  </div>
+
+                  {cofreConfig.active && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2 animate-in fade-in slide-in-from-top-2 duration-200">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Regra de Arredondamento</label>
+                        <select
+                          value={cofreConfig.rule}
+                          onChange={(e) => handleSaveCofre({ ...cofreConfig, rule: Number(e.target.value) })}
+                          className="w-full px-4 py-2.5 bg-gray-50 border border-gray-100/50 rounded-xl text-sm font-medium text-gray-900 outline-none focus:ring-2 focus:ring-gray-200 transition-shadow"
+                        >
+                          <option value="100">Próximos 100 Kz (Ex: 120 Kz para 200 Kz, poupa 80 Kz)</option>
+                          <option value="500">Próximos 500 Kz (Ex: 1200 Kz para 1500 Kz, poupa 300 Kz)</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Meta de Poupança de Destino</label>
+                        <select
+                          value={cofreConfig.goalId}
+                          onChange={(e) => handleSaveCofre({ ...cofreConfig, goalId: e.target.value })}
+                          className="w-full px-4 py-2.5 bg-gray-50 border border-gray-100/50 rounded-xl text-sm font-medium text-gray-900 outline-none focus:ring-2 focus:ring-gray-200 transition-shadow"
+                        >
+                          <option value="">Selecione uma Meta...</option>
+                          {goals.filter(g => g.status === 'active').map(goal => (
+                            <option key={goal.id} value={goal.id}>{goal.name} ({goal.currency})</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             </>
@@ -531,6 +733,140 @@ export default function Settings() {
                   >
                     <div className={`w-4 h-4 bg-white rounded-full absolute top-1 shadow-sm transition-transform ${security.appLock ? 'left-7' : 'left-1'}`}></div>
                   </button>
+                </div>
+
+                <div className="pb-6 border-b border-gray-100/50">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-medium text-gray-900">Código PIN de Acesso</p>
+                      <p className="text-sm text-gray-500 mt-1">
+                        {dbProfile?.pin_code 
+                          ? `Código PIN numérico ativado para login rápido`
+                          : "Configure um PIN numérico para acesso rápido"}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {dbProfile?.pin_code ? (
+                        <button
+                          onClick={handleRemovePin}
+                          className="px-4 py-2 bg-red-50 text-red-600 rounded-xl text-sm font-medium hover:bg-red-100 transition-colors border border-red-100"
+                        >
+                          Desativar PIN
+                        </button>
+                      ) : (
+                        !pinSetupMode && (
+                          <button
+                            onClick={() => {
+                              setPinSetupMode(true);
+                              setNewPinCode('');
+                              setConfirmPinCode('');
+                              setPinError(null);
+                              setPinSuccess(null);
+                            }}
+                            className="px-4 py-2 bg-gray-50 text-gray-700 rounded-xl text-sm font-medium hover:bg-gray-100 transition-colors border border-gray-100/50"
+                          >
+                            Configurar PIN
+                          </button>
+                        )
+                      )}
+                    </div>
+                  </div>
+
+                  {pinSetupMode && (
+                    <form onSubmit={handleSetupPin} className="mt-4 p-5 bg-gray-50/50 border border-gray-100 rounded-2xl space-y-4 max-w-md animate-in fade-in slide-in-from-top-2 duration-200">
+                      {pinError && <div className="p-3 bg-red-50 text-red-600 rounded-xl text-xs font-medium border border-red-100">{pinError}</div>}
+                      {pinSuccess && <div className="p-3 bg-emerald-50 text-emerald-600 rounded-xl text-xs font-medium border border-emerald-100">{pinSuccess}</div>}
+                      
+                      <div>
+                        <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Novo PIN (4-6 dígitos)</label>
+                        <input
+                          type="password"
+                          pattern="[0-9]*"
+                          inputMode="numeric"
+                          maxLength={6}
+                          required
+                          value={newPinCode}
+                          onChange={(e) => setNewPinCode(e.target.value.replace(/\D/g, ''))}
+                          placeholder="Digite apenas números"
+                          className="w-full px-4 py-2 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-indigo-500 transition-colors text-gray-900"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Confirmar Novo PIN</label>
+                        <input
+                          type="password"
+                          pattern="[0-9]*"
+                          inputMode="numeric"
+                          maxLength={6}
+                          required
+                          value={confirmPinCode}
+                          onChange={(e) => setConfirmPinCode(e.target.value.replace(/\D/g, ''))}
+                          placeholder="Confirme seu PIN"
+                          className="w-full px-4 py-2 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-indigo-500 transition-colors text-gray-900"
+                        />
+                      </div>
+
+                      <div className="flex gap-2">
+                        <button type="submit" className="px-4 py-2 bg-gray-900 text-white rounded-xl text-sm font-medium hover:bg-gray-800 transition-colors">
+                          Salvar PIN
+                        </button>
+                        <button type="button" onClick={() => setPinSetupMode(false)} className="px-4 py-2 bg-gray-100 text-gray-700 rounded-xl text-sm font-medium hover:bg-gray-200 transition-colors">
+                          Cancelar
+                        </button>
+                      </div>
+                    </form>
+                  )}
+                </div>
+
+                <div className="pb-6 border-b border-gray-100/50">
+                  <h3 className="font-medium text-gray-900 mb-4">Opções de Recuperação de Acesso</h3>
+                  <form onSubmit={handleUpdateRecovery} className="space-y-4 max-w-md">
+                    {recError && <div className="p-3 bg-red-50 text-red-600 rounded-xl text-xs font-medium border border-red-100">{recError}</div>}
+                    {recSuccess && <div className="p-3 bg-emerald-50 text-emerald-600 rounded-xl text-xs font-medium border border-emerald-100">{recSuccess}</div>}
+                    
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Pergunta Secreta (Recuperação Local)</label>
+                      <select
+                        value={recQuestion}
+                        onChange={(e) => setRecQuestion(e.target.value)}
+                        className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-indigo-500 transition-colors text-gray-900"
+                      >
+                        <option value="Qual é o nome da sua primeira escola?">Qual é o nome da sua primeira escola?</option>
+                        <option value="Qual era o nome do seu primeiro animal de estimação?">Qual era o nome do seu primeiro animal de estimação?</option>
+                        <option value="Em que cidade os seus pais se conheceram?">Em que cidade os seus pais se conheceram?</option>
+                        <option value="Qual é a sua comida favorita de infância?">Qual é a sua comida favorita de infância?</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Resposta Secreta</label>
+                      <input
+                        type="text"
+                        required
+                        value={recAnswer}
+                        onChange={(e) => setRecAnswer(e.target.value)}
+                        placeholder="Sua resposta secreta"
+                        className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-indigo-500 transition-colors text-gray-900"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">E-mail de Recuperação</label>
+                      <input
+                        type="email"
+                        required
+                        value={recEmail}
+                        onChange={(e) => setRecEmail(e.target.value)}
+                        placeholder="Ex: seu-email@dominio.com"
+                        className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-indigo-500 transition-colors text-gray-900"
+                      />
+                    </div>
+
+                    <button type="submit" className="px-4 py-2 bg-gray-900 text-white rounded-xl text-sm font-medium hover:bg-gray-800 transition-colors flex items-center gap-2">
+                      <Save className="w-4 h-4" /> Salvar Opções de Recuperação
+                    </button>
+                  </form>
                 </div>
 
                 <div className="pb-6 border-b border-gray-100/50">

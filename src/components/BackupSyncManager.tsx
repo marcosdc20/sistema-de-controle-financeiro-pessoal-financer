@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { exportDatabaseToJson, importDatabaseFromJson, initDatabase } from '@/database/db';
 import { uploadBackupToDrive, downloadBackupFromDrive } from '@/services/googleDrive';
-import { Cloud, CloudLightning, CloudOff, RefreshCw, X, CheckCircle, Wifi, AlertTriangle } from 'lucide-react';
+import { Cloud, CloudLightning, CloudOff, RefreshCw, X, CheckCircle, Wifi, AlertTriangle, ShieldCheck, Lock } from 'lucide-react';
 
 export default function BackupSyncManager() {
   const { user } = useAuth();
@@ -101,13 +101,13 @@ export default function BackupSyncManager() {
         {isOnline ? (
           user.isLocal ? (
             <>
-              <Wifi className="w-3.5 h-3.5 text-amber-500" />
-              <span>Modo Local (Sem Backup)</span>
+              <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
+              <span>Modo Offline Seguro</span>
             </>
           ) : (
             <>
-              <Cloud className="w-3.5 h-3.5 text-indigo-400" />
-              <span>Nuvem Conectada</span>
+              <Lock className="w-3.5 h-3.5 text-indigo-400" />
+              <span>Base de Dados Local Protegida (Backup Nuvem)</span>
               {lastBackup && (
                 <span className="text-gray-500 font-normal">
                   (Último: {lastBackup.split(' ')[0]})

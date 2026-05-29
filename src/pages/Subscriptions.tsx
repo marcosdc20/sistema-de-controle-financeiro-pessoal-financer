@@ -413,6 +413,11 @@ export default function Subscriptions() {
                         / {getCycleLabel(sub.cycle).toLowerCase()}
                       </span>
                     </div>
+                    {sub.currency !== 'AOA' && (
+                      <p className="text-xs text-gray-400 mt-1 font-medium italic">
+                        Estimado: ~{new Intl.NumberFormat('pt-AO', { style: 'currency', currency: 'AOA', maximumFractionDigits: 0 }).format(sub.amount * getRate(sub.currency))}
+                      </p>
+                    )}
                   </div>
 
                   <div className={cn(

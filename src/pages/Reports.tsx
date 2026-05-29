@@ -353,83 +353,184 @@ export default function Reports() {
     const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
     const pageWidth = doc.internal.pageSize.getWidth();
 
+    // === Cores do Sistema (Premium Dark Slate & Emerald) ===
+    const primaryColor = [17, 24, 39]; // #111827
+    const accentColor = [16, 185, 129]; // #10B981
+    const textColor = [55, 65, 81]; // #374151
+
     // === Header Banner ===
-    doc.setFillColor(79, 70, 229);
-    doc.rect(0, 0, pageWidth, 28, 'F');
+    doc.setFillColor(17, 24, 39);
+    doc.rect(0, 0, pageWidth, 35, 'F');
+
+    // Branding text
     doc.setTextColor(255, 255, 255);
-    doc.setFontSize(20);
+    doc.setFontSize(22);
     doc.setFont('helvetica', 'bold');
-    doc.text('VukaPay', 14, 13);
+    doc.text('VukaPay', 14, 15);
+    
     doc.setFontSize(9);
     doc.setFont('helvetica', 'normal');
-    doc.text('Controle Financeiro Pessoal', 14, 20);
-    doc.text(`Emitido em: ${format(new Date(), 'dd/MM/yyyy HH:mm')}`, pageWidth - 14, 20, { align: 'right' });
+    doc.text('MODO OFFLINE SEGURO - RELATÓRIO EXECUTIVO', 14, 22);
+    doc.text(`Emitido em: ${format(new Date(), 'dd/MM/yyyy HH:mm')}`, pageWidth - 14, 22, { align: 'right' });
 
-    // === KPI Summary ===
-    const totalIncomeVal = monthlyData.reduce((a, b) => a + b.income, 0);
-    const totalExpenseVal = monthlyData.reduce((a, b) => a + b.expense, 0);
-    const result = totalIncomeVal - totalExpenseVal;
+    // Decorative underline banner
+    doc.setFillColor(16, 185, 129);
+    doc.rect(0, 35, pageWidth, 2, 'F');
 
-    doc.setTextColor(31, 41, 55);
-    doc.setFontSize(11);
+    // Calculate totals
+    const totalIncomeVal = filteredTransactions.filter(t => t.type === 'income').reduce((acc, curr) => acc + curr.amount * getRate(curr.currency), 0);
+    const totalExpenseVal = filteredTransactions.filter(t => t.type === 'expense').reduce((acc, curr) => acc + curr.amount * getRate(curr.currency), 0);
+    const resultVal = totalIncomeVal - totalExpenseVal;
+
+    const accTotal = accounts.reduce((acc, a) => acc + a.balance * getRate(a.currency), 0);
+    const invTotal = investments.filter(i => i.status === 'active').reduce((acc, i) => acc + i.currentValue * getRate(i.currency), 0);
+    const loanTotal = loans.filter(l => l.type === 'received' && l.status === 'active').reduce((acc, l) => acc + l.currentBalance * getRate(l.currency), 0);
+    const netWorthVal = accTotal + invTotal - loanTotal;
+
+    // === Resumo Executivo (KPIs) ===
+    doc.setTextColor(17, 24, 39);
+    doc.setFontSize(12);
     doc.setFont('helvetica', 'bold');
-    doc.text('Resumo do Período', 14, 40);
+    doc.text('1. Resumo Executivo Financeiro', 14, 48);
 
     autoTable(doc, {
-      startY: 44,
-      head: [['Receitas Totais', 'Despesas Totais', 'Resultado Líquido']],
+      startY: 52,
+      head: [['Rendas (Receitas)', 'Gastos (Despesas)', 'Saldo Líquido', 'Património Líquido']],
       body: [[
         formatCurrency(totalIncomeVal),
         formatCurrency(totalExpenseVal),
-        formatCurrency(result)
+        formatCurrency(resultVal),
+        formatCurrency(netWorthVal)
       ]],
       theme: 'grid',
-      headStyles: { fillColor: [79, 70, 229], textColor: 255, fontSize: 9, fontStyle: 'bold', halign: 'center' },
+      headStyles: { fillColor: [17, 24, 39], textColor: 255, fontSize: 9, fontStyle: 'bold', halign: 'center' },
       bodyStyles: { fontSize: 10, halign: 'center', fontStyle: 'bold' },
       columnStyles: {
         0: { textColor: [16, 185, 129] },
         1: { textColor: [239, 68, 68] },
-        2: { textColor: result >= 0 ? [16, 185, 129] : [239, 68, 68] }
+        2: { textColor: resultVal >= 0 ? [16, 185, 129] : [239, 68, 68] },
+        3: { textColor: netWorthVal >= 0 ? [59, 130, 246] : [239, 68, 68] }
       }
     });
 
-    // === Transactions Table ===
-    const afterKPI = (doc as any).lastAutoTable?.finalY
-      ? (doc as any).lastAutoTable.finalY + 10
-      : 80;
-    doc.setFontSize(11);
+    // === Limites Orçamentais ===
+    const afterKPI = (doc as any).lastAutoTable?.finalY ? (doc as any).lastAutoTable.finalY + 10 : 80;
+    doc.setFontSize(12);
     doc.setFont('helvetica', 'bold');
-    doc.setTextColor(31, 41, 55);
-    doc.text(`Transações do Período (${filteredTransactions.length})`, 14, afterKPI);
+    doc.text('2. Controlo de Limites Orçamentais', 14, afterKPI);
+
+    const budgetStart = startOfMonth(new Date());
+    const budgetEnd = endOfMonth(new Date());
+    const budgetsData = budgets.filter(b => b.status === 'active').map(b => {
+      const spent = transactions
+        .filter(t => {
+          const tDate = new Date(t.date);
+          const inDate = tDate >= budgetStart && tDate <= budgetEnd;
+          const typeMatch = t.type === 'expense';
+          const catMatch = !b.category || t.category === b.category;
+          return inDate && typeMatch && catMatch;
+        })
+        .reduce((sum, t) => sum + (t.amount * getRate(t.currency)), 0);
+      const pct = b.amount > 0 ? (spent / b.amount) * 100 : 0;
+      return [
+        b.name,
+        formatCurrency(b.amount, b.currency),
+        formatCurrency(spent, b.currency),
+        `${pct.toFixed(0)}%`
+      ];
+    });
 
     autoTable(doc, {
       startY: afterKPI + 4,
-      head: [['Data', 'Descrição', 'Categoria', 'Conta', 'Valor', 'Tipo']],
-      body: filteredTransactions.map(t => [
-        format(new Date(t.date), 'dd/MM/yyyy'),
-        t.description.substring(0, 32),
-        t.category,
-        accounts.find(a => a.id === t.accountId)?.name || 'N/A',
-        formatCurrency(t.amount, t.currency),
-        t.type === 'income' ? 'Receita' : t.type === 'expense' ? 'Despesa' : t.type
-      ]),
+      head: [['Orçamento', 'Limite Definido', 'Consumo Atual', 'Percentual Utilizado']],
+      body: budgetsData.length > 0 ? budgetsData : [['Nenhum orçamento ativo este mês', '-', '-', '-']],
       theme: 'striped',
-      headStyles: { fillColor: [17, 24, 39], textColor: 255, fontSize: 8, fontStyle: 'bold' },
-      bodyStyles: { fontSize: 7.5 },
+      headStyles: { fillColor: [17, 24, 39], textColor: 255, fontSize: 8.5, fontStyle: 'bold' },
+      bodyStyles: { fontSize: 8 },
       alternateRowStyles: { fillColor: [249, 250, 251] },
       columnStyles: {
-        0: { cellWidth: 22 },
-        1: { cellWidth: 55 },
-        2: { cellWidth: 28 },
+        0: { cellWidth: 50 },
+        1: { cellWidth: 40, halign: 'right' },
+        2: { cellWidth: 40, halign: 'right' },
+        3: { cellWidth: 40, halign: 'center' }
+      }
+    });
+
+    // === Metas de Poupança ===
+    const afterBudgets = (doc as any).lastAutoTable?.finalY ? (doc as any).lastAutoTable.finalY + 10 : 130;
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'bold');
+    doc.text('3. Progresso das Metas de Poupança', 14, afterBudgets);
+
+    const goalsData = goals.filter(g => g.status === 'active').map(g => {
+      const pct = g.targetAmount > 0 ? (g.currentAmount / g.targetAmount) * 100 : 0;
+      return [
+        g.name,
+        g.category,
+        formatCurrency(g.targetAmount, g.currency),
+        formatCurrency(g.currentAmount, g.currency),
+        `${pct.toFixed(0)}%`
+      ];
+    });
+
+    autoTable(doc, {
+      startY: afterBudgets + 4,
+      head: [['Meta de Poupança', 'Categoria', 'Objetivo Alvo', 'Acumulado', 'Progresso']],
+      body: goalsData.length > 0 ? goalsData : [['Nenhuma meta ativa cadastrada', '-', '-', '-', '-']],
+      theme: 'striped',
+      headStyles: { fillColor: [17, 24, 39], textColor: 255, fontSize: 8.5, fontStyle: 'bold' },
+      bodyStyles: { fontSize: 8 },
+      alternateRowStyles: { fillColor: [249, 250, 251] },
+      columnStyles: {
+        0: { cellWidth: 50 },
+        1: { cellWidth: 35 },
+        2: { cellWidth: 30, halign: 'right' },
+        3: { cellWidth: 30, halign: 'right' },
+        4: { cellWidth: 25, halign: 'center' }
+      }
+    });
+
+    // === Top 10 Maiores Gastos ===
+    const afterGoals = (doc as any).lastAutoTable?.finalY ? (doc as any).lastAutoTable.finalY + 10 : 180;
+    
+    // Add page if near bottom
+    let startTopY = afterGoals;
+    if (startTopY > 210) {
+      doc.addPage();
+      startTopY = 25; // Reset to top margin on page 2
+    }
+
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'bold');
+    doc.text('4. Maiores Despesas no Período (Top 10)', 14, startTopY);
+
+    const topExpenses = filteredTransactions
+      .filter(t => t.type === 'expense')
+      .sort((a, b) => b.amount * getRate(b.currency) - a.amount * getRate(a.currency))
+      .slice(0, 10);
+
+    const expensesData = topExpenses.map(t => [
+      format(new Date(t.date), 'dd/MM/yyyy'),
+      t.description.substring(0, 40),
+      t.category,
+      accounts.find(a => a.id === t.accountId)?.name || 'N/A',
+      formatCurrency(t.amount, t.currency)
+    ]);
+
+    autoTable(doc, {
+      startY: startTopY + 4,
+      head: [['Data', 'Descrição', 'Categoria', 'Conta de Origem', 'Valor da Despesa']],
+      body: expensesData.length > 0 ? expensesData : [['Nenhuma despesa registrada no período', '-', '-', '-', '-']],
+      theme: 'striped',
+      headStyles: { fillColor: [17, 24, 39], textColor: 255, fontSize: 8.5, fontStyle: 'bold' },
+      bodyStyles: { fontSize: 8 },
+      alternateRowStyles: { fillColor: [249, 250, 251] },
+      columnStyles: {
+        0: { cellWidth: 25 },
+        1: { cellWidth: 60 },
+        2: { cellWidth: 35 },
         3: { cellWidth: 30 },
-        4: { cellWidth: 28, halign: 'right' },
-        5: { cellWidth: 20, halign: 'center' }
-      },
-      didParseCell: (data: any) => {
-        if (data.column.index === 5 && data.section === 'body') {
-          data.cell.styles.textColor = data.cell.raw === 'Receita' ? [16, 185, 129] : [239, 68, 68];
-          data.cell.styles.fontStyle = 'bold';
-        }
+        4: { cellWidth: 30, halign: 'right' }
       }
     });
 
@@ -440,14 +541,14 @@ export default function Reports() {
       doc.setFontSize(7.5);
       doc.setTextColor(156, 163, 175);
       doc.text(
-        `VukaPay — Controle Financeiro Pessoal  |  Página ${i} de ${pageCount}`,
+        `VukaPay — Relatório Financeiro Premium  |  Página ${i} de ${pageCount}`,
         pageWidth / 2,
         doc.internal.pageSize.getHeight() - 8,
         { align: 'center' }
       );
     }
 
-    doc.save(`relatorio_vukapay_${format(new Date(), 'yyyy-MM-dd')}.pdf`);
+    doc.save(`relatorio_premium_vukapay_${format(new Date(), 'yyyy-MM-dd')}.pdf`);
     setIsExportMenuOpen(false);
   };
 

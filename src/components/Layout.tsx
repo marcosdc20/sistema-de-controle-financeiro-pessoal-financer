@@ -23,7 +23,9 @@ import {
   HelpCircle,
   LogOut,
   User,
-  PiggyBank
+  PiggyBank,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/context/AuthContext';
@@ -37,7 +39,7 @@ import AutoUpdater from '@/components/AutoUpdater';
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   const { signOut, user } = useAuth();
-  const { profile, setIsTransactionModalOpen, isTransactionModalOpen, notifications, markNotificationAsRead } = useFinance();
+  const { profile, setIsTransactionModalOpen, isTransactionModalOpen, notifications, markNotificationAsRead, togglePrivacyMode, isPrivacyMode } = useFinance();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
@@ -92,6 +94,11 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         setIsHelpOpen(false);
       }
 
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'h') {
+        e.preventDefault();
+        togglePrivacyMode();
+      }
+
       // Single key shortcuts
       if (e.key === 'n') {
         e.preventDefault();
@@ -112,7 +119,14 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [navigate]);
+  }, [navigate, togglePrivacyMode]);
+
+  // Pedir permissão de notificações no Mount
+  useEffect(() => {
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission();
+    }
+  }, []);
 
   return (
     <div className="h-screen bg-[#F3F4F6] text-gray-900 font-sans flex overflow-hidden">
@@ -330,6 +344,18 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
             <div className="h-8 w-px bg-gray-200 mx-1 hidden sm:block"></div>
 
+            {/* Privacy Mode Toggle */}
+            <button
+              onClick={togglePrivacyMode}
+              className={cn(
+                "p-2.5 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-xl transition-all relative group",
+                isPrivacyMode && "text-indigo-600 bg-indigo-50/50"
+              )}
+              title={isPrivacyMode ? "Desativar Modo Olhar Indiscreto" : "Ativar Modo Olhar Indiscreto (Ctrl+H)"}
+            >
+              {isPrivacyMode ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+            </button>
+
             {/* Notifications Dropdown */}
             <div className="relative">
               <button
@@ -463,9 +489,17 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   isProfileOpen ? "border-indigo-600 scale-105" : "border-transparent hover:border-gray-200"
                 )}
               >
-                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-medium text-sm shadow-sm">
-                  {profile?.full_name?.substring(0, 2).toUpperCase() || user?.email?.substring(0, 2).toUpperCase() || 'JD'}
-                </div>
+                {profile?.avatar_url ? (
+                  <img
+                    src={profile.avatar_url}
+                    alt="Foto de perfil"
+                    className="w-9 h-9 rounded-full object-cover shadow-sm border border-indigo-500/20"
+                  />
+                ) : (
+                  <div className="w-9 h-9 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-medium text-sm shadow-sm">
+                    {profile?.full_name?.substring(0, 2).toUpperCase() || user?.email?.substring(0, 2).toUpperCase() || 'JD'}
+                  </div>
+                )}
               </button>
 
               {isProfileOpen && (
@@ -511,7 +545,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         </header>
 
         <div className="flex-1 overflow-hidden p-0">
-          <div className="h-full overflow-y-auto p-4 lg:p-8 scroll-smooth scrollbar-none">
+          <div className="h-full overflow-y-auto p-4 lg:p-8 scroll-smooth scrollbar-thin scrollbar-thumb-indigo-600/50 scrollbar-track-transparent">
             <div className="max-w-7xl mx-auto">
               {children}
             </div>

@@ -152,6 +152,57 @@ export const FUNDAMENTALS: Fundamental[] = [
 
       Conhecer esses vieses ajuda a evitar armadilhas mentais.
     `
+  },
+  {
+    id: 'angola-taxes',
+    title: 'Guia de Impostos (IRT, IVA, Selo)',
+    description: 'Entenda os principais impostos que afetam sua renda em Angola.',
+    icon: 'ShieldCheck',
+    color: 'red',
+    content: `
+      ### Impostos em Angola
+
+      Para planejar suas finanças locais com precisão, você precisa entender como os impostos reduzem o seu rendimento líquido. Os três principais impostos diários são:
+
+      ### 1. IRT (Imposto sobre o Rendimento do Trabalho)
+      Cobrado diretamente na fonte sobre o seu salário bruto. Ele possui uma tabela progressiva que vai de:
+      *   **Isento:** Até 100.000 Kz mensais.
+      *   **Alíquotas progressivas:** Variam de 10% a 25% sobre o excedente, conforme o escalão salarial determinado pela AGT.
+      *   *Dica:* Calcule sempre o seu orçamento com base no seu salário líquido (já deduzido o IRT e os 3% de Segurança Social INSS).
+
+      ### 2. IVA (Imposto sobre o Valor Acrescentado)
+      Imposto sobre o consumo aplicado na compra de produtos e serviços.
+      *   **Taxa Geral:** 14% aplicada à maioria dos produtos industriais e comerciais.
+      *   **Bens Alimentares de Primeira Necessidade:** Sujeitos a taxas reduzidas (5% ou isenção) para mitigar o custo da cesta básica.
+
+      ### 3. Imposto de Selo (IS)
+      Incide sobre recibos de aluguel, transferências, contratos e operações financeiras (geralmente 0,1% a 1%).
+      
+      **Planejamento:** Conhecer estas regras ajuda a deduzir despesas dedutíveis e a evitar multas ao realizar compras com recibos oficiais contendo NIF.
+    `
+  },
+  {
+    id: 'rule-50-30-20-angola',
+    title: 'Regra 50/30/20 em Angola',
+    description: 'Como adaptar a clássica regra orçamental ao contexto nacional.',
+    icon: 'PieChart',
+    color: 'blue',
+    content: `
+      ### A Regra Clássica
+      A regra 55/35/10 ou 50/30/20 foi criada nos EUA por Elizabeth Warren, dividindo a renda líquida em:
+      *   **50% Necessidades:** Custos essenciais e fixos.
+      *   **30% Desejos:** Gastos supérfluos e estilo de vida.
+      *   **20% Poupança:** Investimentos e quitação de dívidas.
+
+      ### A Adaptação para o Mercado Angolano
+      Devido ao alto custo de vida em Luanda e à inflação alimentar, a regra necessita de ajustes práticos para ser realista:
+
+      1.  **Necessidades (Aumentar para 55-60% se necessário):** Moradia, transporte (táxi/azulinhos ou combustível) e alimentação na cesta básica consomem grande parte do salário.
+      2.  **Desejos (Reduzir para 20-25%):** Gastos de lazer, jantares fora, créditos telefónicos (Unitel/Movicel) devem ser moderados.
+      3.  **Poupança e Kixiquila (Manter em 20%):** O Kixiquila comunitário (poupança rotativa) entra perfeitamente nos 20%. Destinar uma parte para uma meta de arredondamento de troco (Cofre Automático) protege seu poder de compra contra a desvalorização cambial.
+
+      **Dica:** Adapte as porcentagens ao seu escalão de rendimentos. Se ganha menos, foque em reduzir a taxa de esforço de necessidades mantendo a disciplina de poupança.
+    `
   }
 ];
 

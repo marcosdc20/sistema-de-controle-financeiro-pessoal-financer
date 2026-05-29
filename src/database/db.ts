@@ -357,6 +357,68 @@ async function initDatabaseInstance(db: Database): Promise<void> {
       console.log('Migração para Versão 2 concluída.');
     }
 
+    // MIGRATION 3: Adicionar colunas para PIN, recuperação de senha, formas de pagamento, investimentos e criar tabela de kixiquilas (Versão 3)
+    if (currentVersion < 3) {
+      console.log('Executando migração: Versão 3 (Campos de segurança, formas de pagamento, investimentos e Kixiquila)...');
+      
+      // Adicionar colunas em profiles
+      const columnsToAddProfiles = [
+        { name: 'security_question', type: 'TEXT' },
+        { name: 'security_answer', type: 'TEXT' },
+        { name: 'recovery_email', type: 'TEXT' },
+        { name: 'pin_code', type: 'TEXT' }
+      ];
+      for (const col of columnsToAddProfiles) {
+        try {
+          await db.execute(`ALTER TABLE profiles ADD COLUMN ${col.name} ${col.type};`);
+        } catch (e) {
+          console.log(`Coluna ${col.name} já existe em profiles ou erro ao adicionar.`);
+        }
+      }
+
+      // Adicionar colunas em transactions
+      try {
+        await db.execute("ALTER TABLE transactions ADD COLUMN payment_method TEXT DEFAULT 'Express';");
+      } catch (e) {
+        console.log("Coluna payment_method já existe em transactions ou erro ao adicionar.");
+      }
+
+      // Adicionar colunas em investments
+      const columnsToAddInvestments = [
+        { name: 'maturity_date', type: 'TEXT' },
+        { name: 'interest_rate', type: 'REAL DEFAULT 0.0' },
+        { name: 'payment_frequency', type: 'TEXT' }
+      ];
+      for (const col of columnsToAddInvestments) {
+        try {
+          await db.execute(`ALTER TABLE investments ADD COLUMN ${col.name} ${col.type};`);
+        } catch (e) {
+          console.log(`Coluna ${col.name} já existe em investments ou erro ao adicionar.`);
+        }
+      }
+
+      // Criar tabela kixiquilas
+      await db.execute(`
+        CREATE TABLE IF NOT EXISTS kixiquilas (
+          id TEXT PRIMARY KEY,
+          user_id TEXT NOT NULL,
+          name TEXT NOT NULL,
+          contribution REAL NOT NULL,
+          members_count INTEGER NOT NULL,
+          my_turn_month INTEGER NOT NULL,
+          start_date TEXT NOT NULL,
+          status TEXT DEFAULT 'active',
+          members_list TEXT,
+          created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY(user_id) REFERENCES profiles(id) ON DELETE CASCADE
+        );
+      `);
+
+      await db.execute('PRAGMA user_version = 3;');
+      currentVersion = 3;
+      console.log('Migração para Versão 3 concluída.');
+    }
+
     // Preenche categorias padrões se estiverem vazias
     const existingCats = await db.select('SELECT count(*) as count FROM categories');
     const catCount = (existingCats as any)[0]?.count || 0;
@@ -427,7 +489,8 @@ export async function exportDatabaseToJson(): Promise<string> {
     'loan_payments',
     'exchange_rates',
     'savings',
-    'user_preferences'
+    'user_preferences',
+    'kixiquilas'
   ];
 
   const backup: Record<string, any[]> = {};
@@ -465,7 +528,8 @@ export async function importDatabaseFromJson(jsonStr: string): Promise<void> {
     'loan_payments',
     'exchange_rates',
     'savings',
-    'user_preferences'
+    'user_preferences',
+    'kixiquilas'
   ];
 
   try {

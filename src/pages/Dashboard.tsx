@@ -17,7 +17,8 @@ import {
   AlertTriangle,
   Zap,
   Landmark,
-  CheckCircle2
+  CheckCircle2,
+  X
 } from 'lucide-react';
 import {
   AreaChart,
@@ -53,6 +54,8 @@ export default function Dashboard() {
     preferences,
     loading
   } = useFinance();
+
+  const [isFinHealthOpen, setIsFinHealthOpen] = React.useState(false);
 
   // --- All hooks MUST be before any conditional returns (React Rules of Hooks) ---
 
@@ -269,15 +272,18 @@ export default function Dashboard() {
                 <Calendar className="w-4 h-4 text-gray-400" />
                 <span>{new Date().toLocaleDateString(preferences?.language || 'pt-AO', { month: 'long', year: 'numeric' })}</span>
               </div>
-              <div className={cn(
-                "px-4 py-2 rounded-xl text-sm font-medium flex items-center gap-2 shadow-sm transition-colors cursor-help",
-                finHealthScore >= 800 ? "bg-emerald-50 border border-emerald-100 text-emerald-700" :
-                  finHealthScore >= 600 ? "bg-indigo-50 border border-indigo-100 text-indigo-700" :
-                    "bg-amber-50 border border-amber-100 text-amber-700"
-              )} title={"Score de Saúde Financeira, calculado com base na sua poupança, dívidas e reservas."}>
+              <button
+                onClick={() => setIsFinHealthOpen(true)}
+                className={cn(
+                  "px-4 py-2 rounded-xl text-sm font-medium flex items-center gap-2 shadow-sm transition-all hover:scale-105 active:scale-95 cursor-pointer",
+                  finHealthScore >= 800 ? "bg-emerald-50 border border-emerald-100 text-emerald-700 hover:bg-emerald-100" :
+                    finHealthScore >= 600 ? "bg-indigo-50 border border-indigo-100 text-indigo-700 hover:bg-indigo-100" :
+                      "bg-amber-50 border border-amber-100 text-amber-700 hover:bg-amber-100"
+                )}
+              >
                 <Activity className="w-4 h-4" />
                 <span>FinHealth: {finHealthScore}</span>
-              </div>
+              </button>
             </div>
           </div>
 
@@ -292,7 +298,7 @@ export default function Dashboard() {
                 <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider bg-gray-50 px-2 py-1 rounded-lg">Total</span>
               </div>
               <p className="text-sm text-gray-500 font-medium">Saldo Total</p>
-              <h3 className="text-2xl font-bold text-gray-900 mt-1">
+              <h3 className="text-2xl font-bold text-gray-900 mt-1 blur-amount">
                 {formatCurrency(totalBalanceInBaseCurrency)}
               </h3>
             </div>
@@ -306,7 +312,7 @@ export default function Dashboard() {
                 <span className="text-xs font-semibold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-lg">+12%</span>
               </div>
               <p className="text-sm text-gray-500 font-medium">Receitas (Mês)</p>
-              <h3 className="text-2xl font-bold text-gray-900 mt-1">
+              <h3 className="text-2xl font-bold text-gray-900 mt-1 blur-amount">
                 {formatCurrency(totalIncome)}
               </h3>
             </div>
@@ -320,7 +326,7 @@ export default function Dashboard() {
                 <span className="text-xs font-semibold text-red-600 bg-red-50 px-2 py-1 rounded-lg">-5%</span>
               </div>
               <p className="text-sm text-gray-500 font-medium">Despesas (Mês)</p>
-              <h3 className="text-2xl font-bold text-gray-900 mt-1">
+              <h3 className="text-2xl font-bold text-gray-900 mt-1 blur-amount">
                 {formatCurrency(totalExpense)}
               </h3>
             </div>
@@ -371,12 +377,12 @@ export default function Dashboard() {
                 <div className="flex justify-between items-end">
                   <div>
                     <p className="text-xs text-gray-400 mb-0.5">Gasto atual</p>
-                    <p className="text-xl font-bold text-gray-900">{formatCurrency(spendingProjection.current)}</p>
+                    <p className="text-xl font-bold text-gray-900 blur-amount">{formatCurrency(spendingProjection.current)}</p>
                   </div>
                   <div className="text-right">
                     <p className="text-xs text-gray-400 mb-0.5">Projeção total</p>
                     <p className={cn(
-                      "text-xl font-bold",
+                      "text-xl font-bold blur-amount",
                       spendingProjection.isOverIncome ? "text-red-600" : "text-gray-700"
                     )}>{formatCurrency(spendingProjection.projected)}</p>
                   </div>
@@ -706,7 +712,7 @@ export default function Dashboard() {
                     </div>
                     <div className="flex justify-between text-xs text-gray-500">
                       <span>Restante:</span>
-                      <span className="font-semibold text-gray-900">
+                      <span className="font-semibold text-gray-900 blur-amount">
                         {formatCurrency(loan.currentBalance, loan.currency)}
                       </span>
                     </div>
@@ -765,7 +771,7 @@ export default function Dashboard() {
                         {new Date(t.date).toLocaleDateString('pt-AO', { day: '2-digit', month: 'short' })}
                       </td>
                       <td className={cn(
-                        "px-6 py-4 text-right font-bold",
+                        "px-6 py-4 text-right font-bold blur-amount",
                         t.type === 'income' ? "text-emerald-600" :
                           t.type === 'adjustment' ? (t.amount >= 0 ? "text-emerald-600" : "text-red-600") : "text-gray-900"
                       )}>
@@ -779,6 +785,118 @@ export default function Dashboard() {
             </div>
           </div>
         </>
+      )}
+
+      {/* FinHealth Breakdown Modal */}
+      {isFinHealthOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="w-full max-w-md bg-white rounded-3xl border border-gray-100 p-6 shadow-2xl animate-in zoom-in-95 duration-200 relative overflow-hidden">
+            <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-emerald-500 to-indigo-600" />
+            
+            <button
+              onClick={() => setIsFinHealthOpen(false)}
+              className="absolute top-4 right-4 p-1.5 hover:bg-gray-100 rounded-xl text-gray-400 hover:text-gray-600 transition-colors"
+            >
+              <X className="w-4 h-4" />
+            </button>
+
+            <div className="flex flex-col items-center mb-6">
+              <div className={cn(
+                "w-12 h-12 rounded-2xl flex items-center justify-center shadow-md mb-3",
+                finHealthScore >= 800 ? "bg-emerald-100 text-emerald-600" :
+                  finHealthScore >= 600 ? "bg-indigo-100 text-indigo-600" :
+                    "bg-amber-100 text-amber-600"
+              )}>
+                <Activity className="w-6 h-6" />
+              </div>
+              <h3 className="text-xl font-bold text-gray-900">Score FinHealth</h3>
+              <div className="text-3xl font-extrabold text-gray-900 mt-1">{finHealthScore} <span className="text-sm font-normal text-gray-400">/ 1000</span></div>
+              <p className="text-xs text-gray-500 text-center mt-2 leading-relaxed">
+                Este indicador mede a sua saúde financeira com base no seu comportamento de poupança, patrimônio e compromissos locais.
+              </p>
+            </div>
+
+            <div className="space-y-4">
+              {/* Poupança */}
+              <div className="flex items-center justify-between p-3.5 bg-gray-50 border border-gray-100 rounded-2xl">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-emerald-50 text-emerald-600 rounded-xl">
+                    <PiggyBank className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-bold text-gray-950">Taxa de Poupança</h4>
+                    <p className="text-[10px] text-gray-400 mt-0.5">Economizado: {savingsRate.toFixed(1)}% das receitas</p>
+                  </div>
+                </div>
+                <span className="text-xs font-extrabold text-emerald-600">
+                  +{savingsRate >= 20 ? 200 : savingsRate >= 10 ? 100 : savingsRate > 0 ? 50 : 0} pts
+                </span>
+              </div>
+
+              {/* Saldo Total */}
+              <div className="flex items-center justify-between p-3.5 bg-gray-50 border border-gray-100 rounded-2xl">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-indigo-50 text-indigo-600 rounded-xl">
+                    <Wallet className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-bold text-gray-950">Saldo Consolidado</h4>
+                    <p className="text-[10px] text-gray-400 mt-0.5 blur-amount">Patrimônio local: {formatCurrency(totalBalanceInBaseCurrency)}</p>
+                  </div>
+                </div>
+                <span className="text-xs font-extrabold text-indigo-600">
+                  +{totalBalanceInBaseCurrency > 500000 ? 150 : totalBalanceInBaseCurrency > 10000 ? 100 : totalBalanceInBaseCurrency > 0 ? 50 : 0} pts
+                </span>
+              </div>
+
+              {/* Empréstimos */}
+              <div className="flex items-center justify-between p-3.5 bg-gray-50 border border-gray-100 rounded-2xl">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-red-50 text-red-600 rounded-xl text-center">
+                    <ArrowDownRight className="w-4 h-4 mx-auto" />
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-bold text-gray-950">Dívidas e Empréstimos</h4>
+                    <p className="text-[10px] text-gray-400 mt-0.5">
+                      {loans.filter(l => l.status === 'active' && l.type === 'received').length} empréstimos recebidos ativos
+                    </p>
+                  </div>
+                </div>
+                <span className={cn(
+                  "text-xs font-extrabold",
+                  loans.filter(l => l.status === 'active' && l.type === 'received').length === 0 ? "text-indigo-600" : "text-red-500"
+                )}>
+                  {loans.filter(l => l.status === 'active' && l.type === 'received').length === 0 ? '+150 pts' : `-${loans.filter(l => l.status === 'active' && l.type === 'received').length * 30} pts`}
+                </span>
+              </div>
+
+              {/* Metas Ativas */}
+              <div className="flex items-center justify-between p-3.5 bg-gray-50 border border-gray-100 rounded-2xl">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-amber-50 text-amber-600 rounded-xl">
+                    <Target className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-bold text-gray-950">Metas Ativas</h4>
+                    <p className="text-[10px] text-gray-400 mt-0.5">Possui metas de poupança em progresso</p>
+                  </div>
+                </div>
+                <span className="text-xs font-extrabold text-amber-600">
+                  +{goals.filter(g => g.status === 'active').length > 0 ? 50 : 0} pts
+                </span>
+              </div>
+            </div>
+
+            <div className="mt-6 flex justify-end">
+              <button
+                onClick={() => setIsFinHealthOpen(false)}
+                className="w-full py-3 bg-gray-900 hover:bg-gray-800 text-white rounded-2xl text-xs font-bold transition-all"
+              >
+                Fechar Detalhes
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </PageTransition>
   );

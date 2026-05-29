@@ -4,7 +4,7 @@ import {
   BookOpen, Play, Award, Lock, ArrowRight, TrendingUp,
   AlertTriangle, CheckCircle2, Calculator, Lightbulb,
   GraduationCap, Target, Wallet, Brain, Coins, BarChart3,
-  X, ChevronRight, Check
+  X, ChevronRight, Check, ShieldCheck, PieChart
 } from 'lucide-react';
 import PageTransition from '@/components/PageTransition';
 import { cn, CURRENCIES } from '@/lib/utils';
@@ -680,7 +680,7 @@ export default function Education() {
             {FUNDAMENTALS.map((item) => {
               // Dynamic icon mapping
               const Icon = {
-                Wallet, TrendingUp, AlertTriangle, Coins, BarChart3, Brain
+                Wallet, TrendingUp, AlertTriangle, Coins, BarChart3, Brain, ShieldCheck, PieChart
               }[item.icon] || BookOpen;
 
               return (

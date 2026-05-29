@@ -76,6 +76,9 @@ export interface Investment {
   risk: InvestmentRisk;
   status: InvestmentStatus;
   goalId?: string;
+  maturityDate?: string;
+  interestRate?: number;
+  paymentFrequency?: string;
 }
 
 export interface Goal {
@@ -104,6 +107,19 @@ export interface Saving {
   interestRate: number;
   targetAmount?: number;
   startDate: string;
+  createdAt: string;
+}
+
+export interface Kixiquila {
+  id: string;
+  userId: string;
+  name: string;
+  contribution: number;
+  membersCount: number;
+  myTurnMonth: number;
+  startDate: string;
+  status: string;
+  membersList?: string;
   createdAt: string;
 }
 
@@ -169,6 +185,7 @@ export interface Transaction {
   category: string;
   date: string;
   status: TransactionStatus;
+  paymentMethod?: string;
 }
 
 export interface ExchangeRate {
@@ -217,9 +234,25 @@ interface FinanceContextType {
   loans: (Loan & { payments: LoanPayment[] })[];
   exchangeRates: ExchangeRate[];
   categories: typeof CATEGORIES;
-  profile: { full_name: string | null; avatar_url: string | null; password?: string | null } | null;
-  updateProfile: (profile: { full_name?: string; avatar_url?: string; password?: string }) => Promise<void>;
-  addTransaction: (transaction: Omit<Database['public']['Tables']['transactions']['Insert'], 'user_id'>) => Promise<void>;
+  profile: {
+    full_name: string | null;
+    avatar_url: string | null;
+    password?: string | null;
+    security_question?: string | null;
+    security_answer?: string | null;
+    recovery_email?: string | null;
+    pin_code?: string | null;
+  } | null;
+  updateProfile: (profile: {
+    full_name?: string;
+    avatar_url?: string;
+    password?: string;
+    security_question?: string;
+    security_answer?: string;
+    recovery_email?: string;
+    pin_code?: string;
+  }) => Promise<void>;
+  addTransaction: (transaction: Omit<Database['public']['Tables']['transactions']['Insert'], 'user_id'> & { payment_method?: string }) => Promise<void>;
   updateTransaction: (id: string, transaction: Database['public']['Tables']['transactions']['Update']) => Promise<void>;
   deleteTransaction: (id: string) => Promise<void>;
   addAccount: (account: Omit<Database['public']['Tables']['accounts']['Insert'], 'user_id'>) => Promise<void>;
@@ -242,6 +275,12 @@ interface FinanceContextType {
   addSaving: (saving: Omit<Database['public']['Tables']['savings']['Insert'], 'user_id'>) => Promise<void>;
   updateSaving: (id: string, saving: Database['public']['Tables']['savings']['Update']) => Promise<void>;
   deleteSaving: (id: string) => Promise<void>;
+  kixiquilas: Kixiquila[];
+  addKixiquila: (kixiquila: Omit<Kixiquila, 'id' | 'userId' | 'createdAt'>) => Promise<void>;
+  updateKixiquila: (id: string, updates: Partial<Kixiquila>) => Promise<void>;
+  deleteKixiquila: (id: string) => Promise<void>;
+  isPrivacyMode: boolean;
+  togglePrivacyMode: () => void;
   isTransactionModalOpen: boolean;
   setIsTransactionModalOpen: (open: boolean) => void;
   notifications: Notification[];
@@ -294,16 +333,42 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
   const [loans, setLoans] = useState<(Loan & { payments: LoanPayment[] })[]>([]);
   const [investments, setInvestments] = useState<Investment[]>([]);
   const [savings, setSavings] = useState<Saving[]>([]);
+  const [kixiquilas, setKixiquilas] = useState<Kixiquila[]>([]);
   const [goals, setGoals] = useState<Goal[]>([]);
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
   const [budgets, setBudgets] = useState<Budget[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [exchangeRates, setExchangeRates] = useState<ExchangeRate[]>([]);
-  const [profile, setProfile] = useState<{ full_name: string | null; avatar_url: string | null; password?: string | null } | null>(null);
+  const [profile, setProfile] = useState<{
+    full_name: string | null;
+    avatar_url: string | null;
+    password?: string | null;
+    security_question?: string | null;
+    security_answer?: string | null;
+    recovery_email?: string | null;
+    pin_code?: string | null;
+  } | null>(null);
   const [preferences, setPreferences] = useState<UserPreferences | null>(null);
   const [loading, setLoading] = useState(true);
   const [isTransactionModalOpen, setIsTransactionModalOpen] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
+
+  const [isPrivacyMode, setIsPrivacyMode] = useState(() => {
+    return localStorage.getItem('vukapay_privacy_mode') === 'true';
+  });
+
+  const togglePrivacyMode = useCallback(() => {
+    setIsPrivacyMode(prev => {
+      const next = !prev;
+      localStorage.setItem('vukapay_privacy_mode', String(next));
+      document.documentElement.classList.toggle('privacy-mode-active', next);
+      return next;
+    });
+  }, []);
+
+  useEffect(() => {
+    document.documentElement.classList.toggle('privacy-mode-active', isPrivacyMode);
+  }, [isPrivacyMode]);
 
   const getRate = useCallback((from: string, to: string = preferences?.base_currency || 'AOA') => {
     if (from === to) return 1;
@@ -324,7 +389,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
     if (!user) return;
     try {
       const db = await getDatabase();
-      const [accs, trans, invs, gls, subs, bdgs, svgs, rates, lns, payments, cats, profiles, prefs] = await Promise.all([
+      const [accs, trans, invs, gls, subs, bdgs, svgs, rates, lns, payments, cats, profiles, prefs, kixs] = await Promise.all([
         db.select<any[]>('SELECT * FROM accounts ORDER BY created_at'),
         db.select<any[]>('SELECT * FROM transactions ORDER BY date DESC'),
         db.select<any[]>('SELECT * FROM investments'),
@@ -337,7 +402,8 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
         db.select<any[]>('SELECT * FROM loan_payments'),
         db.select<any[]>('SELECT * FROM categories WHERE user_id IS NULL OR user_id = $1', [user.id]),
         db.select<any[]>('SELECT * FROM profiles WHERE id = $1 LIMIT 1', [user.id]),
-        db.select<any[]>('SELECT * FROM user_preferences WHERE user_id = $1 LIMIT 1', [user.id])
+        db.select<any[]>('SELECT * FROM user_preferences WHERE user_id = $1 LIMIT 1', [user.id]),
+        db.select<any[]>('SELECT * FROM kixiquilas WHERE user_id = $1', [user.id])
       ]);
 
       const newNotifications: Notification[] = [];
@@ -422,7 +488,8 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
             destinationAccountId: t.destination_account_id,
             category: t.category,
             date: t.date,
-            status: t.status as TransactionStatus
+            status: t.status as TransactionStatus,
+            paymentMethod: t.payment_method || 'Express'
           };
         }));
       }
@@ -443,7 +510,10 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
           broker: i.broker,
           risk: i.risk as InvestmentRisk,
           status: i.status as InvestmentStatus,
-          goalId: i.goal_id
+          goalId: i.goal_id,
+          maturityDate: i.maturity_date,
+          interestRate: i.interest_rate ? Number(i.interest_rate) : undefined,
+          paymentFrequency: i.payment_frequency
         })));
       }
 
@@ -531,6 +601,21 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
         })));
       }
 
+      if (kixs) {
+        setKixiquilas(kixs.map(k => ({
+          id: k.id,
+          userId: k.user_id,
+          name: k.name,
+          contribution: Number(k.contribution),
+          membersCount: Number(k.members_count),
+          myTurnMonth: Number(k.my_turn_month),
+          startDate: k.start_date,
+          status: k.status,
+          membersList: k.members_list,
+          createdAt: k.created_at
+        })));
+      }
+
       if (rates) {
         setExchangeRates(rates.map(r => ({ from: r.from_currency, to: r.to_currency, rate: Number(r.rate) })));
       }
@@ -545,7 +630,11 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
       setProfile({
         full_name: profData.full_name,
         avatar_url: profData.avatar_url,
-        password: profData.password
+        password: profData.password,
+        security_question: profData.security_question,
+        security_answer: profData.security_answer,
+        recovery_email: profData.recovery_email,
+        pin_code: profData.pin_code
       });
 
       let prefsData = prefs?.[0];
@@ -704,14 +793,16 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
     fetchData();
   }, [user, refreshData]);
 
-  const addTransaction = async (transaction: Omit<Database['public']['Tables']['transactions']['Insert'], 'user_id'>) => {
+  const addTransaction = async (transaction: Omit<Database['public']['Tables']['transactions']['Insert'], 'user_id'> & { payment_method?: string }) => {
     if (!user) return;
     try {
       const db = await getDatabase();
       const id = crypto.randomUUID();
 
+      const paymentMethod = transaction.payment_method || 'Express';
+
       await db.execute(
-        'INSERT INTO transactions (id, user_id, account_id, destination_account_id, category, amount, currency, type, description, date, status) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)',
+        'INSERT INTO transactions (id, user_id, account_id, destination_account_id, category, amount, currency, type, description, date, status, payment_method) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)',
         [
           id,
           user.id,
@@ -723,7 +814,8 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
           transaction.type,
           transaction.description || '',
           transaction.date || new Date().toISOString(),
-          transaction.status || 'paid'
+          transaction.status || 'paid',
+          paymentMethod
         ]
       );
 
@@ -743,6 +835,81 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
 
         await adjustAccountBalance(db, transaction.account_id, -srcChange);
         await adjustAccountBalance(db, transaction.destination_account_id, destChange);
+      }
+
+      // Cofre Automático Rounding logic
+      const cofreConfigStr = localStorage.getItem(`vukapay_cofre_${user.id}`);
+      if (cofreConfigStr && transaction.type === 'expense' && transaction.currency === 'AOA') {
+        try {
+          const cofreConfig = JSON.parse(cofreConfigStr);
+          if (cofreConfig && cofreConfig.active && cofreConfig.rule && cofreConfig.goalId) {
+            const amount = Number(transaction.amount);
+            const rule = Number(cofreConfig.rule); // e.g., 100 or 500
+            if (amount > 0 && (amount % rule) !== 0) {
+              const nextMultiple = Math.ceil(amount / rule) * rule;
+              const change = nextMultiple - amount;
+              if (change > 0) {
+                console.log(`[Cofre Automático] Arredondando ${amount} para ${nextMultiple} (+${change})`);
+                setTimeout(() => {
+                  addGoalContribution(cofreConfig.goalId, change, transaction.account_id).catch(e => {
+                    console.error('[Cofre Automático] Erro ao aportar troco:', e);
+                  });
+                }, 1000);
+              }
+            }
+          }
+        } catch (e) {
+          console.error('[Cofre Automático] Erro no parsing das configurações:', e);
+        }
+      }
+
+      // Check budget alerts for desktop notifications
+      if (transaction.type === 'expense') {
+        try {
+          const category = transaction.category;
+          const matchingBudgets = budgets.filter(b => b.category === category && b.status === 'active');
+          if (matchingBudgets.length > 0) {
+            const today = new Date();
+            const spentSoFar = transactions
+              .filter(t => {
+                const tDate = new Date(t.date);
+                return (
+                  t.type === 'expense' &&
+                  t.category === category &&
+                  tDate.getMonth() === today.getMonth() &&
+                  tDate.getFullYear() === today.getFullYear()
+                );
+              })
+              .reduce((sum, t) => sum + t.amount * getRate(t.currency), 0);
+            
+            const addedAmountInBase = Number(transaction.amount) * getRate(transaction.currency);
+            const newTotalSpent = spentSoFar + addedAmountInBase;
+
+            for (const b of matchingBudgets) {
+              const budgetAmountInBase = b.amount * getRate(b.currency);
+              const spentPct = budgetAmountInBase > 0 ? (newTotalSpent / budgetAmountInBase) * 100 : 0;
+              const prevPct = budgetAmountInBase > 0 ? (spentSoFar / budgetAmountInBase) * 100 : 0;
+
+              if (spentPct >= 100 && prevPct < 100) {
+                if ('Notification' in window && Notification.permission === 'granted') {
+                  new Notification('VukaPay - Orçamento Excedido!', {
+                    body: `Atenção: O seu orçamento para "${category}" foi ultrapassado (${spentPct.toFixed(0)}% consumido).`,
+                    icon: '/logo.png'
+                  });
+                }
+              } else if (spentPct >= 80 && prevPct < 80) {
+                if ('Notification' in window && Notification.permission === 'granted') {
+                  new Notification('VukaPay - Alerta de Orçamento', {
+                    body: `Aviso: O seu orçamento para "${category}" atingiu ${spentPct.toFixed(0)}% do limite.`,
+                    icon: '/logo.png'
+                  });
+                }
+              }
+            }
+          }
+        } catch (e) {
+          console.error('[Budget Alert] Erro ao disparar notificação:', e);
+        }
       }
 
       await refreshData();
@@ -1079,13 +1246,13 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const addInvestment = async (investment: Omit<Database['public']['Tables']['investments']['Insert'], 'user_id'>) => {
+  const addInvestment = async (investment: Omit<Database['public']['Tables']['investments']['Insert'], 'user_id'> & { maturity_date?: string, interest_rate?: number, payment_frequency?: string }) => {
     if (!user) return;
     try {
       const db = await getDatabase();
       const id = crypto.randomUUID();
       await db.execute(
-        'INSERT INTO investments (id, user_id, name, type, invested_amount, current_value, currency, purchase_date, quantity, unit_price, fees, account_id, broker, risk, status, goal_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)',
+        'INSERT INTO investments (id, user_id, name, type, invested_amount, current_value, currency, purchase_date, quantity, unit_price, fees, account_id, broker, risk, status, goal_id, maturity_date, interest_rate, payment_frequency) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)',
         [
           id,
           user.id,
@@ -1102,7 +1269,10 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
           investment.broker,
           investment.risk || 'Médio',
           investment.status || 'active',
-          investment.goal_id
+          investment.goal_id,
+          investment.maturity_date,
+          investment.interest_rate || 0.0,
+          investment.payment_frequency
         ]
       );
       await refreshData();
@@ -1229,6 +1399,62 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
       await refreshData();
     } catch (error) {
       console.error('Error deleting saving:', error);
+    }
+  };
+
+  const addKixiquila = async (kix: Omit<Kixiquila, 'id' | 'userId' | 'createdAt'>) => {
+    if (!user) return;
+    try {
+      const db = await getDatabase();
+      const id = crypto.randomUUID();
+      await db.execute(
+        'INSERT INTO kixiquilas (id, user_id, name, contribution, members_count, my_turn_month, start_date, status, members_list) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)',
+        [
+          id,
+          user.id,
+          kix.name,
+          kix.contribution,
+          kix.membersCount,
+          kix.myTurnMonth,
+          kix.startDate,
+          kix.status || 'active',
+          kix.membersList || ''
+        ]
+      );
+      await refreshData();
+    } catch (error) {
+      console.error('Error adding kixiquila:', error);
+    }
+  };
+
+  const updateKixiquila = async (id: string, updates: Partial<Kixiquila>) => {
+    if (!user) return;
+    try {
+      const db = await getDatabase();
+      const dbUpdates: Record<string, any> = {};
+      if (updates.name !== undefined) dbUpdates.name = updates.name;
+      if (updates.contribution !== undefined) dbUpdates.contribution = updates.contribution;
+      if (updates.membersCount !== undefined) dbUpdates.members_count = updates.membersCount;
+      if (updates.myTurnMonth !== undefined) dbUpdates.my_turn_month = updates.myTurnMonth;
+      if (updates.startDate !== undefined) dbUpdates.start_date = updates.startDate;
+      if (updates.status !== undefined) dbUpdates.status = updates.status;
+      if (updates.membersList !== undefined) dbUpdates.members_list = updates.membersList;
+
+      await updateRow(db, 'kixiquilas', id, dbUpdates);
+      await refreshData();
+    } catch (error) {
+      console.error('Error updating kixiquila:', error);
+    }
+  };
+
+  const deleteKixiquila = async (id: string) => {
+    if (!user) return;
+    try {
+      const db = await getDatabase();
+      await db.execute('DELETE FROM kixiquilas WHERE id = $1', [id]);
+      await refreshData();
+    } catch (error) {
+      console.error('Error deleting kixiquila:', error);
     }
   };
 
@@ -1393,7 +1619,15 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
     return total + ((acc.balance || 0) * rate);
   }, 0), [accounts, getRate]);
 
-  const updateProfile = async (updates: { full_name?: string; avatar_url?: string; password?: string }) => {
+  const updateProfile = async (updates: {
+    full_name?: string;
+    avatar_url?: string;
+    password?: string;
+    security_question?: string;
+    security_answer?: string;
+    recovery_email?: string;
+    pin_code?: string;
+  }) => {
     if (!user) return;
     try {
       const db = await getDatabase();
@@ -1464,6 +1698,12 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
         addSaving,
         updateSaving,
         deleteSaving,
+        kixiquilas,
+        addKixiquila,
+        updateKixiquila,
+        deleteKixiquila,
+        isPrivacyMode,
+        togglePrivacyMode,
         addLoan,
         updateLoan,
         deleteLoan,

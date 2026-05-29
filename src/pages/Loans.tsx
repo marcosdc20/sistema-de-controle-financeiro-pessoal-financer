@@ -7,8 +7,8 @@ import { cn } from '@/lib/utils';
 import { ActionMenu } from '@/components/ActionMenu';
 
 export default function Loans() {
-  const { loans, addLoan, updateLoan, deleteLoan, addLoanPayment, accounts, loading, getRate } = useFinance();
-  const [activeTab, setActiveTab] = useState<'received' | 'granted'>('received');
+  const { loans, addLoan, updateLoan, deleteLoan, addLoanPayment, accounts, loading, getRate, transactions } = useFinance();
+  const [activeTab, setActiveTab] = useState<'received' | 'granted' | 'simulador'>('received');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [filterStatus, setFilterStatus] = useState<string>('all');
@@ -39,6 +39,41 @@ export default function Loans() {
 
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
 
+  // Simulator States
+  const [simPrincipal, setSimPrincipal] = useState('');
+  const [simInterestRate, setSimInterestRate] = useState('');
+  const [simTerm, setSimTerm] = useState('');
+
+  const simulatorResult = useMemo(() => {
+    const principal = Number(simPrincipal) || 0;
+    const annualRate = Number(simInterestRate) || 0;
+    const term = Number(simTerm) || 0;
+
+    if (principal <= 0 || annualRate <= 0 || term <= 0) {
+      return { pmt: 0, totalInterest: 0, totalPayable: 0, weight: 0, avgIncome: 0 };
+    }
+
+    const r = (annualRate / 100) / 12; // taxa mensal
+    const n = term;
+
+    // PMT formula
+    const pmt = principal * (r * Math.pow(1 + r, n)) / (Math.pow(1 + r, n) - 1);
+    const totalPayable = pmt * n;
+    const totalInterest = totalPayable - principal;
+
+    const incomeTx = transactions.filter(t => t.type === 'income');
+    let avgIncome = 0;
+    if (incomeTx.length > 0) {
+      const months = new Set(incomeTx.map(t => t.date.substring(0, 7)));
+      const totalIncome = incomeTx.reduce((sum, t) => sum + (t.amount * getRate(t.currency)), 0);
+      avgIncome = months.size > 0 ? totalIncome / months.size : totalIncome;
+    }
+
+    const weight = avgIncome > 0 ? (pmt / avgIncome) * 100 : 0;
+
+    return { pmt, totalInterest, totalPayable, weight, avgIncome };
+  }, [simPrincipal, simInterestRate, simTerm, transactions, getRate]);
+
 
 
   const openDetailsModal = (loan: Loan) => {
@@ -49,7 +84,7 @@ export default function Loans() {
 
   const openNewModal = () => {
     setEditingLoanId(null);
-    setType(activeTab);
+    setType(activeTab === 'simulador' ? 'received' : activeTab);
     setCounterparty('');
     setInstitution('');
     setCategory('personal');
@@ -197,6 +232,7 @@ export default function Loans() {
           {/* Tabs */}
           <div className="flex p-1 bg-gray-100 rounded-xl w-fit">
             <button
+              type="button"
               onClick={() => setActiveTab('received')}
               className={cn(
                 "px-4 py-2 rounded-lg text-sm font-medium transition-all",
@@ -206,6 +242,7 @@ export default function Loans() {
               Recebidos (Passivos)
             </button>
             <button
+              type="button"
               onClick={() => setActiveTab('granted')}
               className={cn(
                 "px-4 py-2 rounded-lg text-sm font-medium transition-all",
@@ -214,10 +251,22 @@ export default function Loans() {
             >
               Concedidos (Ativos)
             </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab('simulador')}
+              className={cn(
+                "px-4 py-2 rounded-lg text-sm font-medium transition-all",
+                activeTab === 'simulador' ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-700"
+              )}
+            >
+              Simulador de Financiamento
+            </button>
           </div>
 
-          {/* Stats Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          {activeTab !== 'simulador' ? (
+            <>
+              {/* Stats Cards */}
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
             <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
               <p className="text-sm text-gray-500 font-medium mb-1">Total {activeTab === 'received' ? 'a Pagar' : 'a Receber'}</p>
               <h3 className="text-2xl font-bold text-gray-900">
@@ -375,6 +424,126 @@ export default function Loans() {
               </table>
             </div>
           </div>
+        </>
+      ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+          {/* Form Input */}
+          <div className="lg:col-span-5 bg-white rounded-3xl border border-gray-100 p-8 shadow-sm space-y-6">
+            <div>
+              <h2 className="text-xl font-bold text-gray-900 mb-1">Simulador de Crédito</h2>
+              <p className="text-sm text-gray-500">Simule taxas locais de Angola (ex: Crédito Habitação, Automóvel ou Pessoal).</p>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Montante do Crédito (Kz)</label>
+                <input
+                  type="number"
+                  value={simPrincipal}
+                  onChange={(e) => setSimPrincipal(e.target.value)}
+                  placeholder="Ex: 5000000"
+                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-black outline-none transition-all text-gray-900 text-lg font-medium"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Taxa de Juro Anual (%)</label>
+                <input
+                  type="number"
+                  step="any"
+                  value={simInterestRate}
+                  onChange={(e) => setSimInterestRate(e.target.value)}
+                  placeholder="Ex: 18"
+                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-black outline-none transition-all text-gray-900 text-lg font-medium"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Prazo de Amortização (Meses)</label>
+                <input
+                  type="number"
+                  value={simTerm}
+                  onChange={(e) => setSimTerm(e.target.value)}
+                  placeholder="Ex: 60"
+                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-black outline-none transition-all text-gray-900 text-lg font-medium"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Simulation Result */}
+          <div className="lg:col-span-7 bg-white rounded-3xl border border-gray-100 p-8 shadow-sm flex flex-col justify-between relative overflow-hidden">
+            <div className="space-y-6">
+              <div>
+                <h2 className="text-xl font-bold text-gray-900">Resultado da Simulação</h2>
+                <p className="text-sm text-gray-500">Estimativas com base no sistema de amortização francês (Price/PMT).</p>
+              </div>
+
+              {simulatorResult.pmt > 0 ? (
+                <div className="space-y-6 animate-in fade-in duration-300">
+                  <div className="p-6 bg-gray-50 rounded-2xl border border-gray-100">
+                    <p className="text-xs text-gray-500 font-semibold uppercase tracking-wider mb-1">Prestação Mensal Estimada</p>
+                    <p className="text-3xl font-extrabold text-gray-900">
+                      {new Intl.NumberFormat('pt-AO', { style: 'currency', currency: 'AOA', maximumFractionDigits: 0 }).format(simulatorResult.pmt)}
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100">
+                      <p className="text-xs text-gray-400 font-semibold mb-1">Total de Juros</p>
+                      <p className="text-lg font-bold text-gray-800">
+                        {new Intl.NumberFormat('pt-AO', { style: 'currency', currency: 'AOA', maximumFractionDigits: 0 }).format(simulatorResult.totalInterest)}
+                      </p>
+                    </div>
+                    <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100">
+                      <p className="text-xs text-gray-400 font-semibold mb-1">Total a Pagar</p>
+                      <p className="text-lg font-bold text-gray-800">
+                        {new Intl.NumberFormat('pt-AO', { style: 'currency', currency: 'AOA', maximumFractionDigits: 0 }).format(simulatorResult.totalPayable)}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="p-6 bg-gray-50 rounded-2xl border border-gray-100">
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="text-xs text-gray-500 font-semibold uppercase tracking-wider">Peso na Renda Mensal</span>
+                      <span className={cn(
+                        "px-2.5 py-0.5 rounded-full text-xs font-bold",
+                        simulatorResult.weight <= 30 ? "bg-emerald-100 text-emerald-800" :
+                          simulatorResult.weight <= 50 ? "bg-amber-100 text-amber-800" :
+                            "bg-red-100 text-red-800"
+                      )}>
+                        {simulatorResult.weight.toFixed(1)}% Taxa de Esforço
+                      </span>
+                    </div>
+                    <div className="h-3 bg-gray-200 rounded-full overflow-hidden">
+                      <div className={cn(
+                        "h-full rounded-full transition-all duration-500",
+                        simulatorResult.weight <= 30 ? "bg-emerald-500" :
+                          simulatorResult.weight <= 50 ? "bg-amber-500" :
+                            "bg-red-500"
+                      )} style={{ width: `${Math.min(simulatorResult.weight, 100)}%` }} />
+                    </div>
+                    <p className="text-xs text-gray-500 mt-3 leading-relaxed">
+                      Sua renda mensal média estimada pelo app é de <strong className="text-gray-900">{new Intl.NumberFormat('pt-AO', { style: 'currency', currency: 'AOA', maximumFractionDigits: 0 }).format(simulatorResult.avgIncome)}</strong>.
+                      {simulatorResult.weight <= 30
+                        ? " Saudável. A prestação consome menos de 30% do seu rendimento."
+                        : simulatorResult.weight <= 50
+                          ? " Atenção. A taxa de esforço está elevada, o que pode comprometer outros gastos essenciais."
+                          : " Risco Elevado! A prestação consome mais de 50% dos seus rendimentos, inviabilizando a contratação."}
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <div className="h-[250px] flex flex-col items-center justify-center text-center text-gray-400 border-2 border-dashed border-gray-200 rounded-2xl p-6 bg-gray-50">
+                  <Banknote className="w-10 h-10 text-gray-300 mb-2" />
+                  <p className="font-semibold text-gray-700">Preencha os campos ao lado</p>
+                  <p className="text-xs text-gray-500 mt-1">Calcule instantaneamente a prestação e a taxa de esforço ideal do seu orçamento.</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
           {/* Details Modal */}
           {isDetailsModalOpen && selectedLoan && (

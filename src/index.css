@@ -48,4 +48,11 @@
   .scrollbar-thin::-webkit-scrollbar-thumb:hover {
     background: var(--color-indigo-600);
   }
+
+  .privacy-mode-active .blur-amount {
+    filter: blur(10px) !important;
+    user-select: none !important;
+    pointer-events: none !important;
+    transition: filter 0.2s ease;
+  }
 }

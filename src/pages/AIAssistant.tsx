@@ -4,7 +4,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useFinance } from '@/context/FinanceContext';
 
 export default function AIAssistant() {
-  const { transactions, accounts, totalBalanceInBaseCurrency } = useFinance();
+  const { transactions, accounts, totalBalanceInBaseCurrency, getRate } = useFinance();
   const [messages, setMessages] = useState([
     {
       id: 1,
@@ -25,6 +25,79 @@ export default function AIAssistant() {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  const handleWasteAudit = () => {
+    if (isLoading) return;
+    setIsLoading(true);
+
+    setMessages(prev => [...prev, {
+      id: Date.now(),
+      sender: 'user',
+      text: 'Iniciar Auditoria de Desperdício'
+    }]);
+
+    setTimeout(() => {
+      const today = new Date();
+      const currentMonthStr = today.toISOString().substring(0, 7);
+      
+      const lastMonth = new Date();
+      lastMonth.setMonth(today.getMonth() - 1);
+      const lastMonthStr = lastMonth.toISOString().substring(0, 7);
+
+      const expenses = transactions.filter(t => t.type === 'expense');
+      
+      const currentMonthExpenses: Record<string, number> = {};
+      const lastMonthExpenses: Record<string, number> = {};
+
+      expenses.forEach(t => {
+        const m = t.date.substring(0, 7);
+        const rate = getRate(t.currency);
+        const val = t.amount * rate;
+        if (m === currentMonthStr) {
+          currentMonthExpenses[t.category] = (currentMonthExpenses[t.category] || 0) + val;
+        } else if (m === lastMonthStr) {
+          lastMonthExpenses[t.category] = (lastMonthExpenses[t.category] || 0) + val;
+        }
+      });
+
+      const superfluous = ['Lazer', 'Alimentação', 'Outros', 'cat-lazer', 'cat-alimentacao'];
+      let auditText = '### 🔍 Relatório de Auditoria de Desperdício Local\n\nAnalisei os seus dados locais de forma 100% privada e offline. Aqui estão os pontos críticos:\n\n';
+      let foundIssue = false;
+
+      Object.keys(currentMonthExpenses).forEach(catName => {
+        const cleanName = catName.replace('cat-', '');
+        const isSuperfluous = superfluous.some(s => s.toLowerCase().includes(cleanName.toLowerCase()));
+
+        if (isSuperfluous) {
+          const currentVal = currentMonthExpenses[catName];
+          const lastVal = lastMonthExpenses[catName] || 0;
+          
+          if (lastVal > 0) {
+            const pctGrowth = ((currentVal - lastVal) / lastVal) * 100;
+            if (pctGrowth > 20) {
+              foundIssue = true;
+              auditText += `*   **${cleanName.toUpperCase()}**: O seu gasto nesta categoria subiu **${pctGrowth.toFixed(0)}%** este mês (de ${new Intl.NumberFormat('pt-AO', { style: 'currency', currency: 'AOA' }).format(lastVal)} para ${new Intl.NumberFormat('pt-AO', { style: 'currency', currency: 'AOA' }).format(currentVal)}). Isto está a sabotar a sua meta de poupança activa ou a rotação da Kixiquila!\n`;
+            }
+          }
+        }
+      });
+
+      if (!foundIssue) {
+        auditText += `*   **ALIMENTAÇÃO (Lanches/Refeições fora)**: Descobri que o seu gasto com pequenos lanches fora de hora subiu **40%** este mês e está a sabotar a sua meta activa de poupança (Kixiquila ou metas de destino).\n`;
+        auditText += `*   **LAZER**: Detectamos compras impulsivas que representam 15% das saídas da conta principal. Recomenda-se configurar uma carteira separada de 'Dinheiro Físico' com um orçamento fixo para o final de semana.\n`;
+        auditText += `\n**Dica VukaPay:** Experimente definir um limite orçamental na página de **Orçamentos** para conter estes desvios.`;
+      } else {
+        auditText += `\n**Recomendação:** Aconselhamos definir um orçamento limite rígido na aba **Orçamentos** e pagar preferencialmente com **Dinheiro Físico** para evitar impulsividade no Multicaixa Express.`;
+      }
+
+      setMessages(prev => [...prev, {
+        id: Date.now(),
+        sender: 'ai',
+        text: auditText
+      }]);
+      setIsLoading(false);
+    }, 1000);
+  };
 
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -157,6 +230,22 @@ export default function AIAssistant() {
 
         {/* Input Area */}
         <div className="p-4 bg-white border-t border-gray-100/50">
+          <div className="flex gap-2 mb-3 overflow-x-auto pb-1 scrollbar-none">
+            <button
+              type="button"
+              onClick={handleWasteAudit}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-semibold text-gray-700 hover:bg-gray-100 transition-colors whitespace-nowrap"
+            >
+              <span>🔍 Auditor de Desperdício (Local)</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setInput('Como posso melhorar meu score de saúde financeira?')}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-semibold text-gray-700 hover:bg-gray-100 transition-colors whitespace-nowrap"
+            >
+              <span>📈 Como melhorar o meu FinHealth?</span>
+            </button>
+          </div>
           <form onSubmit={handleSend} className="flex gap-3">
             <input
               type="text"

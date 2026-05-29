@@ -4,7 +4,7 @@
   "pub_date": "2026-05-29T17:45:00Z",
   "platforms": {
     "windows-x86_64": {
-      "signature": "SUA_NOVA_ASSINATURA_APARECERA_AQUI_APOS_O_BUILD",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVTbW5GRjhqMzNDY3QwekhXWDRTQ2VqaThkckw4eldwdFlBU25lRW1OcVU2bGYrWFZNQ2hiNzFXbFVZWTBqbGI1bTRqNzZ2MDNjM2Z5MzB6bkdZT3puZ3M1UXpNMDBDZVFBPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgwMDc3MTA0CWZpbGU6VnVrYVBheV8xLjAuMl94NjQtc2V0dXAuZXhlCjhoVk85aHMvVDhYb1dNMG4vUnJPRzFsT2Z0TG91bnc4WCsydHY2Z1pMckd0QnRYbTM0YkJrV3hlSWVGdDNuMkFKU1RKYms2V2VuTWoyQnl3dnJjWEFnPT0K",
       "url": "https://github.com/marcosdc20/sistema-de-controle-financeiro-pessoal-financer/releases/download/v1.0.2/VukaPay_1.0.2_x64-setup.exe"
     }
   }

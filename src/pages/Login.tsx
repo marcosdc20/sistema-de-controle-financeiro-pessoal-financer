@@ -49,8 +49,8 @@ export default function Login() {
         <div className="relative z-10 w-full p-16 flex flex-col justify-between">
           {/* Logo */}
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 bg-indigo-600 rounded-2xl flex items-center justify-center shadow-lg shadow-indigo-600/30">
-              <TrendingUp className="w-6 h-6 text-white" />
+            <div className="w-12 h-12 flex items-center justify-center">
+              <img src="/logo.png" alt="VukaPay" className="w-full h-full object-contain rounded-2xl" />
             </div>
             <span className="text-2xl font-bold tracking-tight bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent">
               VukaPay

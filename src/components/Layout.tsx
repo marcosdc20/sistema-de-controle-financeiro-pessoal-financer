@@ -136,8 +136,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         {/* Sidebar Header */}
         <div className={cn("h-20 flex items-center px-6 border-b border-gray-800 relative", isCollapsed ? "justify-center px-0" : "justify-between")}>
           <div className="flex items-center gap-3 overflow-hidden">
-            <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center flex-shrink-0 shadow-lg shadow-indigo-900/40">
-              <span className="text-white font-bold text-xl">V</span>
+            <div className="w-10 h-10 flex items-center justify-center flex-shrink-0">
+              <img src="/logo.png" alt="VukaPay" className="w-full h-full object-contain rounded-xl" />
             </div>
             {!isCollapsed && (
               <span className="text-xl font-bold tracking-tight text-white whitespace-nowrap">

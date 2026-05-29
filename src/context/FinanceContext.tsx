@@ -305,6 +305,21 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
   const [isTransactionModalOpen, setIsTransactionModalOpen] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
 
+  const getRate = useCallback((from: string, to: string = preferences?.base_currency || 'AOA') => {
+    if (from === to) return 1;
+
+    const getRateToAOA = (curr: string) => {
+      if (curr === 'AOA') return 1;
+      const rateObj = exchangeRates.find(r => r.from === curr && r.to === 'AOA');
+      return rateObj ? rateObj.rate : CURRENCIES[curr as keyof typeof CURRENCIES]?.rate || 1;
+    };
+
+    const rateFromToAOA = getRateToAOA(from);
+    const rateToToAOA = getRateToAOA(to);
+
+    return rateFromToAOA / rateToToAOA;
+  }, [exchangeRates, preferences?.base_currency]);
+
   const refreshData = useCallback(async () => {
     if (!user) return;
     try {
@@ -713,13 +728,21 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
       );
 
       // Ajusta o saldo da conta no frontend local
+      const srcAcc = accounts.find(a => a.id === transaction.account_id);
+      const srcRate = srcAcc ? getRate(transaction.currency, srcAcc.currency) : 1;
+      const srcChange = Number(transaction.amount) * srcRate;
+
       if (transaction.type === 'income') {
-        await adjustAccountBalance(db, transaction.account_id, Number(transaction.amount));
+        await adjustAccountBalance(db, transaction.account_id, srcChange);
       } else if (transaction.type === 'expense') {
-        await adjustAccountBalance(db, transaction.account_id, -Number(transaction.amount));
+        await adjustAccountBalance(db, transaction.account_id, -srcChange);
       } else if (transaction.type === 'transfer' && transaction.destination_account_id) {
-        await adjustAccountBalance(db, transaction.account_id, -Number(transaction.amount));
-        await adjustAccountBalance(db, transaction.destination_account_id, Number(transaction.amount));
+        const destAcc = accounts.find(a => a.id === transaction.destination_account_id);
+        const destRate = destAcc ? getRate(transaction.currency, destAcc.currency) : 1;
+        const destChange = Number(transaction.amount) * destRate;
+
+        await adjustAccountBalance(db, transaction.account_id, -srcChange);
+        await adjustAccountBalance(db, transaction.destination_account_id, destChange);
       }
 
       await refreshData();
@@ -736,13 +759,21 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
       const old = oldList?.[0];
       if (old) {
         // Reverte saldo anterior
+        const oldSrcAcc = accounts.find(a => a.id === old.account_id);
+        const oldSrcRate = oldSrcAcc ? getRate(old.currency, oldSrcAcc.currency) : 1;
+        const oldSrcChange = Number(old.amount) * oldSrcRate;
+
         if (old.type === 'income') {
-          await adjustAccountBalance(db, old.account_id, -Number(old.amount));
+          await adjustAccountBalance(db, old.account_id, -oldSrcChange);
         } else if (old.type === 'expense') {
-          await adjustAccountBalance(db, old.account_id, Number(old.amount));
+          await adjustAccountBalance(db, old.account_id, oldSrcChange);
         } else if (old.type === 'transfer' && old.destination_account_id) {
-          await adjustAccountBalance(db, old.account_id, Number(old.amount));
-          await adjustAccountBalance(db, old.destination_account_id, -Number(old.amount));
+          const oldDestAcc = accounts.find(a => a.id === old.destination_account_id);
+          const oldDestRate = oldDestAcc ? getRate(old.currency, oldDestAcc.currency) : 1;
+          const oldDestChange = Number(old.amount) * oldDestRate;
+
+          await adjustAccountBalance(db, old.account_id, oldSrcChange);
+          await adjustAccountBalance(db, old.destination_account_id, -oldDestChange);
         }
 
         await updateRow(db, 'transactions', id, transactionUpdates);
@@ -750,13 +781,21 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
         const updatedList = await db.select<any[]>('SELECT * FROM transactions WHERE id = $1 LIMIT 1', [id]);
         const updated = updatedList?.[0];
         if (updated) {
+          const newSrcAcc = accounts.find(a => a.id === updated.account_id);
+          const newSrcRate = newSrcAcc ? getRate(updated.currency, newSrcAcc.currency) : 1;
+          const newSrcChange = Number(updated.amount) * newSrcRate;
+
           if (updated.type === 'income') {
-            await adjustAccountBalance(db, updated.account_id, Number(updated.amount));
+            await adjustAccountBalance(db, updated.account_id, newSrcChange);
           } else if (updated.type === 'expense') {
-            await adjustAccountBalance(db, updated.account_id, -Number(updated.amount));
+            await adjustAccountBalance(db, updated.account_id, -newSrcChange);
           } else if (updated.type === 'transfer' && updated.destination_account_id) {
-            await adjustAccountBalance(db, updated.account_id, -Number(updated.amount));
-            await adjustAccountBalance(db, updated.destination_account_id, Number(updated.amount));
+            const newDestAcc = accounts.find(a => a.id === updated.destination_account_id);
+            const newDestRate = newDestAcc ? getRate(updated.currency, newDestAcc.currency) : 1;
+            const newDestChange = Number(updated.amount) * newDestRate;
+
+            await adjustAccountBalance(db, updated.account_id, -newSrcChange);
+            await adjustAccountBalance(db, updated.destination_account_id, newDestChange);
           }
         }
       }
@@ -773,13 +812,21 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
       const oldList = await db.select<any[]>('SELECT * FROM transactions WHERE id = $1 LIMIT 1', [id]);
       const old = oldList?.[0];
       if (old) {
+        const oldSrcAcc = accounts.find(a => a.id === old.account_id);
+        const oldSrcRate = oldSrcAcc ? getRate(old.currency, oldSrcAcc.currency) : 1;
+        const oldSrcChange = Number(old.amount) * oldSrcRate;
+
         if (old.type === 'income') {
-          await adjustAccountBalance(db, old.account_id, -Number(old.amount));
+          await adjustAccountBalance(db, old.account_id, -oldSrcChange);
         } else if (old.type === 'expense') {
-          await adjustAccountBalance(db, old.account_id, Number(old.amount));
+          await adjustAccountBalance(db, old.account_id, oldSrcChange);
         } else if (old.type === 'transfer' && old.destination_account_id) {
-          await adjustAccountBalance(db, old.account_id, Number(old.amount));
-          await adjustAccountBalance(db, old.destination_account_id, -Number(old.amount));
+          const oldDestAcc = accounts.find(a => a.id === old.destination_account_id);
+          const oldDestRate = oldDestAcc ? getRate(old.currency, oldDestAcc.currency) : 1;
+          const oldDestChange = Number(old.amount) * oldDestRate;
+
+          await adjustAccountBalance(db, old.account_id, oldSrcChange);
+          await adjustAccountBalance(db, old.destination_account_id, -oldDestChange);
         }
 
         await db.execute('DELETE FROM transactions WHERE id = $1', [id]);
@@ -1320,20 +1367,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const getRate = useCallback((from: string, to: string = preferences?.base_currency || 'AOA') => {
-    if (from === to) return 1;
 
-    const getRateToAOA = (curr: string) => {
-      if (curr === 'AOA') return 1;
-      const rateObj = exchangeRates.find(r => r.from === curr && r.to === 'AOA');
-      return rateObj ? rateObj.rate : CURRENCIES[curr as keyof typeof CURRENCIES]?.rate || 1;
-    };
-
-    const rateFromToAOA = getRateToAOA(from);
-    const rateToToAOA = getRateToAOA(to);
-
-    return rateFromToAOA / rateToToAOA;
-  }, [exchangeRates, preferences?.base_currency]);
 
   const formatCurrency = useCallback((value: number, currency: string = preferences?.base_currency || 'AOA') => {
     const locale = preferences?.language || 'pt-AO';

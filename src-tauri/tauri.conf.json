@@ -49,7 +49,7 @@
   },
   "plugins": {
     "updater": {
-      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDcyQzI3RDhGN0M1MTlDQTYKUldTbW5GRjhqMzNDY3NjMTNOTW9GVkNDdGJsaEMzaWEwSWRPTnhzazZxejd4QndBZVhHRmpqOUoK",
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDM0Q0ZCN0E3QjZDQTAxQTEKUldTaEFjcTJwN2ZQTkNXMzlCemFDbU9wYTJRdEJzaVFQd1ZKOEJ0STJ6VVJpVURsR0tsOGlyMG8K",
       "endpoints": [
         "https://raw.githubusercontent.com/marcosdc20/sistema-de-controle-financeiro-pessoal-financer/main/updater.json"
       ]

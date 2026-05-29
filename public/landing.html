@@ -15,9 +15,9 @@
     
     <style>
         :root {
-            --primary: #4f46e5;
-            --primary-hover: #4338ca;
-            --primary-light: #e0e7ff;
+            --primary: #10b981;
+            --primary-hover: #059669;
+            --primary-light: #dcfce7;
             --dark: #0f172a;
             --dark-light: #1e293b;
             --text-main: #334155;
@@ -85,7 +85,7 @@
         .logo-icon {
             width: 40px;
             height: 40px;
-            background: linear-gradient(135deg, var(--primary), #7c3aed);
+            background: linear-gradient(135deg, var(--primary), #059669);
             border-radius: 12px;
             display: flex;
             align-items: center;
@@ -94,7 +94,7 @@
             font-family: 'Outfit', sans-serif;
             font-weight: 800;
             font-size: 1.25rem;
-            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
         }
 
         .logo-text {
@@ -138,20 +138,20 @@
         .btn-primary {
             background-color: var(--primary);
             color: var(--white);
-            box-shadow: 0 4px 14px rgba(79, 70, 229, 0.2);
+            box-shadow: 0 4px 14px rgba(16, 185, 129, 0.2);
         }
 
         .btn-primary:hover {
             background-color: var(--primary-hover);
             transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(79, 70, 229, 0.3);
+            box-shadow: 0 6px 20px rgba(16, 185, 129, 0.3);
         }
 
         /* Hero Section */
         .hero {
             padding: 6rem 0 4rem;
-            background: radial-gradient(circle at top right, rgba(99, 102, 241, 0.08), transparent 40%),
-                        radial-gradient(circle at bottom left, rgba(124, 58, 237, 0.05), transparent 40%);
+            background: radial-gradient(circle at top right, rgba(16, 185, 129, 0.08), transparent 40%),
+                        radial-gradient(circle at bottom left, rgba(5, 150, 105, 0.05), transparent 40%);
             text-align: center;
         }
 
@@ -163,7 +163,7 @@
         }
 
         .hero-title span {
-            background: linear-gradient(135deg, var(--primary), #7c3aed);
+            background: linear-gradient(135deg, var(--primary), #059669);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
@@ -232,8 +232,8 @@
 
         .integration-card:hover {
             transform: translateY(-5px);
-            box-shadow: 0 20px 40px rgba(79, 70, 229, 0.05);
-            border-color: rgba(99, 102, 241, 0.3);
+            box-shadow: 0 20px 40px rgba(16, 185, 129, 0.05);
+            border-color: rgba(16, 185, 129, 0.3);
         }
 
         .card-icon {
@@ -300,7 +300,7 @@
         .feature-item:hover {
             transform: translateY(-5px);
             box-shadow: 0 12px 30px rgba(0, 0, 0, 0.04);
-            border-color: rgba(99, 102, 241, 0.2);
+            border-color: rgba(16, 185, 129, 0.2);
         }
 
         .feature-item h3 {
@@ -341,7 +341,7 @@
         .footer-logo-icon {
             width: 36px;
             height: 36px;
-            background: linear-gradient(135deg, var(--primary), #7c3aed);
+            background: linear-gradient(135deg, var(--primary), #059669);
             border-radius: 10px;
             display: flex;
             align-items: center;
@@ -440,7 +440,7 @@
     <header>
         <div class="container nav-container">
             <a href="#" class="logo">
-                <div class="logo-icon">V</div>
+                <img src="logo.png" alt="VukaPay Logo" style="width: 40px; height: 40px; object-fit: contain;">
                 <span class="logo-text">VukaPay</span>
             </a>
             <ul class="nav-links">
@@ -588,7 +588,7 @@
         <div class="container footer-grid">
             <div>
                 <a href="#" class="footer-logo">
-                    <div class="footer-logo-icon">V</div>
+                    <img src="logo.png" alt="VukaPay Logo" style="width: 36px; height: 36px; object-fit: contain;">
                     <span class="footer-logo-text">VukaPay</span>
                 </a>
                 <p class="footer-about">

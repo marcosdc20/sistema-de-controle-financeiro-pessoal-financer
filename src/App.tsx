@@ -23,6 +23,8 @@ import Login from '@/pages/Login';
 import { useAuth } from '@/context/AuthContext';
 import AppSecurityGuard from '@/components/AppSecurityGuard';
 
+
+
 function ProtectedLayout({ children }: { children: React.ReactNode }) {
   return (
     <AppSecurityGuard>

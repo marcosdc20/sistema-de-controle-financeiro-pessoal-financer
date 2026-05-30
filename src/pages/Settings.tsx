@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { useLicense } from '@/context/LicenseContext';
+
 import { 
   User, 
   Bell, 
@@ -22,14 +24,254 @@ import {
   Sliders, 
   FileSpreadsheet, 
   Layers, 
-  FolderLock 
+  FolderLock,
+  BadgeCheck,
+  Copy,
+  RefreshCw,
+  Loader2,
 } from 'lucide-react';
+
+
 import PageTransition from '@/components/PageTransition';
 import { useFinance, DbCategory, AutoRule } from '@/context/FinanceContext';
 import { useAuth } from '@/context/AuthContext';
 import { CURRENCIES, cn } from '@/lib/utils';
 
-type SettingsTab = 'general' | 'categories' | 'notifications' | 'security' | 'data';
+type SettingsTab = 'general' | 'categories' | 'notifications' | 'security' | 'data' | 'license';
+
+// ─── Sub-componente: Aba de Licença ─────────────────────────────────────────
+function LicenseSettingsTab({ showToast }: { showToast: (msg: string, type?: 'success' | 'error') => void }) {
+  const { licenseState, clearLicense, refreshLicense } = useLicense();
+  const [isRefreshing, setIsRefreshing] = React.useState(false);
+  const [showChangeKey, setShowChangeKey] = React.useState(false);
+  const { activateLicenseKey } = useLicense();
+  const [newKey, setNewKey] = React.useState('');
+  const [isActivating, setIsActivating] = React.useState(false);
+
+  const planLabels: Record<string, string> = {
+    free_trial: 'Avaliação Gratuita (7 dias)',
+    monthly:    'Mensal',
+    annual:     'Anual',
+    lifetime:   'Vitalício',
+  };
+
+  const planColors: Record<string, string> = {
+    free_trial: 'text-amber-600 bg-amber-50 border-amber-100',
+    monthly:    'text-blue-600 bg-blue-50 border-blue-100',
+    annual:     'text-violet-600 bg-violet-50 border-violet-100',
+    lifetime:   'text-indigo-600 bg-indigo-50 border-indigo-100',
+  };
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    try {
+      await refreshLicense();
+      showToast('Estado da licença atualizado!');
+    } catch {
+      showToast('Erro ao verificar licença.', 'error');
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
+  const handleChangeKey = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newKey.trim()) return;
+    setIsActivating(true);
+    try {
+      await clearLicense();
+      const result = await activateLicenseKey(newKey.trim());
+      if (result.success) {
+        showToast('Nova chave ativada com sucesso!');
+        setShowChangeKey(false);
+        setNewKey('');
+      } else {
+        showToast(result.message || 'Falha ao ativar nova chave.', 'error');
+      }
+    } catch {
+      showToast('Erro ao trocar a chave.', 'error');
+    } finally {
+      setIsActivating(false);
+    }
+  };
+
+  const sectionClass = "bg-white rounded-3xl border border-gray-100 shadow-[0_4px_30px_rgba(0,0,0,0.015)] p-8 relative overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500";
+
+  return (
+    <div className="space-y-6">
+      <div className={sectionClass}>
+        {/* Cabeçalho */}
+        <div className="flex items-start justify-between mb-6">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-indigo-50 flex items-center justify-center">
+              <BadgeCheck className="w-5 h-5 text-indigo-600" />
+            </div>
+            <div>
+              <h3 className="font-bold text-gray-900">Minha Licença VukaPay</h3>
+              <p className="text-xs text-gray-500 mt-0.5">Detalhes e gestão da sua licença</p>
+            </div>
+          </div>
+          <button
+            id="refresh-license-status-btn"
+            onClick={handleRefresh}
+            disabled={isRefreshing}
+            className="flex items-center gap-2 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-xl text-xs font-medium transition-colors disabled:opacity-50"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin' : ''}`} />
+            Verificar
+          </button>
+        </div>
+
+        {/* Plano */}
+        <div className="grid gap-4">
+          <div className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl border border-gray-100">
+            <div className="flex items-center gap-3">
+              <BadgeCheck className="w-4 h-4 text-gray-400" />
+              <span className="text-sm text-gray-600 font-medium">Plano Ativo</span>
+            </div>
+            <span className={`px-3 py-1 rounded-full text-xs font-bold border ${planColors[licenseState.planType ?? 'free_trial'] || 'text-gray-600 bg-gray-50 border-gray-100'}`}>
+              {planLabels[licenseState.planType ?? 'free_trial'] || licenseState.planType}
+            </span>
+          </div>
+
+          {/* E-mail vinculado */}
+          {licenseState.clientEmail && (
+            <div className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl border border-gray-100">
+              <div className="flex items-center gap-3">
+                <Key className="w-4 h-4 text-gray-400" />
+                <span className="text-sm text-gray-600 font-medium">E-mail Vinculado</span>
+              </div>
+              <span className="text-sm text-gray-700">{licenseState.clientEmail}</span>
+            </div>
+          )}
+
+          {/* Chave de Licença */}
+          {licenseState.licenseKey && (
+            <div className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl border border-gray-100">
+              <div className="flex items-center gap-3">
+                <Key className="w-4 h-4 text-gray-400" />
+                <span className="text-sm text-gray-600 font-medium">Chave de Licença</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <code className="text-xs font-mono text-indigo-700 bg-indigo-50 px-2 py-1 rounded-lg">
+                  {licenseState.licenseKey}
+                </code>
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(licenseState.licenseKey!);
+                    showToast('Chave copiada!');
+                  }}
+                  className="p-1.5 hover:bg-gray-200 rounded-lg text-gray-400 transition-colors"
+                >
+                  <Copy className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Hardware ID */}
+          {licenseState.hardwareId && (
+            <div className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl border border-gray-100">
+              <div className="flex items-center gap-3">
+                <Cpu className="w-4 h-4 text-gray-400" />
+                <div>
+                  <span className="text-sm text-gray-600 font-medium">ID do Dispositivo</span>
+                  <p className="text-[10px] text-gray-400 mt-0.5">Identificador único desta máquina</p>
+                </div>
+              </div>
+              <code className="text-[10px] text-gray-500 font-mono bg-gray-100 px-2 py-1 rounded-lg max-w-[180px] truncate">
+                {licenseState.hardwareId.substring(0, 24)}...
+              </code>
+            </div>
+          )}
+
+          {/* Última Verificação */}
+          {licenseState.lastVerifiedAt && (
+            <div className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl border border-gray-100">
+              <div className="flex items-center gap-3">
+                <Shield className="w-4 h-4 text-gray-400" />
+                <span className="text-sm text-gray-600 font-medium">Última Verificação</span>
+              </div>
+              <span className="text-xs text-gray-500">
+                {new Date(licenseState.lastVerifiedAt).toLocaleString('pt-PT')}
+              </span>
+            </div>
+          )}
+
+          {/* Trial: dias restantes */}
+          {licenseState.planType === 'free_trial' && licenseState.trialDaysRemaining !== null && (
+            <div className="flex items-center justify-between p-4 bg-amber-50 rounded-2xl border border-amber-100">
+              <div className="flex items-center gap-3">
+                <span className="text-xs text-amber-700 font-medium">
+                  Dias restantes de avaliação: <strong>{licenseState.trialDaysRemaining}</strong>
+                </span>
+              </div>
+              <a
+                href={import.meta.env.VITE_LICENSE_PURCHASE_URL || 'https://vukapay.com/adquirir'}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs font-bold text-amber-700 underline hover:text-amber-900"
+              >
+                Adquirir Licença →
+              </a>
+            </div>
+          )}
+        </div>
+
+        {/* Botão de troca de chave */}
+        <div className="mt-6 pt-6 border-t border-gray-100">
+          {!showChangeKey ? (
+            <button
+              id="change-license-key-btn"
+              onClick={() => setShowChangeKey(true)}
+              className="flex items-center gap-2 px-5 py-3 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-2xl text-sm font-semibold transition-colors border border-indigo-100"
+            >
+              <Key className="w-4 h-4" />
+              Atualizar / Trocar Chave de Licença
+            </button>
+          ) : (
+            <form onSubmit={handleChangeKey} className="space-y-3">
+              <p className="text-xs text-gray-500 mb-3">
+                Introduza a nova chave. A licença atual será substituída.
+              </p>
+              <div className="relative">
+                <Key className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <input
+                  type="text"
+                  id="new-license-key-input"
+                  value={newKey}
+                  onChange={(e) => setNewKey(e.target.value.toUpperCase().replace(/[^A-Z0-9-]/g, ''))}
+                  placeholder="VUKA-XXXX-XXXX-XXXX-XXXX"
+                  className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl text-sm font-mono tracking-widest focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
+                />
+              </div>
+              <div className="flex gap-3">
+                <button
+                  type="submit"
+                  disabled={isActivating || !newKey.trim()}
+                  className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl text-sm font-bold disabled:opacity-50 transition-colors"
+                >
+                  {isActivating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                  Ativar Nova Chave
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setShowChangeKey(false); setNewKey(''); }}
+                  className="px-5 py-2.5 bg-gray-100 text-gray-600 rounded-2xl text-sm font-medium hover:bg-gray-200 transition-colors"
+                >
+                  Cancelar
+                </button>
+              </div>
+            </form>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
+
 
 export default function Settings() {
   const {
@@ -764,12 +1006,14 @@ export default function Settings() {
   };
 
   const tabs = [
-    { id: 'general', label: 'Geral', icon: User },
-    { id: 'categories', label: 'Categorias', icon: List },
+    { id: 'general',       label: 'Geral',       icon: User },
+    { id: 'categories',    label: 'Categorias',  icon: List },
     { id: 'notifications', label: 'Notificação', icon: Bell },
-    { id: 'security', label: 'Segurança', icon: Shield },
-    { id: 'data', label: 'Dados', icon: Save },
+    { id: 'security',      label: 'Segurança',   icon: Shield },
+    { id: 'data',          label: 'Dados',        icon: Save },
+    { id: 'license',       label: 'Licença',      icon: BadgeCheck },
   ];
+
 
   return (
     <PageTransition className="space-y-8 max-w-6xl mx-auto pb-20 relative">
@@ -2055,7 +2299,7 @@ export default function Settings() {
                   />
                 </div>
 
-                <div className="flex items-center justify-between pt-4">
+                  <div className="flex items-center justify-between pt-4">
                   <div>
                     <p className="font-medium text-red-600">Redefinir Base de Dados (Destruição Total)</p>
                     <p className="text-sm text-gray-500 mt-1">Apagar todos os dados financeiros locais sob confirmação de chave</p>
@@ -2075,8 +2319,12 @@ export default function Settings() {
             </div>
           )}
 
+          {/* ─── Tab: Licença VukaPay ─────────────────────────────────────────── */}
+          {activeTab === 'license' && <LicenseSettingsTab showToast={showToast} />}
+
         </div>
       </div>
     </PageTransition>
   );
+
 }

@@ -1,11 +1,11 @@
 {
-  "version": "1.0.5",
-  "notes": "VukaPay v1.0.5: Módulo completo de Gestão de Projetos e Tarefas com quadro Kanban robusto e sidebars dinâmicos; atalho global de captura rápida (Alt+T); expansão de Definições com Modo Performance, limites de teto por categoria, segurança com histórico de acesso local e backups SQLite agendados com exportador CSV.",
-  "pub_date": "2026-05-30T01:21:00Z",
+  "version": "1.0.6",
+  "notes": "VukaPay v1.0.6: Atualizações automáticas em segundo plano sem necessidade de confirmação manual, simplificando o processo de upgrade do utilizador.",
+  "pub_date": "2026-05-30T17:09:00Z",
   "platforms": {
     "windows-x86_64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVTYVpsdi9MUWdVZW5vcDBCWFN2VE1Bcjd6N3NsRkV0M0RPNXpCa1VvWHlPUGU1N0pPMGEvaG1QamVwakM2QzBHOHZ4Yjk0dzFPNFltWWRDek9xR2RCWHVjTWU5RVpJWWdVPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgwMTA1MTM2CWZpbGU6VnVrYVBheV8xLjAuNV94NjQtc2V0dXAuZXhlClNtbW8yQ1QrTzVyQnUrSDR0aWdwQ3E4SzdiNDZkSHZUSjBJZjBLQkNBK0JqNGZJck90dS96NXdsOG1RamZ1S3hMK3B0NE5GTkh6U0E0QVlBUFFKVkNRPT0K",
-      "url": "https://github.com/marcosdc20/sistema-de-controle-financeiro-pessoal-financer/releases/download/v1.0.5/VukaPay_1.0.5_x64-setup.exe"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVTYVpsdi9MUWdVZW5vcDBCWFN2VE1Bcjd6N3NsRkV0M0RPNXpCa1VvWHlPUGU1N0pPMGEvaG1QamVwakM2QzBHOHZ4Yjk0dzFPNFltWWRDek9xR2RCWHVjTWU5RVpJWWdVPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgwMTU5OTk5CWZpbGU6VnVrYVBheV8xLjAuNl94NjQtc2V0dXAuZXhlCm52YlY2dklld3ZnbmF1bEhyNUpQeU9yZDFmOHI2WEdpZ3V2dlJrVktVUkExNGp0bUZlNDRyVGlidC8yUXJpSjU0NW50OUYyNEswdWhPUExtNytid0NnPT0K",
+      "url": "https://github.com/marcosdc20/sistema-de-controle-financeiro-pessoal-financer/releases/download/v1.0.6/VukaPay_1.0.6_x64-setup.exe"
     }
   }
 }

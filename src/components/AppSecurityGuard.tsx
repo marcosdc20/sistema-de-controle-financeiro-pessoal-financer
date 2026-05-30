@@ -629,181 +629,241 @@ export default function AppSecurityGuard({ children }: AppSecurityGuardProps) {
     const initials = profile.full_name?.substring(0, 2).toUpperCase() || 'VP';
     
     return (
-      <div className="min-h-screen w-full flex items-center justify-center bg-[#030712] font-sans text-gray-100 p-4 relative overflow-hidden">
-        <div className="absolute top-1/4 -left-1/4 w-[400px] h-[400px] bg-indigo-600/10 rounded-full blur-[100px]" />
-        <div className="absolute bottom-1/4 -right-1/4 w-[400px] h-[400px] bg-purple-600/10 rounded-full blur-[100px]" />
-
-        <div className="w-full max-w-md bg-gray-950/80 border border-gray-900 rounded-[2.5rem] p-8 shadow-2xl backdrop-blur-md relative z-10">
-          <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-indigo-500 to-purple-600" />
-          
-          <div className="flex flex-col items-center mb-6">
-            {profile.avatar_url ? (
-              <img 
-                src={profile.avatar_url} 
-                alt="Avatar do Usuário" 
-                className="w-20 h-20 rounded-3xl object-cover shadow-xl border border-indigo-500/20 mb-3"
-              />
-            ) : (
-              <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-2xl font-bold shadow-xl shadow-indigo-500/10 mb-3 scale-105 border border-indigo-400/20">
-                {initials}
-              </div>
-            )}
-            <h2 className="text-xl font-bold text-white mt-1">{profile.full_name}</h2>
-            <p className="text-xs text-gray-500 mt-1">
-              {isPinMode ? 'Digite o seu código PIN de acesso' : 'Insira a sua senha para desbloquear'}
-            </p>
+      <div className="min-h-screen w-full flex bg-[#030712] font-sans text-gray-100 selection:bg-indigo-500/30">
+        
+        {/* Left Side: Dynamic Branding Image Panel */}
+        <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden border-r border-gray-900">
+          <div className="absolute inset-0">
+            <img
+              src="https://images.unsplash.com/photo-1639762681485-074b7f938ba0?q=80&w=2064&auto=format&fit=crop"
+              alt="Premium 3D Abstract Financial Concept"
+              className="w-full h-full object-cover opacity-40 scale-105"
+              referrerPolicy="no-referrer"
+            />
+            <div className="absolute inset-0 bg-gradient-to-tr from-[#030712] via-[#090d1a]/95 to-transparent" />
           </div>
 
-          {error && (
-            <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl flex items-start gap-2.5 text-red-400 text-xs mb-4">
-              <ShieldAlert className="w-4 h-4 shrink-0 mt-0.5" />
-              <span>{error}</span>
-            </div>
-          )}
+          {/* Ambient Glows */}
+          <div className="absolute top-1/4 -left-1/4 w-[500px] h-[500px] bg-indigo-600/10 rounded-full blur-[120px]" />
+          <div className="absolute bottom-1/4 -right-1/4 w-[400px] h-[400px] bg-purple-600/10 rounded-full blur-[120px]" />
 
-          {isPinMode ? (
-            // PIN CODE Virtual Keypad Unlock (Multicaixa Express style)
-            <div className="space-y-6">
-              {/* Display dots for digits entered */}
-              <div className="flex justify-center gap-3 py-2">
-                {Array.from({ length: profile.pin_code?.length || 4 }).map((_, idx) => (
-                  <div 
-                    key={idx}
-                    className={`w-3.5 h-3.5 rounded-full transition-all duration-150 border border-gray-700 ${
-                      idx < enteredPin.length ? 'bg-indigo-500 scale-110 shadow-lg shadow-indigo-500/30' : 'bg-transparent'
-                    }`}
-                  />
-                ))}
+          <div className="relative z-10 w-full p-16 flex flex-col justify-between">
+            {/* Header / Brand */}
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 flex items-center justify-center bg-indigo-600 rounded-xl shadow-lg shadow-indigo-600/20">
+                <TrendingUp className="w-5 h-5 text-white" />
               </div>
+              <span className="text-xl font-bold tracking-tight bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent">
+                VukaPay
+              </span>
+            </div>
 
-              {/* Grid 3x4 layout */}
-              <div className="grid grid-cols-3 gap-3.5 max-w-[280px] mx-auto">
-                {['1', '2', '3', '4', '5', '6', '7', '8', '9'].map((digit) => (
+            {/* Middle quote/motivation */}
+            <div className="max-w-md space-y-4">
+              <span className="inline-flex items-center gap-2 px-3 py-1 bg-indigo-500/10 border border-indigo-500/20 rounded-full text-indigo-400 text-xs font-semibold">
+                Controle Offline Seguro
+              </span>
+              <h2 className="text-4xl font-extrabold leading-tight text-white">
+                Seus dados financeiros protegidos a cada acesso.
+              </h2>
+              <p className="text-sm text-gray-400">
+                O VukaPay utiliza criptografia local avançada no banco de dados para garantir que apenas você tenha acesso ao seu histórico e saldo.
+              </p>
+            </div>
+
+            <div className="text-[10px] text-gray-600 uppercase tracking-widest">
+              Segurança Local Ativa
+            </div>
+          </div>
+        </div>
+
+        {/* Right Side: Lock Screen Interface */}
+        <div className="w-full lg:w-1/2 flex items-center justify-center p-6 relative">
+          <div className="lg:hidden absolute inset-0 -z-10 bg-[#030712]">
+            <div className="absolute inset-0">
+              <img
+                src="https://images.unsplash.com/photo-1639762681485-074b7f938ba0?q=80&w=2064&auto=format&fit=crop"
+                alt="Premium 3D Abstract Financial Concept"
+                className="w-full h-full object-cover opacity-15 blur-sm"
+                referrerPolicy="no-referrer"
+              />
+              <div className="absolute inset-0 bg-[#030712]/95" />
+            </div>
+            <div className="absolute top-0 right-0 w-[300px] h-[300px] bg-indigo-600/5 rounded-full blur-[80px]" />
+          </div>
+
+          <div className="w-full max-w-sm bg-gray-950/80 border border-gray-900 rounded-[2.5rem] p-8 shadow-2xl backdrop-blur-md relative">
+            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-t-[2.5rem]" />
+            
+            <div className="flex flex-col items-center mb-6">
+              {profile.avatar_url ? (
+                <img 
+                  src={profile.avatar_url} 
+                  alt="Avatar do Usuário" 
+                  className="w-20 h-20 rounded-3xl object-cover shadow-xl border border-indigo-500/20 mb-3"
+                />
+              ) : (
+                <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-2xl font-bold shadow-xl shadow-indigo-500/10 mb-3 scale-105 border border-indigo-400/20">
+                  {initials}
+                </div>
+              )}
+              <h2 className="text-xl font-bold text-white mt-1">{profile.full_name}</h2>
+              <p className="text-xs text-gray-500 mt-1">
+                {isPinMode ? 'Digite o seu código PIN de acesso' : 'Insira a sua senha para desbloquear'}
+              </p>
+            </div>
+
+            {error && (
+              <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl flex items-start gap-2.5 text-red-400 text-xs mb-4">
+                <ShieldAlert className="w-4 h-4 shrink-0 mt-0.5" />
+                <span>{error}</span>
+              </div>
+            )}
+
+            {isPinMode ? (
+              // PIN CODE Virtual Keypad Unlock (Multicaixa Express style)
+              <div className="space-y-6">
+                {/* Display dots for digits entered */}
+                <div className="flex justify-center gap-3 py-2">
+                  {Array.from({ length: profile.pin_code?.length || 4 }).map((_, idx) => (
+                    <div 
+                      key={idx}
+                      className={`w-3.5 h-3.5 rounded-full transition-all duration-150 border border-gray-700 ${
+                        idx < enteredPin.length ? 'bg-indigo-500 scale-110 shadow-lg shadow-indigo-500/30' : 'bg-transparent'
+                      }`}
+                    />
+                  ))}
+                </div>
+
+                {/* Grid 3x4 layout */}
+                <div className="grid grid-cols-3 gap-3.5 max-w-[280px] mx-auto">
+                  {['1', '2', '3', '4', '5', '6', '7', '8', '9'].map((digit) => (
+                    <button
+                      key={digit}
+                      type="button"
+                      onClick={() => handlePinKeyPress(digit)}
+                      className="w-16 h-16 rounded-full bg-gray-900/60 hover:bg-gray-850 active:bg-gray-800 text-lg font-bold text-white flex items-center justify-center transition-all border border-gray-900/40"
+                    >
+                      {digit}
+                    </button>
+                  ))}
+                  
+                  {/* Clear */}
                   <button
-                    key={digit}
                     type="button"
-                    onClick={() => handlePinKeyPress(digit)}
+                    onClick={handlePinClear}
+                    className="w-16 h-16 rounded-full text-xs font-semibold text-gray-400 hover:text-white flex items-center justify-center transition-colors"
+                  >
+                    Limpar
+                  </button>
+                  
+                  {/* 0 */}
+                  <button
+                    type="button"
+                    onClick={() => handlePinKeyPress('0')}
                     className="w-16 h-16 rounded-full bg-gray-900/60 hover:bg-gray-850 active:bg-gray-800 text-lg font-bold text-white flex items-center justify-center transition-all border border-gray-900/40"
                   >
-                    {digit}
+                    0
                   </button>
-                ))}
-                
-                {/* Clear */}
-                <button
-                  type="button"
-                  onClick={handlePinClear}
-                  className="w-16 h-16 rounded-full text-xs font-semibold text-gray-400 hover:text-white flex items-center justify-center transition-colors"
-                >
-                  Limpar
-                </button>
-                
-                {/* 0 */}
-                <button
-                  type="button"
-                  onClick={() => handlePinKeyPress('0')}
-                  className="w-16 h-16 rounded-full bg-gray-900/60 hover:bg-gray-850 active:bg-gray-800 text-lg font-bold text-white flex items-center justify-center transition-all border border-gray-900/40"
-                >
-                  0
-                </button>
-                
-                {/* Delete/Backspace */}
-                <button
-                  type="button"
-                  onClick={handlePinBackspace}
-                  className="w-16 h-16 rounded-full text-gray-400 hover:text-white flex items-center justify-center transition-colors"
-                >
-                  <Delete className="w-5 h-5" />
-                </button>
-              </div>
-
-              <div className="flex justify-between text-xs text-gray-400 px-2 pt-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsPinMode(false);
-                    setError(null);
-                  }}
-                  className="hover:text-white transition-colors"
-                >
-                  Usar Senha de Texto
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsRecovering(true);
-                    setError(null);
-                  }}
-                  className="hover:text-white font-medium transition-colors"
-                >
-                  Esqueceu a senha?
-                </button>
-              </div>
-            </div>
-          ) : (
-            // PASSWORD TEXT Form Unlock
-            <form onSubmit={handleUnlock} className="space-y-4">
-              <div>
-                <div className="relative">
-                  <Key className="absolute left-4 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-gray-500" />
-                  <input
-                    type="password"
-                    required
-                    autoFocus
-                    value={enteredPassword}
-                    onChange={(e) => setEnteredPassword(e.target.value)}
-                    className="w-full pl-12 pr-4 py-3.5 bg-gray-900 border border-gray-800 rounded-2xl text-sm focus:outline-none focus:border-indigo-500 transition-colors text-white"
-                    placeholder="Digite sua senha"
-                  />
+                  
+                  {/* Delete/Backspace */}
+                  <button
+                    type="button"
+                    onClick={handlePinBackspace}
+                    className="w-16 h-16 rounded-full text-gray-400 hover:text-white flex items-center justify-center transition-colors"
+                  >
+                    <Delete className="w-5 h-5" />
+                  </button>
                 </div>
-              </div>
 
-              <button
-                type="submit"
-                className="w-full py-3.5 bg-indigo-600 hover:bg-indigo-700 active:scale-[0.98] transition-all text-white font-bold rounded-2xl text-xs flex items-center justify-center gap-2 shadow-lg shadow-indigo-600/20"
-              >
-                <Lock className="w-4 h-4" />
-                <span>Desbloquear App</span>
-              </button>
-
-              <div className="flex justify-between text-xs text-gray-400 px-1 pt-1">
-                {profile.pin_code ? (
+                <div className="flex justify-between text-xs text-gray-400 px-2 pt-2">
                   <button
                     type="button"
                     onClick={() => {
-                      setIsPinMode(true);
+                      setIsPinMode(false);
                       setError(null);
                     }}
-                    className="hover:text-white transition-colors font-medium text-indigo-400"
+                    className="hover:text-white transition-colors"
                   >
-                    Usar Código PIN
+                    Usar Senha de Texto
                   </button>
-                ) : (
-                  <div />
-                )}
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsRecovering(true);
-                    setError(null);
-                  }}
-                  className="hover:text-white font-medium transition-colors"
-                >
-                  Esqueceu a senha?
-                </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsRecovering(true);
+                      setError(null);
+                    }}
+                    className="hover:text-white font-medium transition-colors"
+                  >
+                    Esqueceu a senha?
+                  </button>
+                </div>
               </div>
-            </form>
-          )}
+            ) : (
+              // PASSWORD TEXT Form Unlock
+              <form onSubmit={handleUnlock} className="space-y-4">
+                <div>
+                  <div className="relative">
+                    <Key className="absolute left-4 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-gray-500" />
+                    <input
+                      type="password"
+                      required
+                      autoFocus
+                      value={enteredPassword}
+                      onChange={(e) => setEnteredPassword(e.target.value)}
+                      className="w-full pl-12 pr-4 py-3.5 bg-gray-900 border border-gray-800 rounded-2xl text-sm focus:outline-none focus:border-indigo-500 transition-colors text-white"
+                      placeholder="Digite sua senha"
+                    />
+                  </div>
+                </div>
 
-          <div className="mt-8 pt-4 border-t border-gray-900 flex justify-center">
-            <button
-              type="button"
-              onClick={handleLogout}
-              className="py-2 px-4 hover:bg-red-500/10 text-red-400 hover:text-red-300 rounded-2xl text-xs font-semibold transition-all flex items-center gap-2 border border-red-950/20"
-            >
-              <LogOut className="w-4 h-4" />
-              <span>Sair da Conta</span>
-            </button>
+                <button
+                  type="submit"
+                  className="w-full py-3.5 bg-indigo-600 hover:bg-indigo-700 active:scale-[0.98] transition-all text-white font-bold rounded-2xl text-xs flex items-center justify-center gap-2 shadow-lg shadow-indigo-600/20"
+                >
+                  <Lock className="w-4 h-4" />
+                  <span>Desbloquear App</span>
+                </button>
+
+                <div className="flex justify-between text-xs text-gray-400 px-1 pt-1">
+                  {profile.pin_code ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsPinMode(true);
+                        setError(null);
+                      }}
+                      className="hover:text-white transition-colors font-medium text-indigo-400"
+                    >
+                      Usar Código PIN
+                    </button>
+                  ) : (
+                    <div />
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsRecovering(true);
+                      setError(null);
+                    }}
+                    className="hover:text-white font-medium transition-colors"
+                  >
+                    Esqueceu a senha?
+                  </button>
+                </div>
+              </form>
+            )}
+
+            <div className="mt-8 pt-4 border-t border-gray-900 flex justify-center">
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="py-2 px-4 hover:bg-red-500/10 text-red-400 hover:text-red-300 rounded-2xl text-xs font-semibold transition-all flex items-center gap-2 border border-red-950/20"
+              >
+                <LogOut className="w-4 h-4" />
+                <span>Sair da Conta</span>
+              </button>
+            </div>
           </div>
         </div>
       </div>

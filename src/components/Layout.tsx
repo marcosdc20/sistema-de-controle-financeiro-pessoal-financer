@@ -25,7 +25,8 @@ import {
   User,
   PiggyBank,
   Eye,
-  EyeOff
+  EyeOff,
+  FolderKanban
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/context/AuthContext';
@@ -39,7 +40,58 @@ import AutoUpdater from '@/components/AutoUpdater';
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   const { signOut, user } = useAuth();
-  const { profile, setIsTransactionModalOpen, isTransactionModalOpen, notifications, markNotificationAsRead, togglePrivacyMode, isPrivacyMode } = useFinance();
+  const { 
+    profile, 
+    setIsTransactionModalOpen, 
+    isTransactionModalOpen, 
+    notifications, 
+    markNotificationAsRead, 
+    togglePrivacyMode, 
+    isPrivacyMode,
+    addTask,
+    projects
+  } = useFinance();
+  
+  // Quick Task Capture State
+  const [isQuickCaptureOpen, setIsQuickCaptureOpen] = useState(false);
+  const [quickTitle, setQuickTitle] = useState('');
+  const [quickPriority, setQuickPriority] = useState<'low' | 'medium' | 'high' | 'critical'>('medium');
+  const [quickProjId, setQuickProjId] = useState('');
+  const [quickDueDate, setQuickDueDate] = useState('');
+
+  const handleQuickCaptureSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!quickTitle.trim()) return;
+    try {
+      await addTask({
+        title: quickTitle.trim(),
+        description: 'Criado via Captura Rápida.',
+        priority: quickPriority,
+        status: 'todo',
+        projectId: quickProjId || undefined,
+        dueDate: quickDueDate || undefined,
+        subtasks: [],
+        tags: [],
+        toolsCost: []
+      });
+      setQuickTitle('');
+      setQuickPriority('medium');
+      setQuickProjId('');
+      setQuickDueDate('');
+      setIsQuickCaptureOpen(false);
+      
+      // Notify
+      if ('Notification' in window && Notification.permission === 'granted') {
+        new Notification('VukaPay - Tarefa Capturada!', {
+          body: `Tarefa "${quickTitle.trim()}" salva com sucesso no SQLite.`,
+          icon: '/logo.png'
+        });
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
@@ -61,6 +113,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     { icon: Target, label: 'Metas', path: '/goals' },
     { icon: TrendingUp, label: 'Investimentos', path: '/investments' },
     { icon: Handshake, label: 'Empréstimos', path: '/loans' },
+    { icon: FolderKanban, label: 'Projetos & Tarefas', path: '/projects' },
     { icon: Sparkles, label: 'Assistente IA', path: '/ai-assistant' },
     { icon: GraduationCap, label: 'Educação', path: '/education' },
     { icon: PieChart, label: 'Relatórios', path: '/reports' },
@@ -80,6 +133,13 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      // ALT + T Quick Capture Task (Trigger even if typing in input)
+      if (e.altKey && e.key.toLowerCase() === 't') {
+        e.preventDefault();
+        setIsQuickCaptureOpen(prev => !prev);
+        return;
+      }
+
       // Don't trigger if user is typing in an input/textarea
       if (['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement).tagName)) {
         if (e.key === 'Escape') (e.target as HTMLElement).blur();
@@ -557,6 +617,97 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           isOpen={isTransactionModalOpen}
           onClose={() => setIsTransactionModalOpen(false)}
         />
+        
+        {/* Quick Task Capture Modal Overlay */}
+        {isQuickCaptureOpen && (
+          <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+            <div className="bg-gray-900 border border-gray-800 text-white rounded-[2.5rem] p-8 max-w-md w-full shadow-2xl animate-in zoom-in-95 duration-200">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-sm font-bold text-gray-305 flex items-center gap-2">
+                  <FolderKanban className="w-5 h-5 text-indigo-400" />
+                  Captura Rápida de Tarefa
+                </h3>
+                <button
+                  onClick={() => setIsQuickCaptureOpen(false)}
+                  className="p-1.5 hover:bg-gray-800 rounded-full text-gray-400 hover:text-white transition-colors"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              <form onSubmit={handleQuickCaptureSubmit} className="space-y-4">
+                <div>
+                  <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1.5">O que precisa ser feito?</label>
+                  <input
+                    type="text"
+                    autoFocus
+                    required
+                    placeholder="Título da tarefa..."
+                    value={quickTitle}
+                    onChange={(e) => setQuickTitle(e.target.value)}
+                    className="w-full px-4 py-3 bg-gray-950 border border-gray-800 rounded-xl text-sm focus:outline-none focus:border-indigo-500 text-white placeholder-gray-655 font-semibold"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1.5">Prioridade</label>
+                    <select
+                      value={quickPriority}
+                      onChange={(e) => setQuickPriority(e.target.value as any)}
+                      className="w-full px-3 py-2.5 bg-gray-950 border border-gray-800 rounded-xl text-xs focus:outline-none text-gray-300 font-semibold"
+                    >
+                      <option value="low">Baixa</option>
+                      <option value="medium">Média</option>
+                      <option value="high">Alta</option>
+                      <option value="critical">Crítica</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1.5">Vencimento</label>
+                    <input
+                      type="date"
+                      value={quickDueDate}
+                      onChange={(e) => setQuickDueDate(e.target.value)}
+                      className="w-full px-3 py-2.5 bg-gray-950 border border-gray-800 rounded-xl text-xs focus:outline-none text-gray-300"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1.5">Iniciativa Relacionada</label>
+                  <select
+                    value={quickProjId}
+                    onChange={(e) => setQuickProjId(e.target.value)}
+                    className="w-full px-3 py-2.5 bg-gray-950 border border-gray-800 rounded-xl text-xs focus:outline-none text-gray-300 font-semibold"
+                  >
+                    <option value="">Tarefa Geral (Sem Projeto)</option>
+                    {projects.map(p => (
+                      <option key={p.id} value={p.id}>{p.name}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="flex gap-3 pt-4">
+                  <button
+                    type="submit"
+                    className="flex-1 py-3 bg-indigo-600 hover:bg-indigo-700 active:scale-[0.98] transition-all text-white font-bold rounded-xl text-xs"
+                  >
+                    Capturar e Salvar
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsQuickCaptureOpen(false)}
+                    className="flex-1 py-3 bg-gray-800 hover:bg-gray-750 transition-colors text-gray-300 font-semibold rounded-xl text-xs"
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
         <HelpModal
           isOpen={isHelpOpen}
           onClose={() => setIsHelpOpen(false)}

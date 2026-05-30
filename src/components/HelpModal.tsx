@@ -92,7 +92,7 @@ export default function HelpModal({ isOpen, onClose }: HelpModalProps) {
 
                 <div className="mt-8 pt-6 border-t border-gray-100 text-center">
                     <p className="text-xs text-gray-400">
-                        VukaPay v1.0.4 • <button className="hover:text-indigo-600 font-medium">Notas da Versão</button>
+                        VukaPay v1.0.5 • <button className="hover:text-indigo-600 font-medium">Notas da Versão</button>
                     </p>
                 </div>
             </div>

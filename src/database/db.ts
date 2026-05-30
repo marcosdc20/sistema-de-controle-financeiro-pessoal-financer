@@ -418,6 +418,98 @@ async function initDatabaseInstance(db: Database): Promise<void> {
       currentVersion = 3;
       console.log('Migração para Versão 3 concluída.');
     }
+    
+    // MIGRATION 4: Rastreamento de sessões/dispositivos ativos do utilizador (Versão 4)
+    if (currentVersion < 4) {
+      console.log('Executando migração: Versão 4 (Tabela de sessões de login)...');
+      await db.execute(`
+        CREATE TABLE IF NOT EXISTS user_sessions (
+          id TEXT PRIMARY KEY,
+          user_id TEXT NOT NULL,
+          device_name TEXT NOT NULL,
+          login_type TEXT NOT NULL,
+          location TEXT,
+          last_active TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          is_current INTEGER DEFAULT 0,
+          FOREIGN KEY(user_id) REFERENCES profiles(id) ON DELETE CASCADE
+        );
+      `);
+      await db.execute('PRAGMA user_version = 4;');
+      currentVersion = 4;
+      console.log('Migração para Versão 4 concluída.');
+    }
+
+    // MIGRATION 5: Projetos, tarefas, regras de auto-categorização e expansão de categorias (Versão 5)
+    if (currentVersion < 5) {
+      console.log('Executando migração: Versão 5 (Projetos, Tarefas, Regras de Auto-categorização)...');
+      
+      // Criar tabela de projetos
+      await db.execute(`
+        CREATE TABLE IF NOT EXISTS projects (
+          id TEXT PRIMARY KEY,
+          user_id TEXT NOT NULL,
+          name TEXT NOT NULL,
+          description TEXT,
+          status TEXT NOT NULL DEFAULT 'Em Planeamento',
+          budget_limit REAL,
+          due_date TEXT,
+          notes TEXT,
+          created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY(user_id) REFERENCES profiles(id) ON DELETE CASCADE
+        );
+      `);
+
+      // Criar tabela de tarefas
+      await db.execute(`
+        CREATE TABLE IF NOT EXISTS tasks (
+          id TEXT PRIMARY KEY,
+          project_id TEXT,
+          user_id TEXT NOT NULL,
+          title TEXT NOT NULL,
+          description TEXT,
+          priority TEXT NOT NULL DEFAULT 'medium',
+          status TEXT NOT NULL DEFAULT 'todo',
+          due_date TEXT,
+          estimated_revenue REAL,
+          subtasks TEXT,
+          tags TEXT,
+          tools_cost TEXT,
+          created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY(project_id) REFERENCES projects(id) ON DELETE CASCADE,
+          FOREIGN KEY(user_id) REFERENCES profiles(id) ON DELETE CASCADE
+        );
+      `);
+
+      // Criar tabela de regras de auto-categorização
+      await db.execute(`
+        CREATE TABLE IF NOT EXISTS auto_categorization_rules (
+          id TEXT PRIMARY KEY,
+          user_id TEXT NOT NULL,
+          keyword TEXT NOT NULL,
+          category_name TEXT NOT NULL,
+          subcategory_name TEXT,
+          created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY(user_id) REFERENCES profiles(id) ON DELETE CASCADE
+        );
+      `);
+
+      // Adicionar colunas parent_id e limit_amount na tabela categories se não existirem
+      try {
+        await db.execute('ALTER TABLE categories ADD COLUMN parent_id TEXT;');
+      } catch (e) {
+        console.log('Coluna parent_id já existia ou erro ao adicionar.');
+      }
+
+      try {
+        await db.execute('ALTER TABLE categories ADD COLUMN limit_amount REAL;');
+      } catch (e) {
+        console.log('Coluna limit_amount já existia ou erro ao adicionar.');
+      }
+
+      await db.execute('PRAGMA user_version = 5;');
+      currentVersion = 5;
+      console.log('Migração para Versão 5 concluída.');
+    }
 
     // Preenche categorias padrões se estiverem vazias
     const existingCats = await db.select('SELECT count(*) as count FROM categories');
@@ -490,7 +582,11 @@ export async function exportDatabaseToJson(): Promise<string> {
     'exchange_rates',
     'savings',
     'user_preferences',
-    'kixiquilas'
+    'kixiquilas',
+    'user_sessions',
+    'projects',
+    'tasks',
+    'auto_categorization_rules'
   ];
 
   const backup: Record<string, any[]> = {};
@@ -529,7 +625,11 @@ export async function importDatabaseFromJson(jsonStr: string): Promise<void> {
     'exchange_rates',
     'savings',
     'user_preferences',
-    'kixiquilas'
+    'kixiquilas',
+    'user_sessions',
+    'projects',
+    'tasks',
+    'auto_categorization_rules'
   ];
 
   try {

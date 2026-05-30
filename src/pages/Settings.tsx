@@ -1,7 +1,31 @@
-import React, { useState, useEffect } from 'react';
-import { User, Bell, Moon, Globe, Shield, LogOut, Save, Download, Trash2, List, Plus, X, Lock, Smartphone, Key, Check } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { 
+  User, 
+  Bell, 
+  Globe, 
+  Shield, 
+  LogOut, 
+  Save, 
+  Download, 
+  Trash2, 
+  List, 
+  Plus, 
+  X, 
+  Lock, 
+  Smartphone, 
+  Key, 
+  Check, 
+  ShieldAlert, 
+  Edit2, 
+  Cpu, 
+  Keyboard, 
+  Sliders, 
+  FileSpreadsheet, 
+  Layers, 
+  FolderLock 
+} from 'lucide-react';
 import PageTransition from '@/components/PageTransition';
-import { useFinance } from '@/context/FinanceContext';
+import { useFinance, DbCategory, AutoRule } from '@/context/FinanceContext';
 import { useAuth } from '@/context/AuthContext';
 import { CURRENCIES, cn } from '@/lib/utils';
 
@@ -9,14 +33,45 @@ type SettingsTab = 'general' | 'categories' | 'notifications' | 'security' | 'da
 
 export default function Settings() {
   const {
-    transactions, accounts, budgets, goals, investments, loans,
-    categories, addCategory, deleteCategory, profile: dbProfile, updateProfile,
-    preferences: dbPrefs, updatePreferences
+    transactions, 
+    accounts, 
+    budgets, 
+    goals, 
+    investments, 
+    loans,
+    categories, 
+    addCategory, 
+    deleteCategory, 
+    profile: dbProfile, 
+    updateProfile,
+    preferences: dbPrefs, 
+    updatePreferences, 
+    exchangeRates, 
+    updateExchangeRate,
+    exportDatabase, 
+    importDatabase, 
+    clearAllFinancialData,
+    dbCategories,
+    autoRules,
+    addDbCategory,
+    updateDbCategory,
+    deleteDbCategory,
+    addAutoRule,
+    deleteAutoRule,
+    optimizeDatabaseVacuum
   } = useFinance();
+  
   const { user, signOut } = useAuth();
   const [activeTab, setActiveTab] = useState<SettingsTab>('general');
 
-  const sectionClass = "bg-white rounded-3xl border border-gray-100/50 shadow-[0_2px_20px_rgba(0,0,0,0.02)] p-8 relative overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500";
+  // local toast notification
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+  const showToast = (message: string, type: 'success' | 'error' = 'success') => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 3500);
+  };
+
+  const sectionClass = "bg-white rounded-3xl border border-gray-100 shadow-[0_4px_30px_rgba(0,0,0,0.015)] p-8 relative overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500";
 
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [tempProfile, setTempProfile] = useState({
@@ -25,6 +80,75 @@ export default function Settings() {
     avatar: dbProfile?.full_name?.substring(0, 2).toUpperCase() || '??',
     avatarUrl: dbProfile?.avatar_url || ''
   });
+
+  // Default Account Selector State
+  const [defaultAccountId, setDefaultAccountId] = useState(() => {
+    return localStorage.getItem('vukapay_default_account_id') || '';
+  });
+
+  const handleDefaultAccountChange = (id: string) => {
+    setDefaultAccountId(id);
+    localStorage.setItem('vukapay_default_account_id', id);
+    showToast('Conta padrão para transações atualizada!');
+  };
+
+  // Performance Mode (CSS Injection)
+  const [performanceMode, setPerformanceMode] = useState(() => {
+    return localStorage.getItem('vukapay_perf_mode') === 'true';
+  });
+
+  const handleTogglePerformanceMode = (val: boolean) => {
+    setPerformanceMode(val);
+    localStorage.setItem('vukapay_perf_mode', String(val));
+    
+    let styleEl = document.getElementById('perf-mode-style');
+    if (val) {
+      if (!styleEl) {
+        styleEl = document.createElement('style');
+        styleEl.id = 'perf-mode-style';
+        styleEl.innerHTML = `
+          *, *::before, *::after {
+            transition: none !important;
+            animation: none !important;
+          }
+        `;
+        document.head.appendChild(styleEl);
+      }
+      showToast('Modo Desempenho Ativado (Animações desativadas)');
+    } else {
+      styleEl?.remove();
+      showToast('Modo Desempenho Desativado (Animações ativadas)');
+    }
+  };
+
+  // Sync state with localstorage on mount
+  useEffect(() => {
+    const isPerf = localStorage.getItem('vukapay_perf_mode') === 'true';
+    if (isPerf) {
+      let styleEl = document.getElementById('perf-mode-style');
+      if (!styleEl) {
+        styleEl = document.createElement('style');
+        styleEl.id = 'perf-mode-style';
+        styleEl.innerHTML = `
+          *, *::before, *::after {
+            transition: none !important;
+            animation: none !important;
+          }
+        `;
+        document.head.appendChild(styleEl);
+      }
+    }
+  }, []);
+
+  // Keyboard Shortcuts Config List
+  const [keyboardShortcuts, setKeyboardShortcuts] = useState([
+    { key: 'n', action: 'Abrir Nova Transação' },
+    { key: 'Alt + T', action: 'Captura Rápida de Tarefa (Overlay)' },
+    { key: 'g', action: 'Ir para Dashboard' },
+    { key: 't', action: 'Ir para Transações' },
+    { key: 'Ctrl + H', action: 'Alternar Modo Olhar Indiscreto' },
+    { key: '?', action: 'Abrir Centro de Ajuda' }
+  ]);
 
   // Update tempProfile when DB profile loads
   useEffect(() => {
@@ -63,7 +187,7 @@ export default function Settings() {
   const [notifications, setNotifications] = useState({
     balanceAlert: dbPrefs?.notifications?.balanceAlert ?? true,
     weeklyReport: dbPrefs?.notifications?.weeklyReport ?? false,
-    billReminders: dbPrefs?.notifications?.billReminders ?? true,
+    billReminders: dbPrefs?.notifications?.weeklyReport ?? true,
     goalAchievements: dbPrefs?.notifications?.goalAchievements ?? true,
     pushNotifications: dbPrefs?.notifications?.pushNotifications ?? true,
     emailNotifications: dbPrefs?.notifications?.emailNotifications ?? false
@@ -101,8 +225,139 @@ export default function Settings() {
     }
   }, [dbPrefs]);
 
-  const [newCategory, setNewCategory] = useState('');
-  const [categoryType, setCategoryType] = useState<'income' | 'expense'>('expense');
+  // Tab 2: Categorias detailed states
+  const [newCatName, setNewCatName] = useState('');
+  const [newCatType, setNewCatType] = useState<'expense' | 'income'>('expense');
+  const [newSubParentId, setNewSubParentId] = useState('');
+  const [newSubName, setNewSubName] = useState('');
+  const [editingLimitCatId, setEditingLimitCatId] = useState<string | null>(null);
+  const [tempLimitVal, setTempLimitVal] = useState('');
+
+  // Auto rules states
+  const [newRuleKeyword, setNewRuleKeyword] = useState('');
+  const [newRuleCat, setNewRuleCat] = useState('');
+
+  // Tab 3: Notifications detailed states
+  const [alertThreshold, setAlertThreshold] = useState(() => {
+    return Number(localStorage.getItem('vukapay_budget_threshold') || '80');
+  });
+
+  const [dueReminderDays, setDueReminderDays] = useState(() => {
+    return Number(localStorage.getItem('vukapay_due_reminder_days') || '3');
+  });
+
+  const [weeklySilentSummary, setWeeklySilentSummary] = useState(() => {
+    return localStorage.getItem('vukapay_weekly_silent_summary') === 'true';
+  });
+
+  const handleSaveThreshold = (val: number) => {
+    setAlertThreshold(val);
+    localStorage.setItem('vukapay_budget_threshold', String(val));
+  };
+
+  const handleSaveDueReminder = (val: number) => {
+    setDueReminderDays(val);
+    localStorage.setItem('vukapay_due_reminder_days', String(val));
+  };
+
+  const handleSaveWeeklySilent = (val: boolean) => {
+    setWeeklySilentSummary(val);
+    localStorage.setItem('vukapay_weekly_silent_summary', String(val));
+    showToast('Weekly Summary preference updated!');
+  };
+
+  // Tab 4: Segurança states
+  const [autoLockTimeout, setAutoLockTimeout] = useState(() => {
+    return localStorage.getItem('vukapay_auto_lock_timeout') || '5';
+  });
+
+  const [windowsHelloBiometrics, setWindowsHelloBiometrics] = useState(() => {
+    return localStorage.getItem('vukapay_windows_hello_simulated') === 'true';
+  });
+
+  const [olharIndiscretoMode, setOlharIndiscretoMode] = useState(() => {
+    return localStorage.getItem('vukapay_privacy_level') || 'all'; // 'all' or 'balances'
+  });
+
+  const handleSaveAutoLock = (val: string) => {
+    setAutoLockTimeout(val);
+    localStorage.setItem('vukapay_auto_lock_timeout', val);
+    showToast('Tempo de bloqueio automático atualizado!');
+  };
+
+  const handleSavePrivacyLevel = (val: string) => {
+    setOlharIndiscretoMode(val);
+    localStorage.setItem('vukapay_privacy_level', val);
+    showToast('Configurações de privacidade salvas!');
+  };
+
+  const handleToggleWindowsHello = (val: boolean) => {
+    setWindowsHelloBiometrics(val);
+    localStorage.setItem('vukapay_windows_hello_simulated', String(val));
+    if (val) {
+      showToast('Windows Hello (Biometria) simulado com sucesso!');
+    } else {
+      showToast('Desbloqueio biométrico desativado.');
+    }
+  };
+
+  // Tab 5: Dados states
+  const [autoBackupInterval, setAutoBackupInterval] = useState(() => {
+    return localStorage.getItem('vukapay_auto_backup_schedule') || '7'; // days
+  });
+
+  const handleSaveAutoBackup = (val: string) => {
+    setAutoBackupInterval(val);
+    localStorage.setItem('vukapay_auto_backup_schedule', val);
+    showToast('Agendamento de backup atualizado.');
+  };
+
+  const handleSQLiteVacuum = async () => {
+    try {
+      await optimizeDatabaseVacuum();
+      showToast('Base de dados SQLite otimizada com sucesso! (VACUUM concluído)');
+    } catch (e) {
+      console.error(e);
+      showToast('Erro ao otimizar base de dados.', 'error');
+    }
+  };
+
+  // CSV Exporter
+  const handleExportCSV = () => {
+    try {
+      const headers = ['ID', 'Data', 'Tipo', 'Descricao', 'Valor', 'Moeda', 'Categoria', 'Conta', 'Status', 'Metodo de Pagamento'];
+      const rows = transactions.map(t => {
+        const accName = accounts.find(a => a.id === t.accountId)?.name || t.accountId;
+        return [
+          t.id,
+          t.date,
+          t.type === 'expense' ? 'Despesa' : t.type === 'income' ? 'Receita' : t.type === 'transfer' ? 'Transferencia' : 'Ajuste',
+          `"${t.description.replace(/"/g, '""')}"`,
+          t.amount,
+          t.currency,
+          t.category,
+          `"${accName.replace(/"/g, '""')}"`,
+          t.status,
+          t.paymentMethod || 'Express'
+        ];
+      });
+
+      const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+      // add UTF-8 BOM for Excel support
+      const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `relatorio_transacoes_${new Date().toISOString().split('T')[0]}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      showToast('Dados de transações exportados em CSV!');
+    } catch (e) {
+      console.error(e);
+      showToast('Erro ao exportar CSV.', 'error');
+    }
+  };
 
   // Password change states
   const [isChangingPassword, setIsChangingPassword] = useState(false);
@@ -126,6 +381,40 @@ export default function Settings() {
   const [recError, setRecError] = useState<string | null>(null);
   const [recSuccess, setRecSuccess] = useState<string | null>(null);
 
+  // Exchange Rates States
+  const [editingRate, setEditingRate] = useState<string | null>(null);
+  const [rateValues, setRateValues] = useState<Record<string, number>>({});
+
+  useEffect(() => {
+    if (exchangeRates && exchangeRates.length > 0) {
+      const vals: Record<string, number> = {};
+      exchangeRates.forEach(r => {
+        vals[`${r.from}-${r.to}`] = r.rate;
+      });
+      setRateValues(vals);
+    }
+  }, [exchangeRates]);
+
+  // Active Sessions States
+  const [activeSessions, setActiveSessions] = useState<any[]>([]);
+
+  const loadSessions = async () => {
+    try {
+      const { getDatabase } = await import('@/database/db');
+      const db = await getDatabase();
+      const rows = await db.select<any[]>('SELECT * FROM user_sessions WHERE user_id = $1 ORDER BY last_active DESC', [user?.id]);
+      setActiveSessions(rows || []);
+    } catch (e) {
+      console.error('Erro ao carregar sessões de login:', e);
+    }
+  };
+
+  useEffect(() => {
+    if (user && activeTab === 'security') {
+      loadSessions();
+    }
+  }, [user, activeTab]);
+
   useEffect(() => {
     if (dbProfile) {
       setRecQuestion(dbProfile.security_question || 'Qual é o nome da sua primeira escola?');
@@ -133,6 +422,41 @@ export default function Settings() {
       setRecEmail(dbProfile.recovery_email || '');
     }
   }, [dbProfile]);
+
+  // Cofre Automático Config state
+  const [cofreConfig, setCofreConfig] = useState({
+    active: false,
+    rule: 100,
+    goalId: ''
+  });
+
+  useEffect(() => {
+    if (user) {
+      const cofreConfigStr = localStorage.getItem(`vukapay_cofre_${user.id}`);
+      if (cofreConfigStr) {
+        try {
+          setCofreConfig(JSON.parse(cofreConfigStr));
+        } catch (e) {
+          console.error(e);
+        }
+      }
+    }
+  }, [user]);
+
+  // Calculate total saved by the Auto Vault (Cofre)
+  const cofreTotalSaved = useMemo(() => {
+    return transactions
+      .filter(t => t.description.startsWith('Contribuição para meta:') && t.category === 'Investimento')
+      .reduce((sum, t) => sum + t.amount, 0);
+  }, [transactions]);
+
+  const handleSaveCofre = (updated: typeof cofreConfig) => {
+    setCofreConfig(updated);
+    if (user) {
+      localStorage.setItem(`vukapay_cofre_${user.id}`, JSON.stringify(updated));
+      showToast('Configurações do cofre salvas com sucesso!');
+    }
+  };
 
   const handleUpdateRecovery = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -155,6 +479,7 @@ export default function Settings() {
         recovery_email: recEmail.trim()
       });
       setRecSuccess('Opções de recuperação atualizadas com sucesso!');
+      showToast('Opções de recuperação atualizadas!');
     } catch (err) {
       console.error(err);
       setRecError('Erro ao salvar as opções de recuperação.');
@@ -179,6 +504,7 @@ export default function Settings() {
     try {
       await updateProfile({ pin_code: newPinCode });
       setPinSuccess('Código PIN configurado com sucesso!');
+      showToast('PIN de acesso configurado!');
       setNewPinCode('');
       setConfirmPinCode('');
       setPinSetupMode(false);
@@ -192,42 +518,13 @@ export default function Settings() {
     if (confirm('Tem a certeza que deseja desativar o acesso por PIN?')) {
       try {
         await updateProfile({ pin_code: '' });
-        setPinSuccess('PIN desativado com sucesso.');
+        showToast('PIN de acesso desativado.');
       } catch (err) {
         console.error(err);
-        setPinError('Erro ao desativar o PIN.');
+        showToast('Erro ao desativar o PIN.', 'error');
       }
     }
   };
-
-  // Cofre Automático state
-  const [cofreConfig, setCofreConfig] = useState({
-    active: false,
-    rule: 100,
-    goalId: ''
-  });
-
-  useEffect(() => {
-    if (user) {
-      const cofreConfigStr = localStorage.getItem(`vukapay_cofre_${user.id}`);
-      if (cofreConfigStr) {
-        try {
-          setCofreConfig(JSON.parse(cofreConfigStr));
-        } catch (e) {
-          console.error(e);
-        }
-      }
-    }
-  }, [user]);
-
-  const handleSaveCofre = (updated: typeof cofreConfig) => {
-    setCofreConfig(updated);
-    if (user) {
-      localStorage.setItem(`vukapay_cofre_${user.id}`, JSON.stringify(updated));
-    }
-  };
-
-  // -- Handlers --
 
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -252,6 +549,7 @@ export default function Settings() {
     try {
       await updateProfile({ password: newPassword });
       setPasswordSuccess('Senha de acesso atualizada com sucesso!');
+      showToast('Senha de acesso atualizada!');
       setCurrentPassword('');
       setNewPassword('');
       setConfirmNewPassword('');
@@ -266,70 +564,200 @@ export default function Settings() {
   };
 
   const handleSaveProfile = async () => {
+    if (!tempProfile.name.trim()) {
+      showToast('O nome não pode estar vazio.', 'error');
+      return;
+    }
     await updateProfile({
       full_name: tempProfile.name,
       avatar_url: tempProfile.avatarUrl
     });
     setIsEditingProfile(false);
+    showToast('Perfil atualizado com sucesso!');
   };
 
   const handlePreferenceChange = async (key: string, value: string) => {
     setPreferences(prev => ({ ...prev, [key]: value }));
     const dbKey = key === 'currency' ? 'base_currency' : key === 'dateFormat' ? 'date_format' : key;
     await updatePreferences({ [dbKey]: value });
+    showToast('Preferências atualizadas!');
   };
 
   const handleNotificationToggle = async (key: keyof typeof notifications) => {
     const updated = { ...notifications, [key]: !notifications[key] };
     setNotifications(updated);
     await updatePreferences({ notifications: updated });
+    showToast('Notificações atualizadas!');
   };
 
   const handleSecurityToggle = async (key: keyof typeof security) => {
     const updated = { ...security, [key]: !security[key] };
     setSecurity(updated);
     await updatePreferences({ security: updated });
+    showToast('Configurações de segurança atualizadas!');
   };
 
+  // Category CRUD logic (Rich and subcategories)
+  const parentCategories = useMemo(() => {
+    return dbCategories.filter(c => !c.parentId && c.type === newCatType);
+  }, [dbCategories, newCatType]);
 
+  const handleAddRichCategory = async () => {
+    if (!newCatName.trim()) return;
+    await addDbCategory({
+      name: newCatName.trim(),
+      type: newCatType,
+      limitAmount: undefined
+    });
+    setNewCatName('');
+    showToast('Categoria principal adicionada!');
+  };
 
-  const handleAddCategory = () => {
-    if (newCategory.trim()) {
-      addCategory(categoryType, newCategory.trim());
-      setNewCategory('');
+  const handleAddSubcategory = async () => {
+    if (!newSubName.trim() || !newSubParentId) return;
+    await addDbCategory({
+      name: newSubName.trim(),
+      type: newCatType,
+      parentId: newSubParentId,
+      limitAmount: undefined
+    });
+    setNewSubName('');
+    showToast('Subcategoria adicionada com sucesso!');
+  };
+
+  const handleSaveCategoryLimit = async (id: string) => {
+    if (!tempLimitVal) return;
+    await updateDbCategory(id, {
+      limitAmount: Number(tempLimitVal)
+    });
+    setEditingLimitCatId(null);
+    setTempLimitVal('');
+    showToast('Teto financeiro de categoria atualizado!');
+  };
+
+  // Rules CRUD
+  const handleAddAutoRule = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newRuleKeyword.trim() || !newRuleCat) return;
+    await addAutoRule({
+      keyword: newRuleKeyword.trim(),
+      categoryName: newRuleCat
+    });
+    setNewRuleKeyword('');
+    setNewRuleCat('');
+    showToast('Regra de auto-categorização criada!');
+  };
+
+  // Real SQLite JSON Export Handler
+  const handleExportDataReal = async () => {
+    try {
+      const jsonStr = await exportDatabase();
+      const blob = new Blob([jsonStr], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `backup_vukapay_${new Date().toISOString().split('T')[0]}_sqlite.json`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      showToast('Backup do banco de dados exportado com sucesso!');
+    } catch (e) {
+      console.error(e);
+      showToast('Erro ao exportar base de dados.', 'error');
     }
   };
 
-  const handleExportData = () => {
-    const data = {
-      transactions,
-      accounts,
-      budgets,
-      goals,
-      investments,
-      loans,
-      categories,
-      exportedAt: new Date().toISOString()
-    };
+  // Real SQLite JSON Import Handler
+  const handleImportFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
 
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `backup_financeiro_${new Date().toISOString().split('T')[0]}.json`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      try {
+        const content = event.target?.result as string;
+        const parsed = JSON.parse(content);
+        
+        if (!parsed.profiles || !parsed.accounts || !parsed.transactions) {
+          throw new Error('Formato de arquivo inválido. As tabelas básicas de controle financeiro estão ausentes.');
+        }
+
+        if (confirm('ATENÇÃO: A importação irá SOBRESCREVER permanentemente todos os registros atuais. Deseja prosseguir com a restauração?')) {
+          await importDatabase(content);
+          showToast('Base de dados restaurada! Reiniciando aplicação...');
+          setTimeout(() => {
+            window.location.reload();
+          }, 1500);
+        }
+      } catch (err: any) {
+        console.error(err);
+        showToast(`Erro na importação: ${err.message || 'Arquivo JSON inválido.'}`, 'error');
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = ''; // Reset file input
   };
 
-  const handleClearData = () => {
-    if (confirm('Tem certeza? Esta ação apagará todos os seus registros de forma permanente da sua conta.')) {
-      alert('Pendente: Implementação de remoção total de segurança. Por enquanto, limpe manualmente os registros.');
+  // Wipe Financial Data Modal Safety states
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
+
+  const handleWipeData = async () => {
+    if (deleteConfirmText !== 'APAGAR') {
+      showToast('Por favor, digite a palavra chave "APAGAR" para prosseguir.', 'error');
+      return;
+    }
+    try {
+      await clearAllFinancialData();
+      setShowDeleteModal(false);
+      setDeleteConfirmText('');
+      showToast('Todos os seus dados financeiros foram redefinidos localmente!');
+      setTimeout(() => {
+        window.location.reload();
+      }, 1500);
+    } catch (e) {
+      console.error(e);
+      showToast('Falha ao redefinir a base de dados.', 'error');
+    }
+  };
+
+  // Revoke active sessions
+  const handleRevokeSession = async (sessionId: string) => {
+    if (confirm('Deseja realmente revogar o acesso deste dispositivo? O login será finalizado lá.')) {
+      try {
+        const { getDatabase } = await import('@/database/db');
+        const db = await getDatabase();
+        await db.execute('DELETE FROM user_sessions WHERE id = $1', [sessionId]);
+        await loadSessions();
+        showToast('Dispositivo revogado com sucesso.');
+      } catch (e) {
+        console.error(e);
+        showToast('Falha ao revogar sessão.', 'error');
+      }
+    }
+  };
+
+  // Save exchange rate modifications
+  const handleSaveRate = async (from: string, to: string) => {
+    const rateKey = `${from}-${to}`;
+    const rateVal = rateValues[rateKey];
+    if (rateVal && rateVal > 0) {
+      try {
+        await updateExchangeRate(from, to, rateVal);
+        setEditingRate(null);
+        showToast(`Taxa de câmbio ${from}/${to} atualizada!`);
+      } catch (e) {
+        console.error(e);
+        showToast('Erro ao atualizar taxa de câmbio.', 'error');
+      }
+    } else {
+      showToast('Insira um valor válido maior que zero.', 'error');
     }
   };
 
   const handleLogout = async () => {
     if (confirm('Deseja realmente sair do sistema?')) {
+      sessionStorage.removeItem('vukapay_session_unlocked');
       await signOut();
       window.location.href = '/login';
     }
@@ -344,10 +772,75 @@ export default function Settings() {
   ];
 
   return (
-    <PageTransition className="space-y-8 max-w-6xl mx-auto pb-20">
+    <PageTransition className="space-y-8 max-w-6xl mx-auto pb-20 relative">
+      {/* Toast HUD */}
+      {toast && (
+        <div className={cn(
+          "fixed top-6 right-6 z-[100] flex items-center gap-3 px-5 py-3.5 rounded-2xl shadow-xl border backdrop-blur-md animate-in fade-in slide-in-from-top-4 duration-300",
+          toast.type === 'success' 
+            ? "bg-emerald-500/90 border-emerald-400 text-white shadow-emerald-500/10" 
+            : "bg-red-500/90 border-red-400 text-white shadow-red-500/10"
+        )}>
+          {toast.type === 'success' ? <Check className="w-5 h-5" /> : <ShieldAlert className="w-5 h-5" />}
+          <span className="text-sm font-semibold">{toast.message}</span>
+        </div>
+      )}
+
+      {/* Safety Wipe Modal Confirmation Screen */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+          <div className="bg-white rounded-[2.5rem] border border-gray-100 shadow-2xl p-8 max-w-md w-full animate-in zoom-in-95 duration-200">
+            <div className="flex items-center gap-4 text-red-600 mb-6">
+              <div className="w-12 h-12 rounded-2xl bg-red-50 flex items-center justify-center">
+                <Trash2 className="w-6 h-6" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-gray-900">Limpeza de Dados</h3>
+                <p className="text-xs text-gray-500">Esta ação é irreversível.</p>
+              </div>
+            </div>
+
+            <p className="text-sm text-gray-600 leading-relaxed mb-6">
+              Você está prestes a excluir **todas** as contas, transações, metas, orçamentos, projetos, tarefas e registros financeiros salvos. Suas credenciais de login não serão apagadas.
+            </p>
+
+            <div className="space-y-4 mb-6">
+              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                Digite a palavra <span className="text-red-600 font-bold">"APAGAR"</span> para confirmar:
+              </label>
+              <input
+                type="text"
+                value={deleteConfirmText}
+                onChange={(e) => setDeleteConfirmText(e.target.value)}
+                placeholder="Escreva aqui..."
+                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-red-200 focus:border-red-500 text-gray-900 font-semibold"
+              />
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={handleWipeData}
+                className="flex-1 py-3 bg-red-600 hover:bg-red-700 active:scale-[0.98] transition-all text-white font-bold rounded-2xl text-xs"
+              >
+                Sim, Apagar Tudo
+              </button>
+              <button
+                onClick={() => {
+                  setShowDeleteModal(false);
+                  setDeleteConfirmText('');
+                }}
+                className="flex-1 py-3 bg-gray-100 hover:bg-gray-200 transition-colors text-gray-700 font-semibold rounded-2xl text-xs"
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div>
-        <h1 className="text-3xl font-semibold text-gray-900 tracking-tight">Definições</h1>
-        <p className="text-gray-500 mt-1">Gerencie suas preferências, conta e segurança.</p>
+        <h1 className="text-3xl font-black text-gray-900 tracking-tight">Definições</h1>
+        <p className="text-gray-500 mt-1">Gerencie suas preferências, conta e segurança local.</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
@@ -361,10 +854,10 @@ export default function Settings() {
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id as SettingsTab)}
                 className={cn(
-                  "w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200",
+                  "w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all duration-200",
                   isActive
                     ? "bg-gray-900 text-white shadow-md"
-                    : "bg-white text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                    : "bg-white text-gray-650 hover:bg-gray-50 hover:text-gray-900"
                 )}
               >
                 <Icon className={cn("w-5 h-5", isActive ? "text-white" : "text-gray-500")} />
@@ -377,7 +870,7 @@ export default function Settings() {
         {/* Content Area */}
         <div className="lg:col-span-9 space-y-6">
 
-          {/* GENERAL TAB */}
+          {/* -------------------- TAB 1: GENERAL -------------------- */}
           {activeTab === 'general' && (
             <>
               {/* Profile Section */}
@@ -466,6 +959,54 @@ export default function Settings() {
                 </div>
               </div>
 
+              {/* Default Account Selector */}
+              <div className={sectionClass}>
+                <h2 className="text-lg font-semibold text-gray-900 mb-6 flex items-center">
+                  <div className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center mr-3 border border-gray-100/50">
+                    <Sliders className="w-4 h-4 text-gray-600" />
+                  </div>
+                  Configurações Operacionais
+                </h2>
+
+                <div className="flex items-center justify-between pb-6 border-b border-gray-100/50">
+                  <div>
+                    <p className="font-semibold text-gray-950">Conta Padrão</p>
+                    <p className="text-xs text-gray-500 mt-0.5">Qual conta vem selecionada por defeito ao abrir "Nova Transação"</p>
+                  </div>
+                  <select
+                    value={defaultAccountId}
+                    onChange={(e) => handleDefaultAccountChange(e.target.value)}
+                    className="px-4 py-2 bg-gray-50 border border-gray-100/50 rounded-xl text-xs font-semibold text-gray-800 outline-none focus:ring-2 focus:ring-gray-200"
+                  >
+                    <option value="">Selecione...</option>
+                    {accounts.map(acc => (
+                      <option key={acc.id} value={acc.id}>{acc.name} ({acc.currency})</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="flex items-center justify-between pt-6">
+                  <div>
+                    <p className="font-semibold text-gray-955 flex items-center gap-1.5">
+                      Modo de Desempenho <Cpu className="w-4 h-4 text-indigo-500" />
+                    </p>
+                    <p className="text-xs text-gray-500 mt-0.5">Desativa animações e transições CSS para poupar bateria e processamento local</p>
+                  </div>
+                  <button
+                    onClick={() => handleTogglePerformanceMode(!performanceMode)}
+                    className={cn(
+                      "w-12 h-6 rounded-full relative transition-colors border",
+                      performanceMode ? "bg-gray-900 border-gray-800" : "bg-gray-200 border-gray-300"
+                    )}
+                  >
+                    <div className={cn(
+                      "w-4 h-4 bg-white rounded-full absolute top-0.5 shadow transition-transform duration-250",
+                      performanceMode ? "left-7" : "left-1"
+                    )}></div>
+                  </button>
+                </div>
+              </div>
+
               {/* Preferences */}
               <div className={sectionClass}>
                 <h2 className="text-lg font-semibold text-gray-900 mb-8 flex items-center">
@@ -538,6 +1079,106 @@ export default function Settings() {
                 </div>
               </div>
 
+              {/* Exchange Rates Management */}
+              <div className={sectionClass}>
+                <h2 className="text-lg font-semibold text-gray-900 mb-6 flex items-center">
+                  <div className="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center mr-3 border border-indigo-100/50">
+                    <Globe className="w-4 h-4 text-indigo-600" />
+                  </div>
+                  Taxas de Câmbio de Referência (AOA)
+                </h2>
+                
+                <p className="text-xs text-gray-500 mb-6">Configure o valor manual em Kwanzas (AOA) correspondente a 1 unidade das moedas estrangeiras utilizadas no app.</p>
+
+                <div className="overflow-hidden border border-gray-150 rounded-2xl bg-gray-50/50">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="bg-gray-100 text-xs font-semibold text-gray-600 border-b border-gray-150">
+                        <th className="p-4">Câmbio</th>
+                        <th className="p-4">Taxa Equivalente (AOA)</th>
+                        <th className="p-4 text-right">Ação</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-150 text-sm">
+                      {exchangeRates.filter(r => r.from !== 'AOA').map(rate => {
+                        const rateKey = `${rate.from}-${rate.to}`;
+                        const isEditing = editingRate === rateKey;
+                        return (
+                          <tr key={rateKey} className="hover:bg-gray-50 transition-colors">
+                            <td className="p-4 font-semibold text-gray-800">1 {rate.from} ({CURRENCIES[rate.from as keyof typeof CURRENCIES]?.name || rate.from})</td>
+                            <td className="p-4">
+                              {isEditing ? (
+                                <input
+                                  type="number"
+                                  step="0.01"
+                                  value={rateValues[rateKey] || ''}
+                                  onChange={(e) => setRateValues({ ...rateValues, [rateKey]: Number(e.target.value) })}
+                                  className="w-32 px-3 py-1 bg-white border border-gray-300 rounded-lg text-sm text-gray-900 font-medium focus:ring-2 focus:ring-indigo-100 focus:outline-none"
+                                />
+                              ) : (
+                                <span className="font-mono text-gray-700 font-bold">{rate.rate.toFixed(2)} Kz</span>
+                              )}
+                            </td>
+                            <td className="p-4 text-right">
+                              {isEditing ? (
+                                <div className="flex gap-2 justify-end">
+                                  <button
+                                    onClick={() => handleSaveRate(rate.from, rate.to)}
+                                    className="p-1.5 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 rounded-lg border border-emerald-100"
+                                    title="Salvar"
+                                  >
+                                    <Check className="w-4 h-4" />
+                                  </button>
+                                  <button
+                                    onClick={() => {
+                                      setEditingRate(null);
+                                      setRateValues({ ...rateValues, [rateKey]: rate.rate });
+                                    }}
+                                    className="p-1.5 bg-gray-100 text-gray-600 hover:bg-gray-250 rounded-lg"
+                                    title="Cancelar"
+                                  >
+                                    <X className="w-4 h-4" />
+                                  </button>
+                                </div>
+                              ) : (
+                                <button
+                                  onClick={() => setEditingRate(rateKey)}
+                                  className="p-1.5 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors inline-flex items-center gap-1.5"
+                                >
+                                  <Edit2 className="w-3.5 h-3.5" />
+                                  <span className="text-xs font-semibold">Editar</span>
+                                </button>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* Keyboard Shortcuts List */}
+              <div className={sectionClass}>
+                <h2 className="text-lg font-semibold text-gray-900 mb-6 flex items-center">
+                  <div className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center mr-3 border border-gray-100/50">
+                    <Keyboard className="w-4 h-4 text-gray-600" />
+                  </div>
+                  Atalhos de Teclado do Sistema
+                </h2>
+                
+                <div className="space-y-3">
+                  {keyboardShortcuts.map((sc, idx) => (
+                    <div key={idx} className="flex justify-between items-center p-3 bg-gray-50 rounded-xl border border-gray-100 text-xs">
+                      <span className="font-semibold text-gray-600">{sc.action}</span>
+                      <kbd className="px-2.5 py-1 bg-white border border-gray-200 rounded-lg text-gray-700 font-mono font-bold shadow-sm">
+                        {sc.key}
+                      </kbd>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
               {/* Cofre Automático */}
               <div className={sectionClass}>
                 <h2 className="text-lg font-semibold text-gray-900 mb-8 flex items-center">
@@ -548,6 +1189,18 @@ export default function Settings() {
                 </h2>
 
                 <div className="space-y-6">
+                  <div className="p-6 bg-gradient-to-br from-emerald-950 to-emerald-900 text-white rounded-3xl flex items-center justify-between shadow-lg shadow-emerald-900/10">
+                    <div>
+                      <span className="text-xs font-bold text-emerald-300 uppercase tracking-widest">Total Poupado no Cofre</span>
+                      <h4 className="text-2xl font-black mt-1 tracking-tight">
+                        {new Intl.NumberFormat(preferences.language, { style: 'currency', currency: 'AOA' }).format(cofreTotalSaved)}
+                      </h4>
+                    </div>
+                    <div className="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center border border-white/10">
+                      <Save className="w-6 h-6 text-emerald-400" />
+                    </div>
+                  </div>
+
                   <div className="flex items-center justify-between pb-6 border-b border-gray-100/50">
                     <div>
                       <p className="font-medium text-gray-900">Ativar Arredondamento</p>
@@ -595,136 +1248,421 @@ export default function Settings() {
             </>
           )}
 
-          {/* CATEGORIES TAB */}
+          {/* -------------------- TAB 2: CATEGORIES -------------------- */}
           {activeTab === 'categories' && (
-            <div className={sectionClass}>
-              <div className="flex items-center justify-between mb-8">
-                <h2 className="text-lg font-semibold text-gray-900 flex items-center">
-                  <div className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center mr-3 border border-gray-100/50">
-                    <List className="w-4 h-4 text-gray-600" />
+            <>
+              {/* Categories Subcategories CRUD */}
+              <div className={sectionClass}>
+                <div className="flex items-center justify-between mb-8">
+                  <h2 className="text-lg font-semibold text-gray-900 flex items-center">
+                    <div className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center mr-3 border border-gray-100/50">
+                      <List className="w-4 h-4 text-gray-600" />
+                    </div>
+                    Gerenciar Categorias & Subcategorias
+                  </h2>
+                  <div className="flex bg-gray-150 p-1 rounded-xl">
+                    <button
+                      onClick={() => setNewCatType('expense')}
+                      className={cn(
+                        "px-4 py-1.5 rounded-lg text-xs font-bold transition-all",
+                        newCatType === 'expense' ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-900"
+                      )}
+                    >
+                      Despesas
+                    </button>
+                    <button
+                      onClick={() => setNewCatType('income')}
+                      className={cn(
+                        "px-4 py-1.5 rounded-lg text-xs font-bold transition-all",
+                        newCatType === 'income' ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-900"
+                      )}
+                    >
+                      Receitas
+                    </button>
                   </div>
-                  Gerenciar Categorias
-                </h2>
-                <div className="flex bg-gray-100 p-1 rounded-xl">
-                  <button
-                    onClick={() => setCategoryType('expense')}
-                    className={cn(
-                      "px-4 py-1.5 rounded-lg text-sm font-medium transition-all",
-                      categoryType === 'expense' ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-900"
-                    )}
-                  >
-                    Despesas
-                  </button>
-                  <button
-                    onClick={() => setCategoryType('income')}
-                    className={cn(
-                      "px-4 py-1.5 rounded-lg text-sm font-medium transition-all",
-                      categoryType === 'income' ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-900"
-                    )}
-                  >
-                    Receitas
-                  </button>
+                </div>
+
+                {/* CRUD additions */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                  {/* Parent Category Add */}
+                  <div className="p-5 bg-gray-50 border border-gray-100 rounded-2xl">
+                    <h4 className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">Nova Categoria Principal</h4>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={newCatName}
+                        onChange={(e) => setNewCatName(e.target.value)}
+                        placeholder="Nome (Ex: Lazer)"
+                        className="flex-1 px-4 py-2 bg-white border border-gray-200 rounded-xl text-xs focus:outline-none"
+                      />
+                      <button
+                        onClick={handleAddRichCategory}
+                        className="px-4 py-2 bg-gray-900 text-white rounded-xl text-xs font-bold"
+                      >
+                        Criar
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Subcategory Add */}
+                  <div className="p-5 bg-gray-50 border border-gray-100 rounded-2xl">
+                    <h4 className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">Nova Subcategoria</h4>
+                    <div className="space-y-2">
+                      <select
+                        value={newSubParentId}
+                        onChange={(e) => setNewSubParentId(e.target.value)}
+                        className="w-full px-3 py-2 bg-white border border-gray-200 rounded-xl text-xs font-medium focus:outline-none"
+                      >
+                        <option value="">Categoria Pai...</option>
+                        {parentCategories.map(pc => (
+                          <option key={pc.id} value={pc.id}>{pc.name}</option>
+                        ))}
+                      </select>
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          value={newSubName}
+                          onChange={(e) => setNewSubName(e.target.value)}
+                          placeholder="Nome (Ex: Cinema)"
+                          className="flex-1 px-4 py-2 bg-white border border-gray-200 rounded-xl text-xs focus:outline-none"
+                        />
+                        <button
+                          onClick={handleAddSubcategory}
+                          className="px-4 py-2 bg-gray-950 text-white rounded-xl text-xs font-bold"
+                        >
+                          Criar Sub
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* List and Limits */}
+                <div className="space-y-4">
+                  <h4 className="text-xs font-bold text-gray-400 uppercase tracking-widest">Lista de Categorias e Limites de Teto</h4>
+                  {parentCategories.map(pc => {
+                    const subs = dbCategories.filter(c => c.parentId === pc.id);
+                    const isEditingLimit = editingLimitCatId === pc.id;
+
+                    return (
+                      <div key={pc.id} className="p-4 bg-gray-50 border border-gray-100 rounded-2xl space-y-3">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <span className="font-bold text-gray-900 text-sm">{pc.name}</span>
+                            {pc.limitAmount && (
+                              <span className="text-[10px] bg-red-50 text-red-600 px-2 py-0.5 rounded border border-red-100 font-bold ml-2">
+                                Teto: {pc.limitAmount.toLocaleString()} Kz
+                              </span>
+                            )}
+                          </div>
+                          
+                          <div className="flex items-center gap-2">
+                            {isEditingLimit ? (
+                              <div className="flex gap-1">
+                                <input
+                                  type="number"
+                                  value={tempLimitVal}
+                                  onChange={(e) => setTempLimitVal(e.target.value)}
+                                  placeholder="Kz limite"
+                                  className="w-24 px-2 py-1 bg-white border border-gray-200 rounded text-xs"
+                                />
+                                <button
+                                  onClick={() => handleSaveCategoryLimit(pc.id)}
+                                  className="p-1 bg-emerald-50 text-emerald-600 rounded border border-emerald-100 text-xs"
+                                >
+                                  OK
+                                </button>
+                                <button
+                                  onClick={() => { setEditingLimitCatId(null); setTempLimitVal(''); }}
+                                  className="p-1 bg-gray-150 text-gray-600 rounded text-xs"
+                                >
+                                  X
+                                </button>
+                              </div>
+                            ) : (
+                              <button
+                                onClick={() => { setEditingLimitCatId(pc.id); setTempLimitVal(pc.limitAmount ? pc.limitAmount.toString() : ''); }}
+                                className="px-3 py-1 bg-white border border-gray-200 rounded-lg text-[10px] font-bold text-gray-500 hover:text-indigo-600 transition-colors"
+                              >
+                                {pc.limitAmount ? 'Alterar Teto' : 'Definir Teto'}
+                              </button>
+                            )}
+
+                            <button
+                              onClick={async () => {
+                                if (confirm(`Excluir categoria "${pc.name}"?`)) {
+                                  await deleteDbCategory(pc.id);
+                                  showToast('Categoria principal excluída.');
+                                }
+                              }}
+                              className="p-1 text-gray-400 hover:text-red-500"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Rendering subcategories */}
+                        {subs.length > 0 && (
+                          <div className="pl-6 border-l-2 border-indigo-100 space-y-1.5">
+                            {subs.map(sub => (
+                              <div key={sub.id} className="flex justify-between items-center text-xs text-gray-650 p-1 hover:bg-gray-100 rounded-lg">
+                                <span>&bull; {sub.name}</span>
+                                <button
+                                  onClick={async () => {
+                                    if (confirm(`Excluir subcategoria "${sub.name}"?`)) {
+                                      await deleteDbCategory(sub.id);
+                                      showToast('Subcategoria excluída.');
+                                    }
+                                  }}
+                                  className="p-0.5 text-gray-400 hover:text-red-500"
+                                >
+                                  <X className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
 
-              <div className="flex gap-3 mb-6">
-                <input
-                  type="text"
-                  value={newCategory}
-                  onChange={(e) => setNewCategory(e.target.value)}
-                  placeholder={`Nova categoria de ${categoryType === 'income' ? 'receita' : 'despesa'}...`}
-                  className="flex-1 px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-gray-200"
-                  onKeyDown={(e) => e.key === 'Enter' && handleAddCategory()}
-                />
-                <button
-                  onClick={handleAddCategory}
-                  className="px-4 py-2.5 bg-gray-900 text-white rounded-xl hover:bg-gray-800 transition-colors flex items-center gap-2"
-                >
-                  <Plus className="w-4 h-4" />
-                  Adicionar
-                </button>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {categories[categoryType].map((cat) => (
-                  <div key={cat} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl border border-gray-100 group hover:border-gray-200 transition-colors">
-                    <span className="text-gray-700 font-medium">{cat}</span>
-                    <button
-                      onClick={() => deleteCategory(categoryType, cat)}
-                      className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
-                      title="Remover categoria"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+              {/* Auto categorization rules */}
+              <div className={sectionClass}>
+                <h2 className="text-lg font-semibold text-gray-900 mb-6 flex items-center">
+                  <div className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center mr-3 border border-gray-100/50">
+                    <Sliders className="w-4 h-4 text-gray-600" />
                   </div>
-                ))}
+                  Regras de Auto-Categorização de Despesas
+                </h2>
+
+                <p className="text-xs text-gray-500 leading-relaxed mb-6">
+                  Se você criar uma transação com uma palavra-chave registrada (ex: "Pequeno Almoço" ou "Gasolina"), o sistema irá classificá-la e categorizá-la automaticamente com a categoria desejada.
+                </p>
+
+                <form onSubmit={handleAddAutoRule} className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6 items-end">
+                  <div>
+                    <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Palavra-chave</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="Ex: Gasolina"
+                      value={newRuleKeyword}
+                      onChange={(e) => setNewRuleKeyword(e.target.value)}
+                      className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:outline-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Categoria Alvo</label>
+                    <select
+                      value={newRuleCat}
+                      onChange={(e) => setNewRuleCat(e.target.value)}
+                      required
+                      className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:outline-none font-medium text-gray-700"
+                    >
+                      <option value="">Selecione...</option>
+                      {categories.expense.map(c => (
+                        <option key={c} value={c}>{c}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <button
+                    type="submit"
+                    className="py-2.5 bg-gray-900 hover:bg-gray-800 text-white text-xs font-bold rounded-xl"
+                  >
+                    Adicionar Regra
+                  </button>
+                </form>
+
+                {/* Rules List */}
+                <div className="space-y-2">
+                  {autoRules.map(rule => (
+                    <div key={rule.id} className="flex justify-between items-center p-3.5 bg-gray-50 border border-gray-100 rounded-xl text-xs">
+                      <div>
+                        Se a descrição contiver <strong className="text-gray-800">"{rule.keyword}"</strong> &rarr; Categoria: <strong className="text-indigo-600">"{rule.categoryName}"</strong>
+                      </div>
+                      <button
+                        onClick={async () => {
+                          await deleteAutoRule(rule.id);
+                          showToast('Regra excluída.');
+                        }}
+                        className="p-1 text-gray-400 hover:text-red-500"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ))}
+                  {autoRules.length === 0 && (
+                    <p className="text-xs text-gray-400 text-center py-4">Nenhuma regra de auto-categorização registrada.</p>
+                  )}
+                </div>
               </div>
-            </div>
+            </>
           )}
 
-          {/* NOTIFICATIONS TAB */}
+          {/* -------------------- TAB 3: NOTIFICATIONS -------------------- */}
           {activeTab === 'notifications' && (
             <div className={sectionClass}>
               <h2 className="text-lg font-semibold text-gray-900 mb-8 flex items-center">
                 <div className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center mr-3 border border-gray-100/50">
                   <Bell className="w-4 h-4 text-gray-600" />
                 </div>
-                Preferências de Notificação
+                Configurações de Alertas e Notificações Nativas
               </h2>
 
-              <div className="space-y-6">
-                {[
-                  { key: 'balanceAlert', label: 'Alertas de Saldo', desc: 'Receber aviso quando saldo estiver baixo' },
-                  { key: 'weeklyReport', label: 'Relatório Semanal', desc: 'Receber resumo financeiro toda segunda-feira' },
-                  { key: 'billReminders', label: 'Lembrete de Contas', desc: 'Avisar 3 dias antes do vencimento' },
-                  { key: 'goalAchievements', label: 'Conquista de Metas', desc: 'Celebrar quando atingir uma meta' },
-                  { key: 'pushNotifications', label: 'Notificações Push', desc: 'Receber notificações no dispositivo' },
-                  { key: 'emailNotifications', label: 'Notificações por Email', desc: 'Receber atualizações importantes por email' },
-                ].map((item) => (
-                  <div key={item.key} className="flex items-center justify-between pb-6 border-b border-gray-100/50 last:border-0 last:pb-0">
-                    <div>
-                      <p className="font-medium text-gray-900">{item.label}</p>
-                      <p className="text-sm text-gray-500 mt-1">{item.desc}</p>
-                    </div>
-                    <button
-                      onClick={() => handleNotificationToggle(item.key as keyof typeof notifications)}
-                      className={`w-12 h-6 rounded-full relative transition-colors ${notifications[item.key as keyof typeof notifications] ? 'bg-gray-900' : 'bg-gray-200'}`}
-                    >
-                      <div className={`w-4 h-4 bg-white rounded-full absolute top-1 shadow-sm transition-transform ${notifications[item.key as keyof typeof notifications] ? 'left-7' : 'left-1'}`}></div>
-                    </button>
+              <div className="space-y-8">
+                {/* Threshold slider */}
+                <div className="p-5 bg-gray-50 border border-gray-100 rounded-2xl space-y-3">
+                  <div className="flex justify-between items-center text-xs font-semibold text-gray-700">
+                    <span>Limiar de Alerta de Orçamento</span>
+                    <span className="font-mono bg-white px-2 py-0.5 border border-gray-200 rounded text-indigo-600 font-bold">{alertThreshold}%</span>
                   </div>
-                ))}
+                  <input
+                    type="range"
+                    min="50"
+                    max="100"
+                    step="5"
+                    value={alertThreshold}
+                    onChange={(e) => handleSaveThreshold(Number(e.target.value))}
+                    className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
+                  />
+                  <p className="text-[10px] text-gray-450 leading-relaxed">
+                    Você receberá um pop-up de notificação do Windows quando um orçamento ou categoria de custo operacional atingir este limiar configurado.
+                  </p>
+                </div>
+
+                {/* Due Reminders Slider */}
+                <div className="p-5 bg-gray-50 border border-gray-100 rounded-2xl space-y-3">
+                  <div className="flex justify-between items-center text-xs font-semibold text-gray-700">
+                    <span>Aviso Antecipado de Vencimentos</span>
+                    <span className="font-mono bg-white px-2 py-0.5 border border-gray-200 rounded text-indigo-600 font-bold">{dueReminderDays} dias</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="1"
+                    max="7"
+                    value={dueReminderDays}
+                    onChange={(e) => handleSaveDueReminder(Number(e.target.value))}
+                    className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
+                  />
+                  <p className="text-[10px] text-gray-450 leading-relaxed">
+                    Notificações nativas serão disparadas com essa antecedência para faturas de assinaturas, prazos de tarefas críticas ou empréstimos ativos.
+                  </p>
+                </div>
+
+                <div className="flex items-center justify-between pb-6 border-b border-gray-100/50">
+                  <div>
+                    <p className="font-medium text-gray-900">Resumo Semanal Silencioso</p>
+                    <p className="text-sm text-gray-500 mt-1">Disparar pop-up agregado nativo toda sexta-feira à tarde com o balanço geral</p>
+                  </div>
+                  <button
+                    onClick={() => handleSaveWeeklySilent(!weeklySilentSummary)}
+                    className={`w-12 h-6 rounded-full relative transition-colors ${weeklySilentSummary ? 'bg-gray-900' : 'bg-gray-200'}`}
+                  >
+                    <div className={`w-4 h-4 bg-white rounded-full absolute top-1 shadow-sm transition-transform ${weeklySilentSummary ? 'left-7' : 'left-1'}`}></div>
+                  </button>
+                </div>
+
+                <div className="space-y-6 pt-4">
+                  <h4 className="text-xs font-bold text-gray-400 uppercase tracking-widest">Outros Alertas do Sistema</h4>
+                  {[
+                    { key: 'balanceAlert', label: 'Alertas de Saldo Baixo', desc: 'Receber aviso quando saldo estiver abaixo do recomendado' },
+                    { key: 'goalAchievements', label: 'Celebrar Metas', desc: 'Alertar quando atingir uma poupança ou marco importante' },
+                    { key: 'pushNotifications', label: 'Notificações no Desktop', desc: 'Habilitar pop-ups via central Tauri nativa' }
+                  ].map((item) => (
+                    <div key={item.key} className="flex items-center justify-between pb-6 border-b border-gray-100/50 last:border-0 last:pb-0">
+                      <div>
+                        <p className="font-medium text-gray-900">{item.label}</p>
+                        <p className="text-sm text-gray-500 mt-1">{item.desc}</p>
+                      </div>
+                      <button
+                        onClick={() => handleNotificationToggle(item.key as keyof typeof notifications)}
+                        className={`w-12 h-6 rounded-full relative transition-colors ${notifications[item.key as keyof typeof notifications] ? 'bg-gray-900' : 'bg-gray-200'}`}
+                      >
+                        <div className={`w-4 h-4 bg-white rounded-full absolute top-1 shadow-sm transition-transform ${notifications[item.key as keyof typeof notifications] ? 'left-7' : 'left-1'}`}></div>
+                      </button>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           )}
 
-          {/* SECURITY TAB */}
+          {/* -------------------- TAB 4: SECURITY -------------------- */}
           {activeTab === 'security' && (
             <div className={sectionClass}>
               <h2 className="text-lg font-semibold text-gray-900 mb-8 flex items-center">
                 <div className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center mr-3 border border-gray-100/50">
                   <Shield className="w-4 h-4 text-gray-600" />
                 </div>
-                Segurança e Acesso
+                Segurança e Acesso Local
               </h2>
 
-              <div className="space-y-6">
+              <div className="space-y-8">
+                {/* Lock Auto Timeout Select */}
                 <div className="flex items-center justify-between pb-6 border-b border-gray-100/50">
                   <div>
-                    <p className="font-medium text-gray-900">Autenticação de Dois Fatores (2FA)</p>
-                    <p className="text-sm text-gray-500 mt-1">Adicionar camada extra de segurança via SMS ou App</p>
+                    <p className="font-semibold text-gray-900">Bloqueio Automático por Inatividade</p>
+                    <p className="text-xs text-gray-500 mt-0.5">Trancar aplicação caso fique ociosa no computador</p>
+                  </div>
+                  <select
+                    value={autoLockTimeout}
+                    onChange={(e) => handleSaveAutoLock(e.target.value)}
+                    className="px-4 py-2.5 bg-gray-50 border border-gray-100/50 rounded-xl text-xs font-semibold text-gray-950 focus:outline-none"
+                  >
+                    <option value="1">1 Minuto</option>
+                    <option value="2">2 Minutos</option>
+                    <option value="5">5 Minutos</option>
+                    <option value="10">10 Minutos</option>
+                    <option value="never">Nunca Bloquear</option>
+                  </select>
+                </div>
+
+                {/* Olhar Indiscreto customization */}
+                <div className="flex items-center justify-between pb-6 border-b border-gray-100/50">
+                  <div>
+                    <p className="font-semibold text-gray-900">Sensibilidade do Modo Olhar Indiscreto</p>
+                    <p className="text-xs text-gray-500 mt-0.5">O que desfocar ao acionar a proteção contra bisbilhoteiros</p>
+                  </div>
+                  <select
+                    value={olharIndiscretoMode}
+                    onChange={(e) => handleSavePrivacyLevel(e.target.value)}
+                    className="px-4 py-2.5 bg-gray-50 border border-gray-100/50 rounded-xl text-xs font-semibold text-gray-950 focus:outline-none"
+                  >
+                    <option value="balances">Borrar Apenas Saldos de Caixa</option>
+                    <option value="all">Borrar Saldos + Gráficos de Fluxo</option>
+                  </select>
+                </div>
+
+                {/* Simulated Windows Hello Biometrics */}
+                <div className="flex items-center justify-between pb-6 border-b border-gray-100/50">
+                  <div>
+                    <p className="font-semibold text-gray-900 flex items-center gap-1.5">
+                      Desbloqueio Biométrico (Windows Hello) <FolderLock className="w-4.5 h-4.5 text-indigo-600" />
+                    </p>
+                    <p className="text-xs text-gray-500 mt-0.5">Permitir impressão digital ou reconhecimento facial do Windows Hello</p>
                   </div>
                   <button
-                    onClick={() => handleSecurityToggle('twoFactor')}
-                    className={`w-12 h-6 rounded-full relative transition-colors ${security.twoFactor ? 'bg-gray-900' : 'bg-gray-200'}`}
+                    onClick={() => handleToggleWindowsHello(!windowsHelloBiometrics)}
+                    className={cn(
+                      "w-12 h-6 rounded-full relative transition-colors border",
+                      windowsHelloBiometrics ? "bg-gray-900 border-gray-800" : "bg-gray-200 border-gray-300"
+                    )}
                   >
-                    <div className={`w-4 h-4 bg-white rounded-full absolute top-1 shadow-sm transition-transform ${security.twoFactor ? 'left-7' : 'left-1'}`}></div>
+                    <div className={cn(
+                      "w-4 h-4 bg-white rounded-full absolute top-0.5 shadow transition-transform",
+                      windowsHelloBiometrics ? "left-7" : "left-1"
+                    )}></div>
                   </button>
                 </div>
 
                 <div className="flex items-center justify-between pb-6 border-b border-gray-100/50">
                   <div>
-                    <p className="font-medium text-gray-900">Bloqueio do App</p>
+                    <p className="font-medium text-gray-900">Exigir Senha ao Inicializar</p>
                     <p className="text-sm text-gray-500 mt-1">Exigir senha ou biometria ao abrir o app</p>
                   </div>
                   <button
@@ -830,7 +1768,7 @@ export default function Settings() {
                       <select
                         value={recQuestion}
                         onChange={(e) => setRecQuestion(e.target.value)}
-                        className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-indigo-500 transition-colors text-gray-900"
+                        className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-indigo-500 transition-colors text-gray-900"
                       >
                         <option value="Qual é o nome da sua primeira escola?">Qual é o nome da sua primeira escola?</option>
                         <option value="Qual era o nome do seu primeiro animal de estimação?">Qual era o nome do seu primeiro animal de estimação?</option>
@@ -967,33 +1905,43 @@ export default function Settings() {
                   )}
                 </div>
 
+                {/* Active Sessions History */}
                 <div className="bg-gray-50 rounded-2xl p-6 border border-gray-100">
-                  <h3 className="font-medium text-gray-900 mb-4">Sessões Ativas</h3>
+                  <h3 className="font-semibold text-gray-905 text-xs uppercase tracking-widest mb-4">Histórico de Acesso e Sessões Ativas</h3>
                   <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center border border-gray-200">
-                          <Smartphone className="w-5 h-5 text-gray-500" />
+                    {activeSessions.length === 0 ? (
+                      <p className="text-xs text-gray-500">Nenhum registro de acesso recente encontrado.</p>
+                    ) : (
+                      activeSessions.map((session) => (
+                        <div key={session.id} className="flex items-center justify-between border-b border-gray-100 pb-3 last:border-0 last:pb-0">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center border border-gray-200">
+                              {session.device_name.includes('Windows') || session.device_name.includes('macOS') || session.device_name.includes('Linux') ? (
+                                <Globe className="w-5 h-5 text-gray-500" />
+                              ) : (
+                                <Smartphone className="w-5 h-5 text-gray-500" />
+                              )}
+                            </div>
+                            <div>
+                              <p className="text-sm font-semibold text-gray-900">{session.device_name}</p>
+                              <p className="text-[10px] text-gray-500">
+                                Tipo: **{session.login_type}** • Visto em: {new Date(session.last_active).toLocaleString()}
+                              </p>
+                            </div>
+                          </div>
+                          {session.is_current === 1 ? (
+                            <span className="text-xs font-semibold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-full border border-emerald-100">Atual</span>
+                          ) : (
+                            <button
+                              onClick={() => handleRevokeSession(session.id)}
+                              className="text-xs font-semibold text-red-600 hover:text-red-700 transition-colors"
+                            >
+                              Revogar
+                            </button>
+                          )}
                         </div>
-                        <div>
-                          <p className="text-sm font-medium text-gray-900">iPhone 13 Pro</p>
-                          <p className="text-xs text-gray-500">Luanda, Angola • Agora mesmo</p>
-                        </div>
-                      </div>
-                      <span className="text-xs font-medium text-emerald-600 bg-emerald-50 px-2 py-1 rounded-full border border-emerald-100">Atual</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center border border-gray-200">
-                          <Globe className="w-5 h-5 text-gray-500" />
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium text-gray-900">Chrome no Windows</p>
-                          <p className="text-xs text-gray-500">Luanda, Angola • Há 2 horas</p>
-                        </div>
-                      </div>
-                      <button className="text-xs font-medium text-red-600 hover:text-red-700">Revogar</button>
-                    </div>
+                      ))
+                    )}
                   </div>
                 </div>
 
@@ -1014,67 +1962,113 @@ export default function Settings() {
             </div>
           )}
 
-          {/* DATA TAB */}
+          {/* -------------------- TAB 5: DATA -------------------- */}
           {activeTab === 'data' && (
             <div className={sectionClass}>
               <h2 className="text-lg font-semibold text-gray-900 mb-8 flex items-center">
                 <div className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center mr-3 border border-gray-100/50">
                   <Save className="w-4 h-4 text-gray-600" />
                 </div>
-                Gestão de Dados
+                Gestão de Dados & Otimização do SQLite
               </h2>
 
               <div className="space-y-6">
+                {/* Auto backup scheduler */}
                 <div className="flex items-center justify-between pb-6 border-b border-gray-100/50">
                   <div>
-                    <p className="font-medium text-gray-900">Exportar Dados</p>
-                    <p className="text-sm text-gray-500 mt-1">Baixar cópia completa dos seus dados (JSON)</p>
+                    <p className="font-semibold text-gray-905">Automação de Backups Locais</p>
+                    <p className="text-xs text-gray-500 mt-0.5">Programar cópias de segurança automáticas e silenciosas na pasta Documentos</p>
+                  </div>
+                  <select
+                    value={autoBackupInterval}
+                    onChange={(e) => handleSaveAutoBackup(e.target.value)}
+                    className="px-4 py-2.5 bg-gray-50 border border-gray-100/50 rounded-xl text-xs font-semibold text-gray-950 focus:outline-none"
+                  >
+                    <option value="1">A cada 24 Horas</option>
+                    <option value="7">A cada 7 Dias (Recomendado)</option>
+                    <option value="30">A cada 30 Dias</option>
+                    <option value="disabled">Desativar Backup Automático</option>
+                  </select>
+                </div>
+
+                {/* SQLite Vacuum Button */}
+                <div className="flex items-center justify-between pb-6 border-b border-gray-100/50">
+                  <div>
+                    <p className="font-semibold text-gray-905">Otimizar Base de Dados (Vacuum)</p>
+                    <p className="text-xs text-gray-500 mt-0.5">Executar limpeza interna do SQLite limpando espaço livre e acelerando pesquisas</p>
                   </div>
                   <button
-                    onClick={handleExportData}
+                    onClick={handleSQLiteVacuum}
+                    className="px-4 py-2.5 bg-indigo-55 text-indigo-700 rounded-xl text-xs font-bold hover:bg-indigo-100/50 transition-colors border border-indigo-100 flex items-center gap-1.5"
+                  >
+                    Otimizar Agora (VACUUM)
+                  </button>
+                </div>
+
+                {/* Export CSV Data */}
+                <div className="flex items-center justify-between pb-6 border-b border-gray-100/50">
+                  <div>
+                    <p className="font-semibold text-gray-905">Exportar Dados Brutos (CSV / Excel)</p>
+                    <p className="text-xs text-gray-500 mt-0.5">Baixar todas as transações financeiras em formato .csv para análise avançada no Excel</p>
+                  </div>
+                  <button
+                    onClick={handleExportCSV}
+                    className="px-4 py-2.5 bg-emerald-50 text-emerald-700 rounded-xl text-xs font-bold hover:bg-emerald-100/50 transition-colors border border-emerald-100 flex items-center gap-1.5"
+                  >
+                    <FileSpreadsheet className="w-4 h-4" />
+                    Exportar CSV
+                  </button>
+                </div>
+
+                <div className="flex items-center justify-between pb-6 border-b border-gray-100/50">
+                  <div>
+                    <p className="font-medium text-gray-900">Exportar Backup Completo (.JSON)</p>
+                    <p className="text-sm text-gray-500 mt-1">Baixar cópia completa em JSON de todas as tabelas locais</p>
+                  </div>
+                  <button
+                    onClick={handleExportDataReal}
                     className="px-4 py-2 bg-gray-50 text-gray-700 rounded-xl text-sm font-medium hover:bg-gray-100 transition-colors border border-gray-100/50 flex items-center gap-2"
                   >
                     <Download className="w-4 h-4" />
-                    Exportar
+                    Exportar Backup
                   </button>
                 </div>
 
                 <div className="flex items-center justify-between pb-6 border-b border-gray-100/50">
                   <div>
-                    <p className="font-medium text-gray-900">Importar Dados</p>
-                    <p className="text-sm text-gray-500 mt-1">Restaurar backup de arquivo JSON</p>
+                    <p className="font-medium text-gray-900">Importar Banco de Dados</p>
+                    <p className="text-sm text-gray-500 mt-1">Restaurar base de dados local a partir de backup JSON</p>
                   </div>
                   <button
-                    onClick={() => document.getElementById('import-file')?.click()}
+                    onClick={() => document.getElementById('import-file-real')?.click()}
                     className="px-4 py-2 bg-gray-50 text-gray-700 rounded-xl text-sm font-medium hover:bg-gray-100 transition-colors border border-gray-100/50 flex items-center gap-2"
                   >
                     <Download className="w-4 h-4 rotate-180" />
-                    Importar
+                    Importar Backup
                   </button>
-                  <input type="file" id="import-file" className="hidden" accept=".json" onChange={() => alert('Importação simulada com sucesso!')} />
-                </div>
-
-                <div className="bg-blue-50 border border-blue-100 rounded-2xl p-6">
-                  <h3 className="font-medium text-blue-900 mb-2 flex items-center gap-2">
-                    <Check className="w-4 h-4" /> Backup Automático
-                  </h3>
-                  <p className="text-sm text-blue-700">
-                    Seus dados são salvos automaticamente no armazenamento local do navegador.
-                    Recomendamos fazer exportações regulares para garantir a segurança das suas informações.
-                  </p>
+                  <input
+                    type="file"
+                    id="import-file-real"
+                    className="hidden"
+                    accept=".json"
+                    onChange={handleImportFile}
+                  />
                 </div>
 
                 <div className="flex items-center justify-between pt-4">
                   <div>
-                    <p className="font-medium text-red-600">Apagar Dados</p>
-                    <p className="text-sm text-gray-500 mt-1">Remover todos os dados locais permanentemente</p>
+                    <p className="font-medium text-red-600">Redefinir Base de Dados (Destruição Total)</p>
+                    <p className="text-sm text-gray-500 mt-1">Apagar todos os dados financeiros locais sob confirmação de chave</p>
                   </div>
                   <button
-                    onClick={handleClearData}
-                    className="px-4 py-2 bg-red-50 text-red-600 rounded-xl text-sm font-medium hover:bg-red-100 transition-colors flex items-center gap-2"
+                    onClick={() => {
+                      setDeleteConfirmText('');
+                      setShowDeleteModal(true);
+                    }}
+                    className="px-4 py-2 bg-red-50 text-red-600 rounded-xl text-sm font-medium hover:bg-red-100 transition-colors flex items-center gap-2 border border-red-100"
                   >
                     <Trash2 className="w-4 h-4" />
-                    Apagar Tudo
+                    Reset de Fábrica
                   </button>
                 </div>
               </div>

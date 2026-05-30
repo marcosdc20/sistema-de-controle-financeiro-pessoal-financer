@@ -18,6 +18,7 @@ import AIAssistant from '@/pages/AIAssistant';
 import Education from '@/pages/Education';
 import Reports from '@/pages/Reports';
 import Settings from '@/pages/Settings';
+import ProjectsTasks from '@/pages/ProjectsTasks';
 import Login from '@/pages/Login';
 import { useAuth } from '@/context/AuthContext';
 import AppSecurityGuard from '@/components/AppSecurityGuard';
@@ -56,6 +57,7 @@ export default function App() {
       <Route path="/goals" element={isAuthenticated ? <ProtectedLayout><Goals /></ProtectedLayout> : <Navigate to="/login" replace />} />
       <Route path="/investments" element={isAuthenticated ? <ProtectedLayout><Investments /></ProtectedLayout> : <Navigate to="/login" replace />} />
       <Route path="/loans" element={isAuthenticated ? <ProtectedLayout><Loans /></ProtectedLayout> : <Navigate to="/login" replace />} />
+      <Route path="/projects" element={isAuthenticated ? <ProtectedLayout><ProjectsTasks /></ProtectedLayout> : <Navigate to="/login" replace />} />
       <Route path="/ai-assistant" element={isAuthenticated ? <ProtectedLayout><AIAssistant /></ProtectedLayout> : <Navigate to="/login" replace />} />
       <Route path="/education" element={isAuthenticated ? <ProtectedLayout><Education /></ProtectedLayout> : <Navigate to="/login" replace />} />
       <Route path="/reports" element={isAuthenticated ? <ProtectedLayout><Reports /></ProtectedLayout> : <Navigate to="/login" replace />} />

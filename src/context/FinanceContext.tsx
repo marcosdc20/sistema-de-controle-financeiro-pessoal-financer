@@ -2,7 +2,7 @@ import { createContext, useContext, useState, useEffect, ReactNode, useMemo, use
 import { CURRENCIES, CATEGORIES } from '@/lib/utils';
 import { useAuth } from '@/context/AuthContext';
 import { Database } from '@/types/database';
-import { getDatabase } from '@/database/db';
+import { getDatabase, exportDatabaseToJson, importDatabaseFromJson } from '@/database/db';
 import DatabasePlugin from '@tauri-apps/plugin-sql';
 
 export type TransactionType = 'expense' | 'income' | 'transfer' | 'adjustment';
@@ -31,6 +31,66 @@ export type LoanCategory = 'personal' | 'family' | 'professional' | 'business';
 export type LoanStatus = 'active' | 'paid' | 'partial' | 'overdue' | 'cancelled';
 export type InterestType = 'simple' | 'compound';
 export type PaymentFrequency = 'one_time' | 'weekly' | 'monthly' | 'yearly';
+
+export interface Project {
+  id: string;
+  userId: string;
+  name: string;
+  description?: string;
+  status: 'Em Planeamento' | 'Ativo' | 'Suspenso' | 'Concluído';
+  budgetLimit?: number;
+  dueDate?: string;
+  notes?: string;
+  createdAt: string;
+}
+
+export interface Subtask {
+  id: string;
+  title: string;
+  completed: boolean;
+}
+
+export interface ToolCost {
+  name: string;
+  cost: number;
+}
+
+export interface Task {
+  id: string;
+  projectId?: string;
+  userId: string;
+  title: string;
+  description?: string;
+  priority: 'low' | 'medium' | 'high' | 'critical';
+  status: 'todo' | 'doing' | 'done';
+  dueDate?: string;
+  estimatedRevenue?: number;
+  subtasks: Subtask[];
+  tags: string[];
+  toolsCost: ToolCost[];
+  createdAt: string;
+}
+
+export interface AutoRule {
+  id: string;
+  userId: string;
+  keyword: string;
+  categoryName: string;
+  subcategoryName?: string;
+  createdAt: string;
+}
+
+export interface DbCategory {
+  id: string;
+  userId?: string;
+  name: string;
+  icon?: string;
+  color?: string;
+  type: 'expense' | 'income' | 'transfer' | 'adjustment';
+  parentId?: string;
+  limitAmount?: number;
+  createdAt?: string;
+}
 
 export interface LoanPayment {
   id: string;
@@ -302,6 +362,25 @@ interface FinanceContextType {
   updatePreferences: (updates: Partial<UserPreferences>) => Promise<void>;
   loading: boolean;
   refreshData: () => Promise<void>;
+  exportDatabase: () => Promise<string>;
+  importDatabase: (jsonStr: string) => Promise<void>;
+  clearAllFinancialData: () => Promise<void>;
+  projects: Project[];
+  tasks: Task[];
+  autoRules: AutoRule[];
+  dbCategories: DbCategory[];
+  addProject: (project: Omit<Project, 'id' | 'userId' | 'createdAt'>) => Promise<void>;
+  updateProject: (id: string, project: Partial<Project>) => Promise<void>;
+  deleteProject: (id: string) => Promise<void>;
+  addTask: (task: Omit<Task, 'id' | 'userId' | 'createdAt'>) => Promise<void>;
+  updateTask: (id: string, task: Partial<Task>) => Promise<void>;
+  deleteTask: (id: string) => Promise<void>;
+  addAutoRule: (rule: Omit<AutoRule, 'id' | 'userId' | 'createdAt'>) => Promise<void>;
+  deleteAutoRule: (id: string) => Promise<void>;
+  addDbCategory: (category: Omit<DbCategory, 'id' | 'createdAt'>) => Promise<void>;
+  updateDbCategory: (id: string, category: Partial<DbCategory>) => Promise<void>;
+  deleteDbCategory: (id: string) => Promise<void>;
+  optimizeDatabaseVacuum: () => Promise<void>;
 }
 
 const FinanceContext = createContext<FinanceContextType | undefined>(undefined);
@@ -349,6 +428,10 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
     pin_code?: string | null;
   } | null>(null);
   const [preferences, setPreferences] = useState<UserPreferences | null>(null);
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [autoRules, setAutoRules] = useState<AutoRule[]>([]);
+  const [dbCategories, setDbCategories] = useState<DbCategory[]>([]);
   const [loading, setLoading] = useState(true);
   const [isTransactionModalOpen, setIsTransactionModalOpen] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -389,7 +472,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
     if (!user) return;
     try {
       const db = await getDatabase();
-      const [accs, trans, invs, gls, subs, bdgs, svgs, rates, lns, payments, cats, profiles, prefs, kixs] = await Promise.all([
+      const [accs, trans, invs, gls, subs, bdgs, svgs, rates, lns, payments, cats, profiles, prefs, kixs, projs, tsks, rls] = await Promise.all([
         db.select<any[]>('SELECT * FROM accounts ORDER BY created_at'),
         db.select<any[]>('SELECT * FROM transactions ORDER BY date DESC'),
         db.select<any[]>('SELECT * FROM investments'),
@@ -403,7 +486,10 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
         db.select<any[]>('SELECT * FROM categories WHERE user_id IS NULL OR user_id = $1', [user.id]),
         db.select<any[]>('SELECT * FROM profiles WHERE id = $1 LIMIT 1', [user.id]),
         db.select<any[]>('SELECT * FROM user_preferences WHERE user_id = $1 LIMIT 1', [user.id]),
-        db.select<any[]>('SELECT * FROM kixiquilas WHERE user_id = $1', [user.id])
+        db.select<any[]>('SELECT * FROM kixiquilas WHERE user_id = $1', [user.id]),
+        db.select<any[]>('SELECT * FROM projects WHERE user_id = $1', [user.id]),
+        db.select<any[]>('SELECT * FROM tasks WHERE user_id = $1', [user.id]),
+        db.select<any[]>('SELECT * FROM auto_categorization_rules WHERE user_id = $1', [user.id])
       ]);
 
       const newNotifications: Notification[] = [];
@@ -759,6 +845,81 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
           adjustment: Array.from(new Set([...grouped.adjustment, ...CATEGORIES.adjustment]))
         };
         setCategories(merged);
+        setDbCategories(cats.map(c => ({
+          id: c.id,
+          userId: c.user_id,
+          name: c.name,
+          icon: c.icon,
+          color: c.color,
+          type: c.type as any,
+          parentId: c.parent_id,
+          limitAmount: c.limit_amount ? Number(c.limit_amount) : undefined,
+          createdAt: c.created_at
+        })));
+      }
+
+      if (projs) {
+        setProjects(projs.map(p => ({
+          id: p.id,
+          userId: p.user_id,
+          name: p.name,
+          description: p.description,
+          status: p.status as any,
+          budgetLimit: p.budget_limit ? Number(p.budget_limit) : undefined,
+          dueDate: p.due_date,
+          notes: p.notes,
+          createdAt: p.created_at
+        })));
+      }
+
+      if (tsks) {
+        setTasks(tsks.map(t => {
+          let parsedSubtasks: Subtask[] = [];
+          let parsedTags: string[] = [];
+          let parsedToolsCost: ToolCost[] = [];
+          try {
+            if (t.subtasks) parsedSubtasks = JSON.parse(t.subtasks);
+          } catch (e) {
+            console.error('Error parsing subtasks JSON:', e);
+          }
+          try {
+            if (t.tags) parsedTags = JSON.parse(t.tags);
+          } catch (e) {
+            console.error('Error parsing tags JSON:', e);
+          }
+          try {
+            if (t.tools_cost) parsedToolsCost = JSON.parse(t.tools_cost);
+          } catch (e) {
+            console.error('Error parsing tools_cost JSON:', e);
+          }
+
+          return {
+            id: t.id,
+            projectId: t.project_id || undefined,
+            userId: t.user_id,
+            title: t.title,
+            description: t.description,
+            priority: t.priority as any,
+            status: t.status as any,
+            dueDate: t.due_date,
+            estimatedRevenue: t.estimated_revenue ? Number(t.estimated_revenue) : undefined,
+            subtasks: parsedSubtasks,
+            tags: parsedTags,
+            toolsCost: parsedToolsCost,
+            createdAt: t.created_at
+          };
+        }));
+      }
+
+      if (rls) {
+        setAutoRules(rls.map(r => ({
+          id: r.id,
+          userId: r.user_id,
+          keyword: r.keyword,
+          categoryName: r.category_name,
+          subcategoryName: r.subcategory_name || undefined,
+          createdAt: r.created_at
+        })));
       }
     } catch (error) {
       console.error('Error refreshing data:', error);
@@ -801,6 +962,17 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
 
       const paymentMethod = transaction.payment_method || 'Express';
 
+      // Lógica de Auto-categorização por palavra-chave
+      let finalCategory = transaction.category;
+      if (transaction.type !== 'transfer' && transaction.type !== 'adjustment') {
+        const descLower = (transaction.description || '').toLowerCase();
+        const matched = autoRules.find(r => descLower.includes(r.keyword.toLowerCase()));
+        if (matched) {
+          finalCategory = matched.categoryName;
+          console.log(`[Auto-Categorização] Palavra-chave "${matched.keyword}" detectada. Categoria alterada para "${finalCategory}"`);
+        }
+      }
+
       await db.execute(
         'INSERT INTO transactions (id, user_id, account_id, destination_account_id, category, amount, currency, type, description, date, status, payment_method) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)',
         [
@@ -808,7 +980,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
           user.id,
           transaction.account_id,
           transaction.destination_account_id,
-          transaction.category,
+          finalCategory,
           transaction.amount,
           transaction.currency,
           transaction.type,
@@ -866,7 +1038,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
       // Check budget alerts for desktop notifications
       if (transaction.type === 'expense') {
         try {
-          const category = transaction.category;
+          const category = finalCategory;
           const matchingBudgets = budgets.filter(b => b.category === category && b.status === 'active');
           if (matchingBudgets.length > 0) {
             const today = new Date();
@@ -1662,6 +1834,241 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
     }, ...prev]);
   };
 
+  const exportDatabase = async (): Promise<string> => {
+    return await exportDatabaseToJson();
+  };
+
+  const importDatabase = async (jsonStr: string): Promise<void> => {
+    await importDatabaseFromJson(jsonStr);
+    await refreshData();
+  };
+
+  const clearAllFinancialData = async () => {
+    if (!user) return;
+    try {
+      const db = await getDatabase();
+      await db.execute('PRAGMA foreign_keys = OFF;');
+      await db.execute('DELETE FROM transactions WHERE user_id = $1', [user.id]);
+      await db.execute('DELETE FROM accounts WHERE user_id = $1', [user.id]);
+      await db.execute('DELETE FROM budgets WHERE user_id = $1', [user.id]);
+      await db.execute('DELETE FROM goals WHERE user_id = $1', [user.id]);
+      await db.execute('DELETE FROM subscriptions WHERE user_id = $1', [user.id]);
+      await db.execute('DELETE FROM investments WHERE user_id = $1', [user.id]);
+      await db.execute('DELETE FROM loans WHERE user_id = $1', [user.id]);
+      await db.execute('DELETE FROM savings WHERE user_id = $1', [user.id]);
+      await db.execute('DELETE FROM kixiquilas WHERE user_id = $1', [user.id]);
+      await db.execute('DELETE FROM categories WHERE user_id = $1', [user.id]);
+      await db.execute('DELETE FROM user_preferences WHERE user_id = $1', [user.id]);
+      await db.execute('DELETE FROM user_sessions WHERE user_id = $1', [user.id]);
+      await db.execute('DELETE FROM projects WHERE user_id = $1', [user.id]);
+      await db.execute('DELETE FROM tasks WHERE user_id = $1', [user.id]);
+      await db.execute('DELETE FROM auto_categorization_rules WHERE user_id = $1', [user.id]);
+      await db.execute('PRAGMA foreign_keys = ON;');
+      await refreshData();
+    } catch (e) {
+      console.error('[FinanceContext] Erro ao limpar dados financeiros do SQLite:', e);
+      throw e;
+    }
+  };
+
+  const addProject = async (proj: Omit<Project, 'id' | 'userId' | 'createdAt'>) => {
+    if (!user) return;
+    try {
+      const db = await getDatabase();
+      const id = crypto.randomUUID();
+      await db.execute(
+        'INSERT INTO projects (id, user_id, name, description, status, budget_limit, due_date, notes) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)',
+        [
+          id,
+          user.id,
+          proj.name,
+          proj.description || '',
+          proj.status || 'Em Planeamento',
+          proj.budgetLimit,
+          proj.dueDate,
+          proj.notes || ''
+        ]
+      );
+      await refreshData();
+    } catch (error) {
+      console.error('Error adding project:', error);
+    }
+  };
+
+  const updateProject = async (id: string, updates: Partial<Project>) => {
+    if (!user) return;
+    try {
+      const db = await getDatabase();
+      const dbUpdates: Record<string, any> = {};
+      if (updates.name !== undefined) dbUpdates.name = updates.name;
+      if (updates.description !== undefined) dbUpdates.description = updates.description;
+      if (updates.status !== undefined) dbUpdates.status = updates.status;
+      if (updates.budgetLimit !== undefined) dbUpdates.budget_limit = updates.budgetLimit;
+      if (updates.dueDate !== undefined) dbUpdates.due_date = updates.dueDate;
+      if (updates.notes !== undefined) dbUpdates.notes = updates.notes;
+
+      await updateRow(db, 'projects', id, dbUpdates);
+      await refreshData();
+    } catch (error) {
+      console.error('Error updating project:', error);
+    }
+  };
+
+  const deleteProject = async (id: string) => {
+    if (!user) return;
+    try {
+      const db = await getDatabase();
+      await db.execute('DELETE FROM projects WHERE id = $1', [id]);
+      await refreshData();
+    } catch (error) {
+      console.error('Error deleting project:', error);
+    }
+  };
+
+  const addTask = async (task: Omit<Task, 'id' | 'userId' | 'createdAt'>) => {
+    if (!user) return;
+    try {
+      const db = await getDatabase();
+      const id = crypto.randomUUID();
+      await db.execute(
+        'INSERT INTO tasks (id, project_id, user_id, title, description, priority, status, due_date, estimated_revenue, subtasks, tags, tools_cost) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)',
+        [
+          id,
+          task.projectId || null,
+          user.id,
+          task.title,
+          task.description || '',
+          task.priority || 'medium',
+          task.status || 'todo',
+          task.dueDate,
+          task.estimatedRevenue || 0.0,
+          JSON.stringify(task.subtasks || []),
+          JSON.stringify(task.tags || []),
+          JSON.stringify(task.toolsCost || [])
+        ]
+      );
+      await refreshData();
+    } catch (error) {
+      console.error('Error adding task:', error);
+    }
+  };
+
+  const updateTask = async (id: string, updates: Partial<Task>) => {
+    if (!user) return;
+    try {
+      const db = await getDatabase();
+      const dbUpdates: Record<string, any> = {};
+      if (updates.projectId !== undefined) dbUpdates.project_id = updates.projectId || null;
+      if (updates.title !== undefined) dbUpdates.title = updates.title;
+      if (updates.description !== undefined) dbUpdates.description = updates.description;
+      if (updates.priority !== undefined) dbUpdates.priority = updates.priority;
+      if (updates.status !== undefined) dbUpdates.status = updates.status;
+      if (updates.dueDate !== undefined) dbUpdates.due_date = updates.dueDate;
+      if (updates.estimatedRevenue !== undefined) dbUpdates.estimated_revenue = updates.estimatedRevenue;
+      if (updates.subtasks !== undefined) dbUpdates.subtasks = JSON.stringify(updates.subtasks);
+      if (updates.tags !== undefined) dbUpdates.tags = JSON.stringify(updates.tags);
+      if (updates.toolsCost !== undefined) dbUpdates.tools_cost = JSON.stringify(updates.toolsCost);
+
+      await updateRow(db, 'tasks', id, dbUpdates);
+      await refreshData();
+    } catch (error) {
+      console.error('Error updating task:', error);
+    }
+  };
+
+  const deleteTask = async (id: string) => {
+    if (!user) return;
+    try {
+      const db = await getDatabase();
+      await db.execute('DELETE FROM tasks WHERE id = $1', [id]);
+      await refreshData();
+    } catch (error) {
+      console.error('Error deleting task:', error);
+    }
+  };
+
+  const addAutoRule = async (rule: Omit<AutoRule, 'id' | 'userId' | 'createdAt'>) => {
+    if (!user) return;
+    try {
+      const db = await getDatabase();
+      const id = crypto.randomUUID();
+      await db.execute(
+        'INSERT INTO auto_categorization_rules (id, user_id, keyword, category_name, subcategory_name) VALUES ($1, $2, $3, $4, $5)',
+        [id, user.id, rule.keyword, rule.categoryName, rule.subcategoryName || null]
+      );
+      await refreshData();
+    } catch (error) {
+      console.error('Error adding auto categorization rule:', error);
+    }
+  };
+
+  const deleteAutoRule = async (id: string) => {
+    if (!user) return;
+    try {
+      const db = await getDatabase();
+      await db.execute('DELETE FROM auto_categorization_rules WHERE id = $1', [id]);
+      await refreshData();
+    } catch (error) {
+      console.error('Error deleting auto rule:', error);
+    }
+  };
+
+  const addDbCategory = async (cat: Omit<DbCategory, 'id' | 'createdAt'>) => {
+    if (!user) return;
+    try {
+      const db = await getDatabase();
+      const id = crypto.randomUUID();
+      await db.execute(
+        'INSERT INTO categories (id, user_id, name, type, parent_id, limit_amount) VALUES ($1, $2, $3, $4, $5, $6)',
+        [id, user.id, cat.name, cat.type, cat.parentId || null, cat.limitAmount || null]
+      );
+      await refreshData();
+    } catch (error) {
+      console.error('Error adding rich category:', error);
+    }
+  };
+
+  const updateDbCategory = async (id: string, updates: Partial<DbCategory>) => {
+    if (!user) return;
+    try {
+      const db = await getDatabase();
+      const dbUpdates: Record<string, any> = {};
+      if (updates.name !== undefined) dbUpdates.name = updates.name;
+      if (updates.type !== undefined) dbUpdates.type = updates.type;
+      if (updates.parentId !== undefined) dbUpdates.parent_id = updates.parentId || null;
+      if (updates.limitAmount !== undefined) dbUpdates.limit_amount = updates.limitAmount || null;
+
+      await updateRow(db, 'categories', id, dbUpdates);
+      await refreshData();
+    } catch (error) {
+      console.error('Error updating rich category:', error);
+    }
+  };
+
+  const deleteDbCategory = async (id: string) => {
+    if (!user) return;
+    try {
+      const db = await getDatabase();
+      await db.execute('DELETE FROM categories WHERE id = $1', [id]);
+      await refreshData();
+    } catch (error) {
+      console.error('Error deleting rich category:', error);
+    }
+  };
+
+  const optimizeDatabaseVacuum = async () => {
+    if (!user) return;
+    try {
+      const db = await getDatabase();
+      await db.execute('VACUUM;');
+      console.log('[SQLite Vacuum] Banco de dados otimizado com sucesso!');
+      await refreshData();
+    } catch (error) {
+      console.error('Error performing vacuum on database:', error);
+      throw error;
+    }
+  };
+
   return (
     <FinanceContext.Provider
       value={{
@@ -1726,7 +2133,26 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
         setIsTransactionModalOpen,
         notifications,
         markNotificationAsRead,
-        addNotification
+        addNotification,
+        exportDatabase,
+        importDatabase,
+        clearAllFinancialData,
+        projects,
+        tasks,
+        autoRules,
+        dbCategories,
+        addProject,
+        updateProject,
+        deleteProject,
+        addTask,
+        updateTask,
+        deleteTask,
+        addAutoRule,
+        deleteAutoRule,
+        addDbCategory,
+        updateDbCategory,
+        deleteDbCategory,
+        optimizeDatabaseVacuum
       }}
     >
       {children}

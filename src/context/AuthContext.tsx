@@ -29,8 +29,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const savedUser = localStorage.getItem('vukapay_user');
       if (savedUser) {
         if (active) {
-          setUser(JSON.parse(savedUser));
+          const parsed = JSON.parse(savedUser);
+          setUser(parsed);
           setLoading(false);
+          // Atualiza a atividade da sessão em background
+          touchSession(parsed.id).catch(err => console.error(err));
         }
         return;
       }
@@ -97,7 +100,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  const loginAsLocal = () => {
+  const loginAsLocal = async () => {
     const localUser = {
       id: 'local-user',
       email: 'local@vukapay.local',
@@ -106,6 +109,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
     localStorage.setItem('vukapay_user', JSON.stringify(localUser));
     setUser(localUser);
+    await recordSession(localUser.id, 'Local');
   };
 
   const loginWithGoogle = async () => {
@@ -178,6 +182,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         localStorage.setItem('vukapay_user', JSON.stringify(googleUser));
         setUser(googleUser);
+        await recordSession(googleUser.id, 'Google');
         setAuthLoading(false);
         return true;
       } catch (err) {
@@ -205,6 +210,61 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       {children}
     </AuthContext.Provider>
   );
+}
+
+
+// Funções Auxiliares para Registro de Sessões de Login
+function getDeviceDetails(): string {
+  const ua = navigator.userAgent;
+  let os = "Dispositivo Desconhecido";
+  let browser = "Navegador";
+
+  if (ua.includes("Windows")) os = "Windows";
+  else if (ua.includes("Macintosh")) os = "macOS";
+  else if (ua.includes("Linux")) os = "Linux";
+  else if (ua.includes("Android")) os = "Android";
+  else if (ua.includes("iPhone") || ua.includes("iPad")) os = "iOS";
+
+  if (ua.includes("Chrome")) browser = "Chrome";
+  else if (ua.includes("Firefox")) browser = "Firefox";
+  else if (ua.includes("Safari") && !ua.includes("Chrome")) browser = "Safari";
+  else if (ua.includes("Edge")) browser = "Edge";
+
+  const isTauri = typeof window !== 'undefined' && (window as any).__TAURI_INTERNALS__ !== undefined;
+  return `${browser} no ${os}${isTauri ? ' (App Desktop)' : ' (Web)'}`;
+}
+
+async function recordSession(userId: string, loginType: string) {
+  try {
+    const { getDatabase } = await import('@/database/db');
+    const db = await getDatabase();
+    const sessionId = crypto.randomUUID();
+    const deviceName = getDeviceDetails();
+    
+    // Desativar a flag de sessão atual nas sessões antigas
+    await db.execute('UPDATE user_sessions SET is_current = 0 WHERE user_id = $1', [userId]);
+    
+    // Inserir nova sessão ativa
+    await db.execute(
+      'INSERT INTO user_sessions (id, user_id, device_name, login_type, is_current, last_active) VALUES ($1, $2, $3, $4, 1, CURRENT_TIMESTAMP)',
+      [sessionId, userId, deviceName, loginType]
+    );
+    console.log('[AuthContext] Sessão registrada com sucesso no SQLite:', deviceName);
+  } catch (e) {
+    console.error('[AuthContext] Falha ao registrar a sessão no banco:', e);
+  }
+}
+
+async function touchSession(userId: string) {
+  try {
+    const { getDatabase } = await import('@/database/db');
+    const db = await getDatabase();
+    
+    // Atualiza o last_active para a sessão ativa atual no banco
+    await db.execute('UPDATE user_sessions SET last_active = CURRENT_TIMESTAMP WHERE user_id = $1 AND is_current = 1', [userId]);
+  } catch (e) {
+    console.error('[AuthContext] Falha ao atualizar timestamp da sessão:', e);
+  }
 }
 
 export function useAuth() {

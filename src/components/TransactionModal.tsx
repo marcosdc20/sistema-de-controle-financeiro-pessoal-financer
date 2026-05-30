@@ -47,7 +47,12 @@ export default function TransactionModal({ isOpen, onClose, editingTransaction }
             setType('expense');
             setCategory('');
             setCurrency('AOA');
-            if (accounts.length > 0) setAccountId(accounts[0].id);
+            const defaultAccId = localStorage.getItem('vukapay_default_account_id');
+            if (defaultAccId && accounts.some(a => a.id === defaultAccId)) {
+                setAccountId(defaultAccId);
+            } else if (accounts.length > 0) {
+                setAccountId(accounts[0].id);
+            }
             setDestinationAccountId('');
             setStatus('paid');
             setDate(new Date().toISOString().split('T')[0]);

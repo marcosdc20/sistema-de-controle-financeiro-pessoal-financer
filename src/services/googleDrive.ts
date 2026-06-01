@@ -93,6 +93,9 @@ export async function uploadBackupToDrive(jsonStr: string): Promise<boolean> {
     );
 
     if (!uploadResponse.ok) {
+      if (uploadResponse.status === 401) {
+        localStorage.removeItem('google_access_token');
+      }
       throw new Error(`Erro ao enviar dados para o Drive: ${uploadResponse.statusText}`);
     }
 
@@ -133,6 +136,9 @@ export async function downloadBackupFromDrive(): Promise<string | null> {
     );
 
     if (!response.ok) {
+      if (response.status === 401) {
+        localStorage.removeItem('google_access_token');
+      }
       throw new Error(`Erro ao baixar arquivo do Drive: ${response.statusText}`);
     }
 

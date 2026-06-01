@@ -205,7 +205,7 @@ export async function validateLicense(licenseKey: string): Promise<FirestoreLice
       return null;
     }
 
-    return licenseSnap.data() as FirestoreLicense;
+    return { id: licenseSnap.id, ...licenseSnap.data() } as FirestoreLicense;
   } catch (error) {
     console.error('[LicenseService] Erro ao validar licença:', error);
     throw error;

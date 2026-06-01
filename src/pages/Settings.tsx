@@ -76,11 +76,20 @@ function LicenseSettingsTab({ showToast }: { showToast: (msg: string, type?: 'su
 
   const handleChangeKey = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newKey.trim()) return;
+    const trimmedKey = newKey.trim();
+    if (!trimmedKey) return;
+
+    // Valida o formato antes de tentar ativar
+    if (!trimmedKey.match(/^VUKA-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}$/)) {
+      showToast('Formato inválido. Use o padrão VUKA-XXXX-XXXX-XXXX-XXXX', 'error');
+      return;
+    }
+
     setIsActivating(true);
     try {
-      await clearLicense();
-      const result = await activateLicenseKey(newKey.trim());
+      // Tenta ativar ANTES de limpar a licença atual,
+      // para não perder o acesso caso a nova chave seja inválida
+      const result = await activateLicenseKey(trimmedKey);
       if (result.success) {
         showToast('Nova chave ativada com sucesso!');
         setShowChangeKey(false);
@@ -89,7 +98,7 @@ function LicenseSettingsTab({ showToast }: { showToast: (msg: string, type?: 'su
         showToast(result.message || 'Falha ao ativar nova chave.', 'error');
       }
     } catch {
-      showToast('Erro ao trocar a chave.', 'error');
+      showToast('Erro ao trocar a chave. Verifique a sua ligação à internet.', 'error');
     } finally {
       setIsActivating(false);
     }

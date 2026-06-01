@@ -6,26 +6,32 @@
     <!-- Tag de Verificação do Google Search Console -->
     <meta name="google-site-verification" content="PkxOhY6zHo5yvFg0PT3lDRV3ydTYShbPrKD42RiaFbo" />
     
-    <title>VukaPay — Controle Financeiro Pessoal Seguro</title>
+    <title>VukaPay — Controle Financeiro Pessoal Seguro e 100% Privado</title>
+    <meta name="description" content="O VukaPay é um aplicativo de controle financeiro pessoal focado em privacidade, com armazenamento local via SQLite e sincronização no Google Drive.">
     
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
     
     <style>
         :root {
-            --primary: #10b981;
-            --primary-hover: #059669;
-            --primary-light: #dcfce7;
-            --dark: #0f172a;
-            --dark-light: #1e293b;
-            --text-main: #334155;
-            --text-muted: #64748b;
-            --bg-light: #f8fafc;
+            --primary: #4f46e5;         /* Indigo 600 */
+            --primary-hover: #4338ca;   /* Indigo 700 */
+            --primary-light: #e0e7ff;   /* Indigo 100 */
+            --primary-soft: #f5f3ff;    /* Indigo 50 */
+            --dark: #0f172a;            /* Slate 900 */
+            --dark-light: #1e293b;      /* Slate 800 */
+            --text-main: #334155;       /* Slate 700 */
+            --text-muted: #64748b;      /* Slate 500 */
+            --bg-light: #f8fafc;        /* Slate 50 */
             --white: #ffffff;
-            --border: #e2e8f0;
+            --border: #e2e8f0;          /* Slate 200 */
             --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            
+            --shadow-sm: 0 1px 3px rgba(79, 70, 229, 0.05);
+            --shadow-md: 0 10px 25px -5px rgba(79, 70, 229, 0.08), 0 8px 10px -6px rgba(79, 70, 229, 0.08);
+            --shadow-lg: 0 20px 50px -12px rgba(79, 70, 229, 0.15);
         }
 
         * {
@@ -56,9 +62,9 @@
 
         /* Navbar */
         header {
-            background-color: rgba(255, 255, 255, 0.8);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
+            background-color: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
             border-bottom: 1px solid var(--border);
             position: sticky;
             top: 0;
@@ -66,6 +72,7 @@
             height: 80px;
             display: flex;
             align-items: center;
+            transition: var(--transition);
         }
 
         .nav-container {
@@ -82,25 +89,25 @@
             text-decoration: none;
         }
 
-        .logo-icon {
+        .logo-img {
             width: 40px;
             height: 40px;
-            background: linear-gradient(135deg, var(--primary), #059669);
+            object-fit: contain;
             border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: var(--white);
-            font-family: 'Outfit', sans-serif;
-            font-weight: 800;
-            font-size: 1.25rem;
-            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.2);
+            transition: var(--transition);
+        }
+
+        .logo:hover .logo-img {
+            transform: rotate(-5deg) scale(1.05);
         }
 
         .logo-text {
+            font-family: 'Outfit', sans-serif;
             font-size: 1.5rem;
             font-weight: 800;
             color: var(--dark);
+            letter-spacing: -0.02em;
         }
 
         .nav-links {
@@ -133,37 +140,74 @@
             text-decoration: none;
             transition: var(--transition);
             cursor: pointer;
+            gap: 0.5rem;
         }
 
         .btn-primary {
             background-color: var(--primary);
             color: var(--white);
-            box-shadow: 0 4px 14px rgba(16, 185, 129, 0.2);
+            box-shadow: 0 4px 14px rgba(79, 70, 229, 0.2);
         }
 
         .btn-primary:hover {
             background-color: var(--primary-hover);
             transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(16, 185, 129, 0.3);
+            box-shadow: 0 6px 20px rgba(79, 70, 229, 0.3);
+        }
+
+        .btn-secondary {
+            background-color: var(--white);
+            color: var(--text-main);
+            border: 1px solid var(--border);
+        }
+
+        .btn-secondary:hover {
+            background-color: var(--bg-light);
+            border-color: var(--text-muted);
+            transform: translateY(-2px);
         }
 
         /* Hero Section */
         .hero {
-            padding: 6rem 0 4rem;
-            background: radial-gradient(circle at top right, rgba(16, 185, 129, 0.08), transparent 40%),
-                        radial-gradient(circle at bottom left, rgba(5, 150, 105, 0.05), transparent 40%);
+            padding: 7rem 0 5rem;
+            background: radial-gradient(circle at top right, rgba(99, 102, 241, 0.08), transparent 45%),
+                        radial-gradient(circle at bottom left, rgba(79, 70, 229, 0.05), transparent 40%);
             text-align: center;
         }
 
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1.25rem;
+            background-color: var(--primary-soft);
+            border: 1px solid rgba(79, 70, 229, 0.15);
+            border-radius: 9999px;
+            color: var(--primary);
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-bottom: 2rem;
+            animation: pulse-border 3s infinite;
+        }
+
+        @keyframes pulse-border {
+            0% { box-shadow: 0 0 0 0 rgba(79, 70, 229, 0.2); }
+            70% { box-shadow: 0 0 0 8px rgba(79, 70, 229, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(79, 70, 229, 0); }
+        }
+
         .hero-title {
-            font-size: 3.5rem;
-            line-height: 1.2;
+            font-size: 3.75rem;
+            line-height: 1.15;
             margin-bottom: 1.5rem;
-            letter-spacing: -0.02em;
+            letter-spacing: -0.03em;
+            max-width: 900px;
+            margin-left: auto;
+            margin-right: auto;
         }
 
         .hero-title span {
-            background: linear-gradient(135deg, var(--primary), #059669);
+            background: linear-gradient(135deg, var(--primary), var(--accent));
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
@@ -171,28 +215,104 @@
         .hero-subtitle {
             font-size: 1.25rem;
             color: var(--text-muted);
-            max-width: 700px;
+            max-width: 750px;
             margin: 0 auto 2.5rem;
+            line-height: 1.7;
         }
 
         .hero-cta {
             display: flex;
             gap: 1rem;
             justify-content: center;
+            margin-bottom: 4rem;
         }
 
-        /* App Security & Google Integration Section */
-        .integration {
-            padding: 5rem 0;
+        /* Hero App Mockup */
+        .hero-mockup {
+            max-width: 1000px;
+            margin: 0 auto;
+            background-color: var(--white);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 0.75rem;
+            box-shadow: var(--shadow-lg);
+            position: relative;
+            transform: translateY(0);
+            transition: var(--transition);
+        }
+
+        .hero-mockup:hover {
+            transform: translateY(-4px);
+        }
+
+        .hero-mockup-window {
+            background-color: var(--bg-light);
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid var(--border);
+        }
+
+        .hero-mockup-header {
+            height: 40px;
+            background-color: var(--white);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            padding: 0 1rem;
+            gap: 0.5rem;
+        }
+
+        .hero-mockup-dots {
+            display: flex;
+            gap: 6px;
+        }
+
+        .hero-mockup-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background-color: #cbd5e1;
+        }
+
+        .hero-mockup-dot:nth-child(1) { background-color: #ef4444; }
+        .hero-mockup-dot:nth-child(2) { background-color: #f59e0b; }
+        .hero-mockup-dot:nth-child(3) { background-color: #10b981; }
+
+        .hero-mockup-address {
+            flex: 1;
+            max-width: 320px;
+            margin: 0 auto;
+            background-color: var(--bg-light);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            height: 24px;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: monospace;
+        }
+
+        .hero-mockup-img {
+            width: 100%;
+            height: auto;
+            display: block;
+            border-radius: 0 0 12px 12px;
+        }
+
+        /* App Showcase / Interactive Carousel Section */
+        .showcase {
+            padding: 7rem 0;
             background-color: var(--white);
             border-top: 1px solid var(--border);
             border-bottom: 1px solid var(--border);
         }
 
-        .section-header {
+        .showcase-header {
             text-align: center;
             max-width: 700px;
-            margin: 0 auto 4rem;
+            margin: 0 auto 4.5rem;
         }
 
         .section-tag {
@@ -206,81 +326,239 @@
         }
 
         .section-title {
-            font-size: 2.25rem;
+            font-size: 2.5rem;
             margin-bottom: 1rem;
+            letter-spacing: -0.02em;
         }
 
         .section-description {
             color: var(--text-muted);
+            font-size: 1.1rem;
+        }
+
+        .showcase-grid {
+            display: grid;
+            grid-template-columns: 360px 1fr;
+            gap: 4rem;
+            align-items: flex-start;
+        }
+
+        .showcase-tabs-container {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            max-height: 580px;
+            overflow-y: auto;
+            padding-right: 0.5rem;
+        }
+
+        /* Customize Scrollbar for tabs container */
+        .showcase-tabs-container::-webkit-scrollbar {
+            width: 4px;
+        }
+        .showcase-tabs-container::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .showcase-tabs-container::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 10px;
+        }
+        .showcase-tabs-container::-webkit-scrollbar-thumb:hover {
+            background: var(--text-muted);
+        }
+
+        .showcase-tab {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1.25rem 1.5rem;
+            background-color: var(--bg-light);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            cursor: pointer;
+            text-align: left;
+            transition: var(--transition);
+        }
+
+        .showcase-tab:hover {
+            border-color: var(--accent);
+            background-color: var(--primary-soft);
+            transform: translateX(4px);
+        }
+
+        .showcase-tab.active {
+            border-color: var(--primary);
+            background-color: var(--primary-soft);
+            box-shadow: var(--shadow-md);
+            transform: translateX(8px);
+        }
+
+        .showcase-tab-icon {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 44px;
+            height: 44px;
+            background-color: var(--white);
+            color: var(--text-muted);
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            transition: var(--transition);
+            flex-shrink: 0;
+        }
+
+        .showcase-tab.active .showcase-tab-icon {
+            background-color: var(--primary);
+            color: var(--white);
+            border-color: var(--primary);
+        }
+
+        .showcase-tab-text {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .showcase-tab-title {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.05rem;
+            font-weight: 600;
+            color: var(--dark);
+        }
+
+        .showcase-tab-desc {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-top: 0.15rem;
+            line-height: 1.3;
+        }
+
+        .showcase-carousel {
+            background-color: var(--bg-light);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            padding: 1rem;
+            box-shadow: var(--shadow-lg);
+            position: sticky;
+            top: 100px;
+        }
+
+        .carousel-window {
+            background-color: var(--white);
+            border-radius: 16px;
+            overflow: hidden;
+            border: 1px solid var(--border);
+            position: relative;
+            width: 100%;
+            aspect-ratio: 1.62;
+        }
+
+        .carousel-slide {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            transition: opacity 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            pointer-events: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .carousel-slide.active {
+            opacity: 1;
+            pointer-events: auto;
+            z-index: 5;
+        }
+
+        .carousel-img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        /* Security & Google Integration Section */
+        .integration {
+            padding: 7rem 0;
+            background-color: var(--bg-light);
         }
 
         .grid-2 {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 4rem;
-            align-items: center;
+            gap: 3rem;
+            align-items: stretch;
         }
 
         .integration-card {
-            background-color: var(--bg-light);
+            background-color: var(--white);
             border: 1px solid var(--border);
             border-radius: 24px;
-            padding: 2.5rem;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.02);
+            padding: 3rem;
+            box-shadow: var(--shadow-sm);
             transition: var(--transition);
+            display: flex;
+            flex-direction: column;
         }
 
         .integration-card:hover {
             transform: translateY(-5px);
-            box-shadow: 0 20px 40px rgba(16, 185, 129, 0.05);
-            border-color: rgba(16, 185, 129, 0.3);
+            box-shadow: var(--shadow-lg);
+            border-color: rgba(79, 70, 229, 0.2);
         }
 
         .card-icon {
-            width: 56px;
-            height: 56px;
-            background-color: var(--primary-light);
+            width: 60px;
+            height: 60px;
+            background-color: var(--primary-soft);
             color: var(--primary);
             border-radius: 16px;
             display: flex;
             align-items: center;
             justify-content: center;
-            margin-bottom: 1.5rem;
+            margin-bottom: 2rem;
+            border: 1px solid rgba(79, 70, 229, 0.1);
         }
 
         .integration-card h3 {
-            font-size: 1.5rem;
+            font-size: 1.6rem;
             margin-bottom: 1rem;
+            letter-spacing: -0.01em;
         }
 
         .integration-card p {
             color: var(--text-muted);
-            margin-bottom: 1.5rem;
+            margin-bottom: 2rem;
+            font-size: 1rem;
+            line-height: 1.6;
         }
 
         .integration-list {
             list-style: none;
-            margin-top: 1rem;
+            margin-top: auto;
         }
 
         .integration-list li {
             display: flex;
             align-items: flex-start;
-            gap: 0.75rem;
-            margin-bottom: 0.75rem;
+            gap: 0.85rem;
+            margin-bottom: 1rem;
             color: var(--text-main);
             font-size: 0.95rem;
+            line-height: 1.5;
         }
 
         .integration-list li svg {
-            color: #10b981;
+            color: var(--primary);
             flex-shrink: 0;
-            margin-top: 0.25rem;
+            margin-top: 0.2rem;
         }
 
-        /* Features Section */
-        .features {
-            padding: 6rem 0;
+        /* Features Section (Icons Grid) */
+        .features-summary {
+            padding: 7rem 0;
+            background-color: var(--white);
         }
 
         .grid-3 {
@@ -290,43 +568,107 @@
         }
 
         .feature-item {
-            background-color: var(--white);
+            background-color: var(--bg-light);
             border: 1px solid var(--border);
             border-radius: 20px;
-            padding: 2rem;
+            padding: 2.5rem;
             transition: var(--transition);
         }
 
         .feature-item:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.04);
-            border-color: rgba(16, 185, 129, 0.2);
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-md);
+            border-color: rgba(79, 70, 229, 0.15);
+            background-color: var(--white);
+        }
+
+        .feature-icon-wrapper {
+            width: 48px;
+            height: 48px;
+            background-color: var(--white);
+            border: 1px solid var(--border);
+            color: var(--primary);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1.5rem;
+            transition: var(--transition);
+        }
+
+        .feature-item:hover .feature-icon-wrapper {
+            background-color: var(--primary);
+            color: var(--white);
+            border-color: var(--primary);
+            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.2);
         }
 
         .feature-item h3 {
             font-size: 1.25rem;
             margin-bottom: 0.75rem;
-            margin-top: 1.25rem;
         }
 
         .feature-item p {
             color: var(--text-muted);
             font-size: 0.95rem;
+            line-height: 1.6;
+        }
+
+        /* Call To Action Banner */
+        .cta-banner {
+            padding: 6rem 0;
+            background: linear-gradient(135deg, var(--dark) 0%, var(--dark-light) 100%);
+            color: var(--white);
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .cta-banner-glow {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, rgba(79, 70, 229, 0.15) 0%, transparent 60%);
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .cta-banner-content {
+            position: relative;
+            z-index: 2;
+            max-width: 700px;
+            margin: 0 auto;
+        }
+
+        .cta-banner h2 {
+            color: var(--white);
+            font-size: 2.75rem;
+            letter-spacing: -0.02em;
+            margin-bottom: 1rem;
+        }
+
+        .cta-banner p {
+            color: #94a3b8;
+            font-size: 1.2rem;
+            margin-bottom: 2.5rem;
         }
 
         /* Footer */
         footer {
-            background-color: var(--dark);
+            background-color: #090d16;
             color: #94a3b8;
-            padding: 4rem 0 2rem;
-            border-top: 1px solid var(--dark-light);
+            padding: 5rem 0 2.5rem;
+            border-top: 1px solid #1e293b;
         }
 
         .footer-grid {
             display: grid;
             grid-template-columns: 2fr 1fr 1fr;
             gap: 4rem;
-            margin-bottom: 3rem;
+            margin-bottom: 4rem;
         }
 
         .footer-logo {
@@ -338,35 +680,31 @@
             margin-bottom: 1.5rem;
         }
 
-        .footer-logo-icon {
+        .footer-logo-img {
             width: 36px;
             height: 36px;
-            background: linear-gradient(135deg, var(--primary), #059669);
+            object-fit: contain;
             border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: var(--white);
-            font-family: 'Outfit', sans-serif;
-            font-weight: 800;
-            font-size: 1.1rem;
         }
 
         .footer-logo-text {
             font-family: 'Outfit', sans-serif;
-            font-size: 1.25rem;
+            font-size: 1.35rem;
             font-weight: 700;
         }
 
         .footer-about {
             max-width: 400px;
             font-size: 0.95rem;
+            line-height: 1.6;
         }
 
         .footer-links h4 {
             color: var(--white);
-            font-size: 1.1rem;
-            margin-bottom: 1.25rem;
+            font-size: 1.05rem;
+            margin-bottom: 1.5rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
         }
 
         .footer-links ul {
@@ -374,7 +712,7 @@
         }
 
         .footer-links ul li {
-            margin-bottom: 0.75rem;
+            margin-bottom: 0.85rem;
         }
 
         .footer-links ul li a {
@@ -389,8 +727,8 @@
         }
 
         .footer-bottom {
-            border-top: 1px solid var(--dark-light);
-            padding-top: 2rem;
+            border-top: 1px solid #1e293b;
+            padding-top: 2.5rem;
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -398,38 +736,76 @@
         }
 
         /* Responsive Design */
-        @media (max-width: 968px) {
+        @media (max-width: 992px) {
+            .showcase-grid {
+                grid-template-columns: 1fr;
+                gap: 3rem;
+            }
+
+            .showcase-carousel {
+                position: static;
+            }
+
+            .showcase-tabs-container {
+                flex-direction: row;
+                overflow-x: auto;
+                max-height: none;
+                padding-bottom: 1rem;
+                padding-right: 0;
+            }
+
+            .showcase-tab {
+                flex-shrink: 0;
+                width: 280px;
+                transform: none !important;
+            }
+
             .grid-2 {
                 grid-template-columns: 1fr;
-                gap: 2.5rem;
+                gap: 2rem;
             }
+
             .grid-3 {
                 grid-template-columns: 1fr 1fr;
             }
+
+            .hero-title {
+                font-size: 2.75rem;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .grid-3 {
+                grid-template-columns: 1fr;
+            }
+
             .footer-grid {
                 grid-template-columns: 1fr;
                 gap: 2.5rem;
             }
-            .hero-title {
-                font-size: 2.5rem;
-            }
-        }
 
-        @media (max-width: 640px) {
-            .grid-3 {
-                grid-template-columns: 1fr;
-            }
             .hero-cta {
                 flex-direction: column;
-                padding: 0 2rem;
+                align-items: center;
             }
+
+            .hero-cta .btn {
+                width: 100%;
+                max-width: 320px;
+            }
+
             .footer-bottom {
                 flex-direction: column;
-                gap: 1rem;
+                gap: 1.25rem;
                 text-align: center;
             }
+
             .nav-links {
                 display: none;
+            }
+
+            .section-title {
+                font-size: 2rem;
             }
         }
     </style>
@@ -440,14 +816,14 @@
     <header>
         <div class="container nav-container">
             <a href="#" class="logo">
-                <img src="logo.png" alt="VukaPay Logo" style="width: 40px; height: 40px; object-fit: contain;">
+                <img src="logo.png" alt="VukaPay Logo" class="logo-img">
                 <span class="logo-text">VukaPay</span>
             </a>
             <ul class="nav-links">
                 <li><a href="#funcionalidades">Funcionalidades</a></li>
                 <li><a href="#seguranca">Segurança</a></li>
-                <li><a href="#google-drive">Backup do Google</a></li>
-                <li><a href="privacy.html" class="btn btn-primary" style="padding: 0.5rem 1rem;">Políticas</a></li>
+                <li><a href="#google-drive">Backup Drive</a></li>
+                <li><a href="privacy.html" class="btn btn-secondary" style="padding: 0.5rem 1.25rem;">Políticas de Privacidade</a></li>
             </ul>
         </div>
     </header>
@@ -455,13 +831,225 @@
     <!-- Hero Section -->
     <section class="hero">
         <div class="container">
-            <h1 class="hero-title">Controle Financeiro Simples, <span>Totalmente Privado</span></h1>
+            <div class="hero-badge">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                100% Local e Criptografado
+            </div>
+            <h1 class="hero-title">Sua vida financeira. <span>Sob seu total controle.</span></h1>
             <p class="hero-subtitle">
-                O VukaPay é um aplicativo desktop projetado para manter suas finanças organizadas. Seus dados residem onde pertencem: no seu próprio computador, com total privacidade e backups automáticos criptografados.
+                O VukaPay é um aplicativo desktop projetado para manter suas finanças organizadas. Seus dados residem onde pertencem: no seu próprio computador via SQLite, com total privacidade e opção de sincronização híbrida na nuvem.
             </p>
             <div class="hero-cta">
-                <a href="#funcionalidades" class="btn btn-primary">Conhecer Funcionalidades</a>
-                <a href="privacy.html" class="btn" style="border: 1px solid var(--border); background-color: var(--white); color: var(--text-main);">Ler Política de Privacidade</a>
+                <a href="#funcionalidades" class="btn btn-primary">
+                    Conhecer Funcionalidades
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+                </a>
+                <a href="privacy.html" class="btn btn-secondary">Ler Política de Privacidade</a>
+            </div>
+            
+            <!-- Hero Mockup Dashboard Preview -->
+            <div class="hero-mockup">
+                <div class="hero-mockup-window">
+                    <div class="hero-mockup-header">
+                        <div class="hero-mockup-dots">
+                            <div class="hero-mockup-dot"></div>
+                            <div class="hero-mockup-dot"></div>
+                            <div class="hero-mockup-dot"></div>
+                        </div>
+                        <div class="hero-mockup-address">vukapay://app/dashboard</div>
+                        <div style="width: 50px;"></div>
+                    </div>
+                    <img src="screenshots/dashboard.png" alt="VukaPay Dashboard Preview" class="hero-mockup-img">
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- App Showcase / Interactive Carousel Section -->
+    <section id="funcionalidades" class="showcase">
+        <div class="container">
+            <div class="showcase-header">
+                <span class="section-tag">Explore o Sistema</span>
+                <h2 class="section-title">Controle Financeiro Poderoso por Dentro</h2>
+                <p class="section-description">
+                    Veja como o VukaPay simplifica a gestão da sua vida financeira através de módulos focados e intuitivos.
+                </p>
+            </div>
+
+            <div class="showcase-grid">
+                <!-- Navigation Tabs (Left Side) -->
+                <div class="showcase-tabs-container">
+                    <!-- Tab 1: Dashboard -->
+                    <button class="showcase-tab active" data-slide="0">
+                        <div class="showcase-tab-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>
+                        </div>
+                        <div class="showcase-tab-text">
+                            <span class="showcase-tab-title">Painel Geral</span>
+                            <span class="showcase-tab-desc">Visão consolidada de todas as finanças.</span>
+                        </div>
+                    </button>
+
+                    <!-- Tab 2: Transactions -->
+                    <button class="showcase-tab" data-slide="1">
+                        <div class="showcase-tab-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                        </div>
+                        <div class="showcase-tab-text">
+                            <span class="showcase-tab-title">Fluxo de Transações</span>
+                            <span class="showcase-tab-desc">Monitore receitas, despesas e transferências.</span>
+                        </div>
+                    </button>
+
+                    <!-- Tab 3: Accounts -->
+                    <button class="showcase-tab" data-slide="2">
+                        <div class="showcase-tab-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+                        </div>
+                        <div class="showcase-tab-text">
+                            <span class="showcase-tab-title">Contas & Cartões</span>
+                            <span class="showcase-tab-desc">Gerencie limites e vencimentos em um só lugar.</span>
+                        </div>
+                    </button>
+
+                    <!-- Tab 4: Budgets -->
+                    <button class="showcase-tab" data-slide="3">
+                        <div class="showcase-tab-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+                        </div>
+                        <div class="showcase-tab-text">
+                            <span class="showcase-tab-title">Orçamentos</span>
+                            <span class="showcase-tab-desc">Limite gastos por categorias de despesa.</span>
+                        </div>
+                    </button>
+
+                    <!-- Tab 5: Subscriptions -->
+                    <button class="showcase-tab" data-slide="4">
+                        <div class="showcase-tab-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+                        </div>
+                        <div class="showcase-tab-text">
+                            <span class="showcase-tab-title">Assinaturas</span>
+                            <span class="showcase-tab-desc">Não seja pego de surpresa por planos recorrentes.</span>
+                        </div>
+                    </button>
+
+                    <!-- Tab 6: Savings & Goals -->
+                    <button class="showcase-tab" data-slide="5">
+                        <div class="showcase-tab-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                        </div>
+                        <div class="showcase-tab-text">
+                            <span class="showcase-tab-title">Poupança & Metas</span>
+                            <span class="showcase-tab-desc">Separe dinheiros em "cofrinhos" e atinja alvos.</span>
+                        </div>
+                    </button>
+
+                    <!-- Tab 7: Investments -->
+                    <button class="showcase-tab" data-slide="6">
+                        <div class="showcase-tab-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+                        </div>
+                        <div class="showcase-tab-text">
+                            <span class="showcase-tab-title">Investimentos</span>
+                            <span class="showcase-tab-desc">Controle sua carteira e rendimentos históricos.</span>
+                        </div>
+                    </button>
+
+                    <!-- Tab 8: AI Assistant -->
+                    <button class="showcase-tab" data-slide="7">
+                        <div class="showcase-tab-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8z"/><circle cx="12" cy="12" r="1"/></svg>
+                        </div>
+                        <div class="showcase-tab-text">
+                            <span class="showcase-tab-title">Assistente Financeiro IA</span>
+                            <span class="showcase-tab-desc">Análise de padrões de gastos por inteligência artificial.</span>
+                        </div>
+                    </button>
+
+                    <!-- Tab 9: Projects & Tasks -->
+                    <button class="showcase-tab" data-slide="8">
+                        <div class="showcase-tab-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+                        </div>
+                        <div class="showcase-tab-text">
+                            <span class="showcase-tab-title">Projetos & Tarefas</span>
+                            <span class="showcase-tab-desc">Vincule metas financeiras a planos de ação de projetos.</span>
+                        </div>
+                    </button>
+
+                    <!-- Tab 10: Reports -->
+                    <button class="showcase-tab" data-slide="9">
+                        <div class="showcase-tab-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+                        </div>
+                        <div class="showcase-tab-text">
+                            <span class="showcase-tab-title">Relatórios</span>
+                            <span class="showcase-tab-desc">Exportação em PDF ou planilhas de forma imediata.</span>
+                        </div>
+                    </button>
+
+                    <!-- Tab 11: Settings -->
+                    <button class="showcase-tab" data-slide="10">
+                        <div class="showcase-tab-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                        </div>
+                        <div class="showcase-tab-text">
+                            <span class="showcase-tab-title">Definições</span>
+                            <span class="showcase-tab-desc">Controle do ciclo de backups e licenças.</span>
+                        </div>
+                    </button>
+                </div>
+
+                <!-- Showcase Mockup Window (Right Side) -->
+                <div class="showcase-carousel">
+                    <div class="carousel-window">
+                        <!-- Slide 0: Dashboard -->
+                        <div class="carousel-slide active">
+                            <img src="screenshots/dashboard.png" alt="Dashboard" class="carousel-img">
+                        </div>
+                        <!-- Slide 1: Transactions -->
+                        <div class="carousel-slide">
+                            <img src="screenshots/transactions.png" alt="Transações" class="carousel-img">
+                        </div>
+                        <!-- Slide 2: Accounts -->
+                        <div class="carousel-slide">
+                            <img src="screenshots/accounts.png" alt="Contas" class="carousel-img">
+                        </div>
+                        <!-- Slide 3: Budgets -->
+                        <div class="carousel-slide">
+                            <img src="screenshots/budgets.png" alt="Orçamentos" class="carousel-img">
+                        </div>
+                        <!-- Slide 4: Subscriptions -->
+                        <div class="carousel-slide">
+                            <img src="screenshots/subscriptions.png" alt="Assinaturas" class="carousel-img">
+                        </div>
+                        <!-- Slide 5: Savings/Goals -->
+                        <div class="carousel-slide">
+                            <img src="screenshots/savings.png" alt="Poupança e Metas" class="carousel-img">
+                        </div>
+                        <!-- Slide 6: Investments -->
+                        <div class="carousel-slide">
+                            <img src="screenshots/investments.png" alt="Investimentos" class="carousel-img">
+                        </div>
+                        <!-- Slide 7: AI Assistant -->
+                        <div class="carousel-slide">
+                            <img src="screenshots/ai_assistant.png" alt="Assistente IA" class="carousel-img">
+                        </div>
+                        <!-- Slide 8: Projects -->
+                        <div class="carousel-slide">
+                            <img src="screenshots/projects.png" alt="Projetos" class="carousel-img">
+                        </div>
+                        <!-- Slide 9: Reports -->
+                        <div class="carousel-slide">
+                            <img src="screenshots/reports.png" alt="Relatórios" class="carousel-img">
+                        </div>
+                        <!-- Slide 10: Settings -->
+                        <div class="carousel-slide">
+                            <img src="screenshots/settings.png" alt="Configurações" class="carousel-img">
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </section>
@@ -469,11 +1057,11 @@
     <!-- App Security & Google Integration Section -->
     <section id="seguranca" class="integration">
         <div class="container">
-            <div class="section-header">
-                <span class="section-tag">Segurança Integrada</span>
-                <h2 class="section-title">Como o VukaPay Protege Seus Dados</h2>
+            <div class="showcase-header">
+                <span class="section-tag">Segurança Sem Concessões</span>
+                <h2 class="section-title">Privacidade e Sobrenome: VukaPay</h2>
                 <p class="section-description">
-                    Focamos no offline-first. Suas transações, orçamentos e contas não passam por servidores de terceiros. Você decide quando e onde fazer o backup.
+                    Focamos no offline-first. Suas transações, orçamentos e contas não passam por servidores de terceiros. Você é o único dono dos seus dados financeiros.
                 </p>
             </div>
 
@@ -481,49 +1069,49 @@
                 <!-- Offline-first Database -->
                 <div class="integration-card">
                     <div class="card-icon">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
                     </div>
                     <h3>Banco de Dados Local e Criptografado</h3>
                     <p>
-                        Todas as informações inseridas na aplicação são armazenadas localmente no seu dispositivo através de um banco de dados SQLite. 
+                        Todas as informações inseridas na aplicação são armazenadas localmente no seu dispositivo através de um banco de dados SQLite. Sua privacidade é absoluta por padrão.
                     </p>
                     <ul class="integration-list">
                         <li>
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                            Funciona perfeitamente sem conexão com a internet.
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                            <span><strong>Zero Conexão Necessária:</strong> Funciona perfeitamente de forma 100% offline.</span>
                         </li>
                         <li>
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                            Nenhum servidor externo armazena seus dados financeiros.
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                            <span><strong>Sem Servidor Intermediário:</strong> Nós não guardamos, coletamos ou visualizamos nenhuma transação sua.</span>
                         </li>
                         <li>
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                            Remoção imediata: se você apagar o app, os dados locais são destruídos.
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                            <span><span><strong>Controle de Remoção:</strong> Se você excluir a aplicação, todos os dados locais são imediatamente eliminados.</span>
                         </li>
                     </ul>
                 </div>
 
                 <!-- Google Integration -->
                 <div id="google-drive" class="integration-card">
-                    <div class="card-icon" style="background-color: #ecfdf5; color: #10b981;">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                    <div class="card-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
                     </div>
-                    <h3>Integração com Google Drive (Backup Seguro)</h3>
+                    <h3>Integração Segura com Google Drive</h3>
                     <p>
-                        O VukaPay utiliza a autenticação da Google (OAuth 2.0) apenas para permitir a salvaguarda e sincronização do seu histórico de transações de forma automatizada no seu próprio Google Drive.
+                        O VukaPay utiliza a autenticação da Google (OAuth 2.0) estritamente para permitir o backup e a sincronização do seu histórico de transações de forma automatizada no seu próprio Google Drive.
                     </p>
                     <ul class="integration-list">
                         <li>
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                            <strong>Escopo drive.file:</strong> O app só pode criar e ler o arquivo de backup <code>vukapay_backup.json</code> gerado por ele mesmo.
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                            <span><strong>Escopo drive.file:</strong> O app só pode criar e ler o arquivo de backup <code>vukapay_backup.json</code> criado por ele mesmo.</span>
                         </li>
                         <li>
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                            <strong>Sem acesso intromissivo:</strong> O app não possui autorização para visualizar, alterar ou excluir nenhum outro documento na sua conta Google Drive.
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                            <span><strong>Sem acesso invasivo:</strong> O app não possui autorização para visualizar ou alterar qualquer outro arquivo no seu Google Drive.</span>
                         </li>
                         <li>
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                            <strong>Autenticação simples:</strong> Faça login de forma segura e imediata para identificar o seu perfil de backup.
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                            <span><strong>Autenticação Descomplicada:</strong> Faça login com a Google diretamente na aplicação para restaurar suas configurações.</span>
                         </li>
                     </ul>
                 </div>
@@ -531,54 +1119,57 @@
         </div>
     </section>
 
-    <!-- Features Grid -->
-    <section id="funcionalidades" class="features">
+    <!-- Features Summary Icons Grid -->
+    <section class="features-summary">
         <div class="container">
-            <div class="section-header">
-                <span class="section-tag">Funcionalidades Principais</span>
-                <h2 class="section-title">Controle Completo da sua Vida Financeira</h2>
+            <div class="showcase-header">
+                <span class="section-tag">Diferenciais Clave</span>
+                <h2 class="section-title">O que nos torna diferentes</h2>
                 <p class="section-description">
-                    Uma suíte de ferramentas projetadas para impulsionar a sua saúde financeira, sem complicação.
+                    Focado nas suas necessidades reais, eliminando burocracias e intermediários desnecessários.
                 </p>
             </div>
 
             <div class="grid-3">
-                <!-- Item 1 -->
+                <!-- Item 1: Metas e Poupanças -->
                 <div class="feature-item">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/></svg>
-                    <h3>Fluxo de Transações</h3>
-                    <p>Monitore suas receitas, despesas e transferências de maneira intuitiva. Separe por categorias personalizadas.</p>
+                    <div class="feature-icon-wrapper">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+                    </div>
+                    <h3>Metas Claras</h3>
+                    <p>Defina alvos de economia para o futuro de forma transparente, acompanhando o progresso histórico dos seus depósitos.</p>
                 </div>
-                <!-- Item 2 -->
+                
+                <!-- Item 2: IA Local -->
                 <div class="feature-item">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
-                    <h3>Gestão de Contas e Cartões</h3>
-                    <p>Cadastre suas contas bancárias e cartões de crédito. Acompanhe limites de despesa e as datas de vencimento das faturas.</p>
+                    <div class="feature-icon-wrapper">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+                    </div>
+                    <h3>Análise de IA</h3>
+                    <p>Um conselheiro financeiro inteligente ajuda a pontuar desperdícios e otimizar suas categorias de gastos locais.</p>
                 </div>
-                <!-- Item 3 -->
+                
+                <!-- Item 3: Relatórios Exportáveis -->
                 <div class="feature-item">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
-                    <h3>Orçamentos Inteligentes</h3>
-                    <p>Defina tetos de gastos para categorias específicas. Receba notificações automáticas quando estiver prestes a estourar o limite.</p>
+                    <div class="feature-icon-wrapper">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+                    </div>
+                    <h3>Exportação Rápida</h3>
+                    <p>Faturas e relatórios estruturados em PDF e planilhas Excel prontos para serem enviados ao seu contador.</p>
                 </div>
-                <!-- Item 4 -->
-                <div class="feature-item">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/><path d="M2 12h20"/></svg>
-                    <h3>Metas e Investimentos</h3>
-                    <p>Crie objetivos de poupança a longo prazo e gerencie sua carteira de investimentos com acompanhamento de evolução histórica.</p>
-                </div>
-                <!-- Item 5 -->
-                <div class="feature-item">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
-                    <h3>Assistente Financeiro IA</h3>
-                    <p>Uma inteligência artificial local ajuda a analisar seu padrão de gastos, apontar desperdícios e sugerir orçamentos mais eficientes.</p>
-                </div>
-                <!-- Item 6 -->
-                <div class="feature-item">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
-                    <h3>Relatórios Detalhados</h3>
-                    <p>Exporte faturas, relatórios de despesas em formato PDF ou tabelas Excel para auditoria ou compartilhamento com seu contador.</p>
-                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Call to Action Banner -->
+    <section class="cta-banner">
+        <div class="cta-banner-glow"></div>
+        <div class="container cta-banner-content">
+            <h2>Pronto para assumir o controle total?</h2>
+            <p>Faça o download do VukaPay e comece a controlar suas finanças locais com total privacidade ainda hoje.</p>
+            <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
+                <a href="#funcionalidades" class="btn btn-primary">Começar Agora</a>
+                <a href="privacy.html" class="btn btn-secondary" style="background-color: transparent; color: white; border-color: rgba(255,255,255,0.2);">Ver Políticas</a>
             </div>
         </div>
     </section>
@@ -588,7 +1179,7 @@
         <div class="container footer-grid">
             <div>
                 <a href="#" class="footer-logo">
-                    <img src="logo.png" alt="VukaPay Logo" style="width: 36px; height: 36px; object-fit: contain;">
+                    <img src="logo.png" alt="VukaPay Logo" class="footer-logo-img">
                     <span class="footer-logo-text">VukaPay</span>
                 </a>
                 <p class="footer-about">
@@ -615,6 +1206,68 @@
             <p>Criado com foco em segurança, criptografia e controle pessoal.</p>
         </div>
     </footer>
+
+    <!-- Interactive Carousel Script -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const tabs = document.querySelectorAll('.showcase-tab');
+            const slides = document.querySelectorAll('.carousel-slide');
+            let activeIndex = 0;
+            let intervalId = null;
+            const delay = 4000; // 4 seconds per slide
+
+            function showSlide(index) {
+                // Remove active class from all tabs and slides
+                tabs.forEach(tab => tab.classList.remove('active'));
+                slides.forEach(slide => slide.classList.remove('active'));
+
+                // Add active class to selected tab and slide
+                tabs[index].classList.add('active');
+                slides[index].classList.add('active');
+                activeIndex = index;
+
+                // Scroll active tab into view if needed (on mobile/horizontal scroll)
+                tabs[index].scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'nearest',
+                    inline: 'center'
+                });
+            }
+
+            function startAutoplay() {
+                stopAutoplay();
+                intervalId = setInterval(() => {
+                    let nextIndex = (activeIndex + 1) % tabs.length;
+                    showSlide(nextIndex);
+                }, delay);
+            }
+
+            function stopAutoplay() {
+                if (intervalId) {
+                    clearInterval(intervalId);
+                    intervalId = null;
+                }
+            }
+
+            // Click handlers
+            tabs.forEach((tab, index) => {
+                tab.addEventListener('click', () => {
+                    showSlide(index);
+                    // Pause autoplay on click
+                    stopAutoplay();
+                });
+            });
+
+            // Pause autoplay on hover over showcase container
+            const showcaseSection = document.querySelector('.showcase');
+            showcaseSection.addEventListener('mouseenter', stopAutoplay);
+            showcaseSection.addEventListener('mouseleave', startAutoplay);
+
+            // Initialize
+            showSlide(activeIndex);
+            startAutoplay();
+        });
+    </script>
 
 </body>
 </html>

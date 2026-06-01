@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { check, Update } from '@tauri-apps/plugin-updater';
+import { relaunch } from '@tauri-apps/plugin-process';
 import { RefreshCw, Download, AlertTriangle, CheckCircle, X } from 'lucide-react';
 
 export default function AutoUpdater() {
@@ -43,6 +44,8 @@ export default function AutoUpdater() {
       });
 
       setStatus('installing');
+      console.log('[AutoUpdater] Reiniciando aplicativo para aplicar atualização...');
+      await relaunch();
     } catch (err) {
       console.error('[AutoUpdater] Erro ao atualizar automaticamente:', err);
       setStatus('error');

@@ -5,7 +5,7 @@ import { uploadBackupToDrive, downloadBackupFromDrive } from '@/services/googleD
 import { Cloud, CloudLightning, CloudOff, RefreshCw, X, CheckCircle, Wifi, AlertTriangle, ShieldCheck, Lock } from 'lucide-react';
 
 export default function BackupSyncManager() {
-  const { user } = useAuth();
+  const { user, loginWithGoogle } = useAuth();
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [showPrompt, setShowPrompt] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
@@ -183,9 +183,17 @@ export default function BackupSyncManager() {
             )}
 
             {syncStatus === 'error' && (
-              <div className="mt-4 p-3 bg-red-500/10 border border-red-500/20 rounded-2xl flex items-center gap-2 text-red-400 text-xs">
-                <AlertTriangle className="w-4 h-4" />
-                <span>Ocorreu um erro ao enviar para o Drive. Verifique a conta.</span>
+              <div className="mt-4 p-3 bg-red-500/10 border border-red-500/20 rounded-2xl flex flex-col gap-2 text-red-400 text-xs">
+                <div className="flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4 shrink-0" />
+                  <span>Ocorreu um erro ao enviar para o Drive. Verifique a conta.</span>
+                </div>
+                <button
+                  onClick={loginWithGoogle}
+                  className="mt-1 py-1.5 px-3 bg-red-500/20 hover:bg-red-500/30 text-red-300 rounded-xl text-[10px] font-bold transition-all self-start cursor-pointer active:scale-95"
+                >
+                  Reconectar Conta Google
+                </button>
               </div>
             )}
 

@@ -368,16 +368,19 @@ export function LicenseProvider({ children }: { children: React.ReactNode }) {
     async (licenseKey: string): Promise<ActivationResult> => {
       const hwId = hardwareIdRef.current || (await getHardwareId());
 
+      // Guarda o estado anterior para poder restaurar em caso de falha
+      const previousState = licenseState;
+
       setLicenseState((prev) => ({ ...prev, phase: 'activating', errorMessage: null }));
 
       const result = await activateLicense(licenseKey, hwId);
 
       if (!result.success || !result.license) {
-        setLicenseState((prev) => ({
-          ...prev,
-          phase:        'trial_expired',
+        // Restaura o estado anterior em vez de forçar trial_expired
+        setLicenseState({
+          ...previousState,
           errorMessage: result.message || 'Falha na ativação.',
-        }));
+        });
         return result;
       }
 
@@ -405,7 +408,7 @@ export function LicenseProvider({ children }: { children: React.ReactNode }) {
 
       return result;
     },
-    [getHardwareId, getSqliteDb]
+    [getHardwareId, getSqliteDb, licenseState]
   );
 
   /**

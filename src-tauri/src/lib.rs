@@ -1,9 +1,8 @@
+use sha2::{Digest, Sha256};
 use std::io::{Read, Write};
 use std::net::TcpListener;
 use std::sync::atomic::{AtomicBool, Ordering};
 use tauri::Emitter;
-use sha2::{Sha256, Digest};
-
 
 // Flag estática para cancelar instâncias anteriores do servidor de autenticação
 static CANCEL_PREVIOUS: AtomicBool = AtomicBool::new(false);
@@ -240,7 +239,6 @@ async fn start_google_auth(
     Ok(())
 }
 
-
 // ─── Comando: get_hardware_id ────────────────────────────────────────────────
 // Captura o UUID da motherboard via wmic no Windows e retorna o hash SHA-256.
 // O hash garante que o identificador é anônimo e tem comprimento fixo.
@@ -280,7 +278,9 @@ fn get_hardware_id() -> Result<String, String> {
                 .and_then(|line| line.split('=').nth(1))
                 .map(|v| v.trim().to_string())
                 .filter(|v| !v.is_empty() && v != "None")
-                .ok_or_else(|| "Não foi possível obter identificador de hardware único.".to_string())?
+                .ok_or_else(|| {
+                    "Não foi possível obter identificador de hardware único.".to_string()
+                })?
         }
     };
 
@@ -326,10 +326,14 @@ fn get_system_info() -> Result<serde_json::Value, String> {
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_sql::Builder::default().build())
-        .invoke_handler(tauri::generate_handler![start_google_auth, get_hardware_id, get_system_info])
-
+        .invoke_handler(tauri::generate_handler![
+            start_google_auth,
+            get_hardware_id,
+            get_system_info
+        ])
         .setup(|app| {
             if cfg!(debug_assertions) {
                 app.handle().plugin(

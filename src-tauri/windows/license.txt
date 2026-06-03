@@ -1,0 +1,7 @@
+Termos de Utilização e Boas-vindas ao VukaPay
+
+Obrigado por instalar o VukaPay - O seu Sistema de Controle Financeiro Pessoal.
+
+Ao continuar com a instalação, concorda que este software é fornecido para a gestão das suas finanças pessoais e que os seus dados são guardados localmente no seu computador e na sua conta Supabase de forma segura.
+
+Clique em "Aceito" para prosseguir com a instalação do VukaPay.

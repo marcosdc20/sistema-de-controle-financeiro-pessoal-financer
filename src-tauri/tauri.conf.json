@@ -25,6 +25,7 @@
   },
   "bundle": {
     "active": true,
+    "licenseFile": "./windows/license.txt",
     "createUpdaterArtifacts": true,
     "targets": ["nsis", "msi"],
     "icon": [
@@ -43,7 +44,11 @@
         "startMenuFolder": "VukaPay",
         "installerHooks": "./windows/hooks.nsh",
         "languages": ["Portuguese", "English"],
-        "compression": "lzma"
+        "compression": "lzma",
+        "installerIcon": "./icons/icon.ico",
+        "headerImage": "./windows/installer-header.bmp",
+        "sidebarImage": "./windows/installer-sidebar.bmp",
+        "displayLanguageSelector": true
       }
     }
   },

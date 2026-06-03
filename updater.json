@@ -1,11 +1,12 @@
 {
   "version": "1.0.9",
-  "notes": "VukaPay v1.0.9 — Redesenho do website oficial inspirado no Circle.so integrado com links externos na barra lateral e modal de ajuda do cliente desktop.",
-  "pub_date": "2026-06-03T19:00:00Z",
+  "notes": "VukaPay v1.0.9 — Correção do fundo preto e tema escuro: o fundo do sistema agora está correto no modo claro, o toggle de tema escuro nas definições funciona corretamente e o tema é guardado entre sessões.",
+  "pub_date": "2026-06-03T22:00:00Z",
   "platforms": {
     "windows-x86_64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVTUEh6TVdRZXFBTXU4dTUwY2lOQXovRm5LVDRwdFM3L2h2bmgvcFl4aXJib09ZTkVHeDdsSnpKWG9Pa0NrL2JlZTZMY0ErYk0xNHpOajlUT2NJWFFYSDFFUU1xTEVRVndRPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgwNTEzNzE2CWZpbGU6VnVrYVBheV8xLjAuOV94NjQtc2V0dXAuZXhlCm1DRU1tb3dUZ2dKOVVKc2w0UncwZjhsRURWVWo0M0JMQ2xJMjlycUhBNTlPRlE0THpxOHJ5cDBGREx2cXJlWFNEenNxVDBlcTNWNnBFZktodDkwN0RnPT0K",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVTUEh6TVdRZXFBTWhqRlV1cHhqWmFiOU1QeXlCTVp5UHdLazlEemhOSXphQ0prMW55RHVGZ00rTXI5KzkrZnJQNG5GY3NiT0JJRFFPUjlJUTByNDNEQ2xzUWNjREpyYXdFPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgwNTI1MDAyCWZpbGU6VnVrYVBheV8xLjAuOV94NjQtc2V0dXAuZXhlCkVPM0JLbm1TQ3JaSFpSNUI1NjBwVkRMYkJRdlN0bmRKTi9ZOHMyakt0SERiZHllZ3NuZVVvTWx2UllmUFJRSXg4MlFOcXR1WVIrQ1A4OFFvdHFnbEFnPT0K",
       "url": "https://github.com/marcosdc20/sistema-de-controle-financeiro-pessoal-financer/releases/download/v1.0.9/VukaPay_1.0.9_x64-setup.exe"
     }
   }
 }
+

@@ -29,7 +29,9 @@ import {
   FolderKanban,
   Users,
   Briefcase,
-  MessageSquare
+  MessageSquare,
+  Globe,
+  ExternalLink
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/context/AuthContext';
@@ -198,7 +200,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   }, []);
 
   return (
-    <div className="h-screen bg-[#F3F4F6] text-gray-900 font-sans flex overflow-hidden">
+    <div className="h-screen bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100 font-sans flex overflow-hidden">
       {/* Mobile Sidebar Overlay */}
       {isSidebarOpen && (
         <div
@@ -365,6 +367,28 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             );
           })}
 
+          <a
+            href="https://marcosdc20.github.io/vukapay-docs/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className={cn(
+              "flex items-center px-3 py-3 rounded-xl text-sm font-medium transition-all duration-200 text-gray-400 hover:text-white hover:bg-gray-800 group relative",
+              isCollapsed && "justify-center px-0 w-full"
+            )}
+          >
+            <Globe className={cn("w-5 h-5 transition-colors shrink-0", !isCollapsed && "mr-3", "text-gray-400 group-hover:text-white")} />
+            {!isCollapsed && <span className="truncate flex-1 text-left">Visitar Website</span>}
+            {!isCollapsed && <ExternalLink className="w-3.5 h-3.5 opacity-55 group-hover:opacity-100 shrink-0 ml-1" />}
+
+            {/* Tooltip for Collapsed State */}
+            {isCollapsed && (
+              <div className="absolute left-full ml-4 px-4 py-2 bg-indigo-600 text-white text-xs font-bold rounded-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 whitespace-nowrap z-[100] shadow-[0_10px_25px_rgba(79,70,229,0.4)] border border-indigo-400/30 translate-x-[-10px] group-hover:translate-x-0 pointer-events-none">
+                Visitar Website
+                <div className="absolute right-full top-1/2 -translate-y-1/2 border-[6px] border-transparent border-r-indigo-600" />
+              </div>
+            )}
+          </a>
+
           <button
             onClick={handleLogout}
             className={cn(
@@ -385,46 +409,45 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           </button>
         </div>
       </aside>
-
       {/* Main Content */}
-      <main className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden bg-[#F3F4F6] transition-all duration-500 cubic-bezier(0.4, 0, 0.2, 1)">
+      <main className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden bg-gray-55 dark:bg-gray-950 transition-all duration-500 cubic-bezier(0.4, 0, 0.2, 1)">
         {/* Header */}
-        <header className="h-20 bg-white border-b border-gray-200 flex items-center px-4 lg:px-8 justify-between sticky top-0 z-30 shadow-sm shrink-0">
+        <header className="h-20 bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-800 flex items-center px-4 lg:px-8 justify-between sticky top-0 z-30 shadow-sm shrink-0">
           <div className="flex items-center gap-4 flex-1">
             <button
               onClick={() => setIsSidebarOpen(true)}
-              className="lg:hidden p-2 -ml-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+              className="lg:hidden p-2 -ml-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
             >
               <Menu className="w-6 h-6" />
             </button>
 
             {/* Page Title (Desktop) */}
             <div className="hidden xl:block mr-8">
-              <h1 className="text-lg font-bold text-gray-900">{currentPathLabel}</h1>
+              <h1 className="text-lg font-bold text-gray-900 dark:text-white">{currentPathLabel}</h1>
             </div>
 
             {/* Search Bar */}
             <div className={cn(
               "flex-1 max-w-md relative transition-all duration-300",
-              isMobileSearchOpen ? "fixed inset-x-0 top-0 h-20 bg-white z-50 px-4 flex items-center lg:static lg:h-auto lg:p-0" : "hidden md:flex"
+              isMobileSearchOpen ? "fixed inset-x-0 top-0 h-20 bg-white dark:bg-slate-900 z-50 px-4 flex items-center lg:static lg:h-auto lg:p-0" : "hidden md:flex"
             )}>
               <div className="relative w-full">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-500" />
                 <input
                   type="text"
                   placeholder="Pesquisar (⌘ + K)"
                   readOnly
                   onClick={() => setIsCommandBarOpen(true)}
-                  className="w-full pl-10 pr-12 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all cursor-pointer"
+                  className="w-full pl-10 pr-12 py-2.5 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 dark:text-white transition-all cursor-pointer"
                 />
-                <div className="absolute right-3 top-1/2 -translate-y-1/2 hidden sm:flex items-center gap-1 px-1.5 py-0.5 bg-white border border-gray-200 rounded text-[10px] font-bold text-gray-400 shadow-sm">
+                <div className="absolute right-3 top-1/2 -translate-y-1/2 hidden sm:flex items-center gap-1 px-1.5 py-0.5 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded text-[10px] font-bold text-gray-400 shadow-sm">
                   <span className="text-[8px]">⌘</span>K
                 </div>
               </div>
               {isMobileSearchOpen && (
                 <button
                   onClick={() => setIsMobileSearchOpen(false)}
-                  className="ml-3 p-2 text-gray-400 hover:text-gray-600 lg:hidden"
+                  className="ml-3 p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 lg:hidden"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -436,7 +459,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             {/* Mobile Search Toggle */}
             <button
               onClick={() => setIsCommandBarOpen(true)}
-              className="md:hidden p-2.5 text-gray-500 hover:bg-gray-100 rounded-xl transition-colors"
+              className="md:hidden p-2.5 text-gray-500 hover:bg-gray-105 dark:hover:bg-slate-800 rounded-xl transition-colors"
             >
               <Search className="w-5 h-5" />
             </button>
@@ -450,14 +473,14 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               <span>Nova Transação</span>
             </button>
 
-            <div className="h-8 w-px bg-gray-200 mx-1 hidden sm:block"></div>
+            <div className="h-8 w-px bg-gray-200 dark:bg-slate-800 mx-1 hidden sm:block"></div>
 
             {/* Privacy Mode Toggle */}
             <button
               onClick={togglePrivacyMode}
               className={cn(
-                "p-2.5 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-xl transition-all relative group",
-                isPrivacyMode && "text-indigo-600 bg-indigo-50/50"
+                "p-2.5 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-350 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-xl transition-all relative group",
+                isPrivacyMode && "text-indigo-600 bg-indigo-50/50 dark:bg-indigo-950/30 dark:text-indigo-400"
               )}
               title={isPrivacyMode ? "Desativar Modo Olhar Indiscreto" : "Ativar Modo Olhar Indiscreto (Ctrl+H)"}
             >
@@ -473,25 +496,25 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   setIsHelpOpen(false);
                 }}
                 className={cn(
-                  "p-2.5 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-xl transition-all relative group",
-                  isNotificationsOpen && "bg-gray-100 text-indigo-600"
+                  "p-2.5 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-xl transition-all relative group",
+                  isNotificationsOpen && "bg-gray-100 dark:bg-slate-800 text-indigo-600 dark:text-indigo-400"
                 )}
               >
                 <Bell className="w-5 h-5" />
                 {notifications.some(n => !n.read) && (
-                  <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
+                  <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-white dark:border-slate-900"></span>
                 )}
               </button>
 
               {isNotificationsOpen && (
                 <>
                   <div className="fixed inset-0 z-40" onClick={() => setIsNotificationsOpen(false)} />
-                  <div className="absolute right-0 mt-2 w-80 bg-white rounded-2xl shadow-2xl border border-gray-100 z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-200 origin-top-right">
-                    <div className="p-4 border-b border-gray-50 flex items-center justify-between">
-                      <h3 className="font-bold text-gray-900">Notificações</h3>
+                  <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-gray-100 dark:border-slate-800 z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-200 origin-top-right">
+                    <div className="p-4 border-b border-gray-100 dark:border-slate-800 flex items-center justify-between">
+                      <h3 className="font-bold text-gray-900 dark:text-white">Notificações</h3>
                       <button
                         onClick={() => notifications.forEach(n => markNotificationAsRead(n.id))}
-                        className="text-xs text-indigo-600 font-semibold hover:underline"
+                        className="text-xs text-indigo-600 dark:text-indigo-400 font-semibold hover:underline"
                       >
                         Marcar todas como lidas
                       </button>
@@ -503,19 +526,19 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                             key={n.id}
                             onClick={() => markNotificationAsRead(n.id)}
                             className={cn(
-                              "p-4 hover:bg-gray-50 transition-colors cursor-pointer border-b border-gray-50 last:border-0",
-                              !n.read && "bg-indigo-50/30"
+                              "p-4 hover:bg-gray-50 dark:hover:bg-slate-800/40 transition-colors cursor-pointer border-b border-gray-100 dark:border-slate-850 last:border-0",
+                              !n.read && "bg-indigo-50/30 dark:bg-indigo-950/10"
                             )}
                           >
                             <div className="flex gap-3">
                               <div className={cn(
                                 "w-2 h-2 mt-1.5 rounded-full shrink-0",
-                                !n.read ? (n.type === 'error' ? "bg-red-500" : n.type === 'warning' ? "bg-amber-500" : "bg-indigo-500") : "bg-gray-200"
+                                !n.read ? (n.type === 'error' ? "bg-red-500" : n.type === 'warning' ? "bg-amber-500" : "bg-indigo-500") : "bg-gray-200 dark:bg-slate-700"
                               )} />
                               <div>
-                                <p className={cn("text-sm font-bold text-gray-900", !n.read && "text-indigo-900")}>{n.title}</p>
-                                <p className="text-xs text-gray-500 mt-0.5 leading-relaxed">{n.desc}</p>
-                                <p className="text-[10px] text-gray-400 mt-1.5 font-medium">
+                                <p className={cn("text-sm font-bold text-gray-900 dark:text-white", !n.read && "text-indigo-900 dark:text-indigo-200")}>{n.title}</p>
+                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 leading-relaxed">{n.desc}</p>
+                                <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-1.5 font-medium">
                                   {new Date(n.date).toLocaleDateString('pt-AO')}
                                 </p>
                               </div>
@@ -523,13 +546,13 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                           </div>
                         ))
                       ) : (
-                        <div className="p-12 text-center text-gray-400">
+                        <div className="p-12 text-center text-gray-400 dark:text-gray-550">
                           <p className="text-sm">Sem novas notificações.</p>
                         </div>
                       )}
                     </div>
-                    <div className="p-3 bg-gray-50 text-center">
-                      <button className="text-sm font-bold text-gray-600 hover:text-indigo-600 transition-colors">Ver todas as notificações</button>
+                    <div className="p-3 bg-gray-50 dark:bg-slate-950/60 text-center">
+                      <button className="text-sm font-bold text-gray-600 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">Ver todas as notificações</button>
                     </div>
                   </div>
                 </>
@@ -555,26 +578,26 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               {isHelpOpen && (
                 <>
                   <div className="fixed inset-0 z-40" onClick={() => setIsHelpOpen(false)} />
-                  <div className="absolute right-0 mt-2 w-64 bg-white rounded-2xl shadow-2xl border border-gray-100 z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-200 origin-top-right">
-                    <div className="p-4 border-b border-gray-50">
-                      <h3 className="font-bold text-gray-900">Centro de Ajuda</h3>
+                  <div className="absolute right-0 mt-2 w-64 bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-gray-100 dark:border-slate-800 z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-200 origin-top-right">
+                    <div className="p-4 border-b border-gray-100 dark:border-slate-800">
+                      <h3 className="font-bold text-gray-900 dark:text-white">Centro de Ajuda</h3>
                     </div>
                     <div className="p-2">
                       <button
                         onClick={() => { setIsHelpOpen(false); /* Documentation logic here */ }}
-                        className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 hover:text-indigo-600 transition-all text-left"
+                        className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-55 dark:hover:bg-slate-800 hover:text-indigo-600 dark:hover:text-indigo-400 transition-all text-left"
                       >
                         Documentação
                       </button>
                       <button
                         onClick={() => { setIsHelpOpen(true); }}
-                        className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 hover:text-indigo-600 transition-all text-left"
+                        className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-55 dark:hover:bg-slate-800 hover:text-indigo-600 dark:hover:text-indigo-400 transition-all text-left"
                       >
                         Atalhos de Teclado
                       </button>
                       <button
                         onClick={() => { setIsHelpOpen(false); /* Support logic here */ }}
-                        className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 hover:text-indigo-600 transition-all text-left"
+                        className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-55 dark:hover:bg-slate-800 hover:text-indigo-600 dark:hover:text-indigo-400 transition-all text-left"
                       >
                         Suporte via Chat
                       </button>
@@ -594,7 +617,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 }}
                 className={cn(
                   "p-1 rounded-full border-2 transition-all",
-                  isProfileOpen ? "border-indigo-600 scale-105" : "border-transparent hover:border-gray-200"
+                  isProfileOpen ? "border-indigo-600 scale-105" : "border-transparent hover:border-gray-200 dark:hover:border-slate-700"
                 )}
               >
                 {profile?.avatar_url ? (
@@ -613,16 +636,16 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               {isProfileOpen && (
                 <>
                   <div className="fixed inset-0 z-40" onClick={() => setIsProfileOpen(false)} />
-                  <div className="absolute right-0 mt-2 w-56 bg-white rounded-2xl shadow-2xl border border-gray-100 z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-200 origin-top-right">
-                    <div className="p-4 border-b border-gray-50 bg-gray-50/50">
-                      <p className="text-sm font-bold text-gray-900">{profile?.full_name || user?.user_metadata?.full_name || 'Usuário'}</p>
-                      <p className="text-xs text-gray-500 truncate">{user?.email}</p>
+                  <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-gray-100 dark:border-slate-800 z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-200 origin-top-right">
+                    <div className="p-4 border-b border-gray-100 dark:border-slate-800 bg-gray-55/50 dark:bg-slate-950/50">
+                      <p className="text-sm font-bold text-gray-900 dark:text-white">{profile?.full_name || user?.user_metadata?.full_name || 'Usuário'}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{user?.email}</p>
                     </div>
                     <div className="p-2">
                       <NavLink
                         to="/settings"
                         onClick={() => setIsProfileOpen(false)}
-                        className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 hover:text-indigo-600 transition-all"
+                        className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-55 dark:hover:bg-slate-800 hover:text-indigo-600 dark:hover:text-indigo-400 transition-all"
                       >
                         <User className="w-4 h-4" />
                         Meu Perfil
@@ -630,16 +653,16 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                       <NavLink
                         to="/settings"
                         onClick={() => setIsProfileOpen(false)}
-                        className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 hover:text-indigo-600 transition-all"
+                        className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-55 dark:hover:bg-slate-800 hover:text-indigo-600 dark:hover:text-indigo-400 transition-all"
                       >
                         <Settings className="w-4 h-4" />
                         Definições
                       </NavLink>
                     </div>
-                    <div className="p-2 border-t border-gray-50">
+                    <div className="p-2 border-t border-gray-100 dark:border-slate-800">
                       <button
                         onClick={handleLogout}
-                        className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-bold text-red-600 hover:bg-red-50 transition-all"
+                        className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-bold text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all"
                       >
                         <LogOut className="w-4 h-4" />
                         Sair da Conta

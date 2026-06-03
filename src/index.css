@@ -81,7 +81,7 @@ html.dark #root, .dark #root {
   background-color: #090d16 !important;
 }
 
-.dark .bg-[#F3F4F6] {
+.dark .bg-\[\#F3F4F6\] {
   background-color: #090d16 !important;
 }
 

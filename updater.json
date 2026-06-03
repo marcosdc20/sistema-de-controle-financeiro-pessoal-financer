@@ -1,11 +1,11 @@
 {
-  "version": "1.0.8",
-  "notes": "VukaPay v1.0.8 — Grande atualização!\n\n✨ NOVIDADES:\n• Novos menus: Contactos & Mesadas, Área de Negócios, Comunidade\n• Gerador de Faturas, Recibos e Propostas com IVA angolano (14%)\n• Simulador de Lucros e Perdas para empreendedores\n• Campos IBAN, Número de Conta e Multicaixa Express nas contas\n• Dicas financeiras para a realidade angolana\n• Idiomas tradicionais: Umbundu, Kimbundu, Kikongo\n• Tema Claro/Escuro melhorado\n• Login premium redesenhado\n• Versão atualizada no painel de definições\n\n📧 Suporte: suporte.vukapay@gmail.com",
-  "pub_date": "2026-06-03T17:00:00Z",
+  "version": "1.0.9",
+  "notes": "VukaPay v1.0.9 — Redesenho do website oficial inspirado no Circle.so integrado com links externos na barra lateral e modal de ajuda do cliente desktop.",
+  "pub_date": "2026-06-03T19:00:00Z",
   "platforms": {
     "windows-x86_64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVTUEh6TVdRZXFBTWtva0NXR2Q1L09CNExxRFY0OXpxbWN2NTBEbXlmWCtaeUlyVmFCejN4aUFKR0dGWHA1aFlvY3FQaVd0aG1nV0ZYTmJNV3FpeXlRd0NPbnI5OWk0d3dNPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgwNTA1MTM1CWZpbGU6VnVrYVBheV8xLjAuOF94NjQtc2V0dXAuZXhlCmE5ZHRDcjZOQmtzVi80UjZubTVoUmFSekFTaDRsTkpHTDVDUEpMYjk3WUkrWEdZOUIwTWxlazdOajhxOFY1V3JJMkxoT2F5emhkUml1VkNCblFnUkRRPT0K",
-      "url": "https://github.com/marcosdc20/sistema-de-controle-financeiro-pessoal-financer/releases/download/v1.0.8/VukaPay_1.0.8_x64-setup.exe"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVTUEh6TVdRZXFBTWtva0NXR2Q1L09CNExxRFY0OXpxbWN2NTBEbXlmWCtaeUlyVmFCejN4aUFKR0dGWHA1aFlvY3FQaVd0aG1nV0ZYTmJNV3FpeXlRd0NPbnI5OWk0d3dNPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgwNTA1MTM1CWZpbGU6VnVrYVBheV8xLjAuOV94NjQtc2V0dXAuZXhlCmE5ZHRDcjZOQmtzVi80UjZubTVoUmFSekFTaDRsTkpHTDVDUEpMYjk3WUkrWEdZOUIwTWxlazdOajhxOFY1V3JJMkxoT2F5emhkUml1VkNCblFnUkRRPT0K",
+      "url": "https://github.com/marcosdc20/sistema-de-controle-financeiro-pessoal-financer/releases/download/v1.0.9/VukaPay_1.0.9_x64-setup.exe"
     }
   }
 }

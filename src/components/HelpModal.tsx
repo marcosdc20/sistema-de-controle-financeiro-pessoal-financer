@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, Book, Command, MessageCircle, HelpCircle, ExternalLink, ChevronRight } from 'lucide-react';
+import { X, Book, Command, MessageCircle, HelpCircle, ExternalLink, Globe } from 'lucide-react';
 
 interface HelpModalProps {
     isOpen: boolean;
@@ -14,7 +14,13 @@ export default function HelpModal({ isOpen, onClose }: HelpModalProps) {
             title: 'Guia de Início Rápido',
             icon: <Book className="w-5 h-5 text-indigo-600" />,
             desc: 'Aprenda o básico sobre como gerenciar suas finanças.',
-            link: '#'
+            link: 'https://marcosdc20.github.io/vukapay-docs/'
+        },
+        {
+            title: 'Website Oficial',
+            icon: <Globe className="w-5 h-5 text-indigo-600" />,
+            desc: 'Aceda à nossa documentação online, preços e downloads.',
+            link: 'https://marcosdc20.github.io/vukapay-docs/'
         },
         {
             title: 'Atalhos de Teclado',
@@ -31,7 +37,7 @@ export default function HelpModal({ isOpen, onClose }: HelpModalProps) {
             title: 'Suporte via Chat',
             icon: <MessageCircle className="w-5 h-5 text-amber-600" />,
             desc: 'Fale com nossa equipe de suporte em tempo real.',
-            link: '#'
+            link: 'mailto:suporte.vukapay@gmail.com'
         }
     ];
 
@@ -56,24 +62,21 @@ export default function HelpModal({ isOpen, onClose }: HelpModalProps) {
                 </div>
 
                 <div className="space-y-4">
-                    {sections.map((section, idx) => (
-                        <div
-                            key={idx}
-                            className="p-5 rounded-2xl border border-gray-100 hover:border-indigo-100 hover:bg-indigo-50/30 transition-all cursor-pointer group"
-                        >
+                    {sections.map((section, idx) => {
+                        const content = (
                             <div className="flex items-start justify-between">
                                 <div className="flex gap-4">
-                                    <div className="mt-1 p-2 rounded-xl bg-white shadow-sm border border-gray-100">
+                                    <div className="mt-1 p-2 rounded-xl bg-white shadow-sm border border-gray-100 shrink-0">
                                         {section.icon}
                                     </div>
-                                    <div>
+                                    <div className="text-left">
                                         <h3 className="font-bold text-gray-900">{section.title}</h3>
                                         <p className="text-xs text-gray-500 mt-1 leading-relaxed">{section.desc}</p>
 
                                         {section.shortcuts && (
                                             <div className="mt-4 grid grid-cols-1 gap-2">
                                                 {section.shortcuts.map((s, si) => (
-                                                    <div key={si} className="flex justify-between items-center text-[10px] font-medium bg-white px-2 py-1.5 rounded-lg border border-gray-50 uppercase tracking-wider">
+                                                    <div key={si} className="flex justify-between items-center text-[10px] font-medium bg-white px-2 py-1.5 rounded-lg border border-gray-50 uppercase tracking-wider gap-4">
                                                         <span className="text-gray-400">{s.desc}</span>
                                                         <span className="text-gray-900 bg-gray-50 px-1.5 rounded border border-gray-200">{s.key}</span>
                                                     </div>
@@ -82,17 +85,40 @@ export default function HelpModal({ isOpen, onClose }: HelpModalProps) {
                                         )}
                                     </div>
                                 </div>
-                                {section.link && (
-                                    <ExternalLink className="w-4 h-4 text-gray-300 group-hover:text-indigo-600 transition-colors" />
+                                {section.link && section.link !== '#' && (
+                                    <ExternalLink className="w-4 h-4 text-gray-300 group-hover:text-indigo-600 transition-colors shrink-0" />
                                 )}
                             </div>
-                        </div>
-                    ))}
+                        );
+
+                        if (section.link && section.link !== '#') {
+                            return (
+                                <a
+                                    key={idx}
+                                    href={section.link}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="p-5 block rounded-2xl border border-gray-100 hover:border-indigo-100 hover:bg-indigo-50/30 transition-all cursor-pointer group"
+                                >
+                                    {content}
+                                </a>
+                            );
+                        }
+
+                        return (
+                            <div
+                                key={idx}
+                                className="p-5 rounded-2xl border border-gray-100 hover:border-indigo-100 hover:bg-indigo-50/30 transition-all group"
+                            >
+                                {content}
+                            </div>
+                        );
+                    })}
                 </div>
 
                 <div className="mt-8 pt-6 border-t border-gray-100 text-center">
                     <p className="text-xs text-gray-400">
-                        VukaPay v1.0.5 • <button className="hover:text-indigo-600 font-medium">Notas da Versão</button>
+                        VukaPay v1.0.9 • <button className="hover:text-indigo-600 font-medium">Notas da Versão</button>
                     </p>
                 </div>
             </div>

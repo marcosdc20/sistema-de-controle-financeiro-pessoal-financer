@@ -6,7 +6,7 @@ import {
   TrendingUp, TrendingDown, DollarSign, Percent, ChevronDown,
   ChevronUp, Package, User, Phone, Mail, MapPin, Building2,
   CheckCircle2, Clock, AlertCircle, Printer, ArrowRight,
-  BarChart2, PieChart, Wallet, Hash
+  BarChart2, PieChart, Wallet, Hash, Lightbulb
 } from 'lucide-react';
 import PageTransition from '@/components/PageTransition';
 

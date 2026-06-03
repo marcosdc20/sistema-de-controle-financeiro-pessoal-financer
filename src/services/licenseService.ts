@@ -33,7 +33,22 @@ const OFFLINE_GRACE_PERIOD_MS = 7 * 24 * 60 * 60 * 1000; // 7 dias offline permi
 const LOCAL_LICENSE_TABLE = 'license_records';
 const HMAC_SECRET = import.meta.env.VITE_LICENSE_HMAC_SECRET as string;
 
-// ─── Funções auxiliares de criptografia ─────────────────────────────────────
+// ─── Funções auxiliares ──────────────────────────────────────────────────────
+
+/**
+ * Adiciona um limite de tempo (timeout) a uma Promise.
+ */
+function withTimeout<T>(promise: Promise<T>, ms: number, errorMsg: string): Promise<T> {
+  let timeoutId: any;
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    timeoutId = setTimeout(() => {
+      reject(new Error(errorMsg));
+    }, ms);
+  });
+  return Promise.race([promise, timeoutPromise]).finally(() => {
+    clearTimeout(timeoutId);
+  });
+}
 
 /**
  * Gera um HMAC-SHA256 usando Web Crypto API nativa.
@@ -122,7 +137,11 @@ export async function getServerTimestamp(): Promise<{ timestamp: number; isOnlin
 export async function checkTrialStatus(hardwareId: string): Promise<FirestoreTrial | null> {
   try {
     const trialRef = doc(db, 'trials', hardwareId);
-    const trialSnap = await getDoc(trialRef);
+    const trialSnap = await withTimeout(
+      getDoc(trialRef),
+      8000,
+      'TIMEOUT: Erro ao verificar trial no servidor.'
+    );
 
     if (!trialSnap.exists()) {
       return null;
@@ -147,7 +166,11 @@ export async function createTrialRecord(hardwareId: string, serverTime: number):
   };
 
   const trialRef = doc(db, 'trials', hardwareId);
-  await setDoc(trialRef, trialData);
+  await withTimeout(
+    setDoc(trialRef, trialData),
+    8000,
+    'TIMEOUT: Erro ao registrar trial no servidor.'
+  );
 
   return trialData;
 }
@@ -199,7 +222,11 @@ export function saveTrialLocally(trial: FirestoreTrial): void {
 export async function validateLicense(licenseKey: string): Promise<FirestoreLicense | null> {
   try {
     const licenseRef = doc(db, 'licenses', licenseKey.toUpperCase());
-    const licenseSnap = await getDoc(licenseRef);
+    const licenseSnap = await withTimeout(
+      getDoc(licenseRef),
+      8000,
+      'TIMEOUT: Não foi possível obter resposta do servidor de licenças.'
+    );
 
     if (!licenseSnap.exists()) {
       return null;
@@ -257,24 +284,32 @@ export async function activateLicense(
     // 4. Grava o hardware_id no Firestore (as Firestore Security Rules também validam isto)
     if (!license.hardware_id) {
       const licenseRef = doc(db, 'licenses', normalizedKey);
-      await updateDoc(licenseRef, {
-        hardware_id: hardwareId,
-      });
+      await withTimeout(
+        updateDoc(licenseRef, {
+          hardware_id: hardwareId,
+        }),
+        8000,
+        'TIMEOUT: O servidor não respondeu a tempo para vincular o Hardware ID.'
+      );
     }
 
     // Retorna a licença atualizada
     const updatedLicense: FirestoreLicense = { ...license, hardware_id: hardwareId };
     return { success: true, license: updatedLicense };
   } catch (error: unknown) {
-    const errorCode: ActivationErrorCode =
-      error instanceof Error && error.message.includes('network')
-        ? 'NETWORK_ERROR'
-        : 'UNKNOWN';
+    const errorStr = error instanceof Error ? error.message : '';
+    const isTimeout = errorStr.includes('TIMEOUT');
+    const isNetwork = errorStr.toLowerCase().includes('network') || errorStr.toLowerCase().includes('failed to fetch');
+
+    const errorCode: ActivationErrorCode = isNetwork ? 'NETWORK_ERROR' : 'UNKNOWN';
+    const message = isTimeout
+      ? 'A ativação expirou (Timeout). Verifique a sua conexão com a internet e tente novamente.'
+      : 'Erro ao ativar a licença. Verifique a sua ligação à internet.';
 
     return {
       success: false,
       errorCode,
-      message: 'Erro ao ativar a licença. Verifique a sua ligação à internet.',
+      message,
     };
   }
 }

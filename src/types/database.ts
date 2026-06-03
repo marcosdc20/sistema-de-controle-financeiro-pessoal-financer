@@ -31,6 +31,11 @@ export type Database = {
                     status: string | null
                     type: string
                     user_id: string
+                    iban: string | null
+                    account_number: string | null
+                    mc_express_phone: string | null
+                    mc_express_limit: number | null
+                    mc_express_coords: string | null
                 }
                 Insert: {
                     balance?: number | null
@@ -48,6 +53,11 @@ export type Database = {
                     status?: string | null
                     type: string
                     user_id: string
+                    iban?: string | null
+                    account_number?: string | null
+                    mc_express_phone?: string | null
+                    mc_express_limit?: number | null
+                    mc_express_coords?: string | null
                 }
                 Update: {
                     balance?: number | null
@@ -65,6 +75,11 @@ export type Database = {
                     status?: string | null
                     type?: string
                     user_id?: string
+                    iban?: string | null
+                    account_number?: string | null
+                    mc_express_phone?: string | null
+                    mc_express_limit?: number | null
+                    mc_express_coords?: string | null
                 }
                 Relationships: []
             }

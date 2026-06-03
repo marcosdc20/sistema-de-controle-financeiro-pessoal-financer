@@ -385,15 +385,23 @@ export function LicenseProvider({ children }: { children: React.ReactNode }) {
       }
 
       // Persiste no SQLite local
-      const db = await getSqliteDb();
-      if (db) {
-        await saveLicenseLocally(db, result.license, hwId);
+      try {
+        const db = await getSqliteDb();
+        if (db) {
+          await saveLicenseLocally(db, result.license, hwId);
+        }
+      } catch (dbError) {
+        console.error('[LicenseContext] Falha ao persistir licença localmente no SQLite:', dbError);
       }
 
       // Limpa dados do trial no localStorage
-      localStorage.removeItem('vukapay_trial_started');
-      localStorage.removeItem('vukapay_trial_expires');
-      localStorage.removeItem('vukapay_trial_hw_id');
+      try {
+        localStorage.removeItem('vukapay_trial_started');
+        localStorage.removeItem('vukapay_trial_expires');
+        localStorage.removeItem('vukapay_trial_hw_id');
+      } catch (lsError) {
+        console.error('[LicenseContext] Falha ao limpar cache de trial:', lsError);
+      }
 
       setLicenseState({
         ...initialState,

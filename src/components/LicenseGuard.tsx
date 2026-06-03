@@ -104,6 +104,26 @@ function BlockedScreen({ phase }: { phase: 'trial_expired' | 'expired' | 'revoke
   const [activationError, setActivationError] = useState<string | null>(null);
   const [activationSuccess, setActivationSuccess] = useState(false);
 
+  useEffect(() => {
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission();
+    }
+  }, []);
+
+  const sendDesktopNotification = (title: string, body: string) => {
+    if ('Notification' in window) {
+      if (Notification.permission === 'granted') {
+        new Notification(title, { body, icon: '/logo.png' });
+      } else if (Notification.permission !== 'denied') {
+        Notification.requestPermission().then(permission => {
+          if (permission === 'granted') {
+            new Notification(title, { body, icon: '/logo.png' });
+          }
+        });
+      }
+    }
+  };
+
   const handleKeyChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value.toUpperCase().replace(/[^A-Z0-9-]/g, '');
     setLicenseKey(value);
@@ -117,7 +137,9 @@ function BlockedScreen({ phase }: { phase: 'trial_expired' | 'expired' | 'revoke
       return;
     }
     if (!licenseKey.match(/^VUKA-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}$/)) {
-      setActivationError('Formato inválido. A chave deve seguir o padrão VUKA-XXXX-XXXX-XXXX-XXXX');
+      const errMsg = 'Formato inválido. A chave deve seguir o padrão VUKA-XXXX-XXXX-XXXX-XXXX';
+      setActivationError(errMsg);
+      sendDesktopNotification('Falha de Ativação VukaPay', errMsg);
       return;
     }
 
@@ -128,6 +150,7 @@ function BlockedScreen({ phase }: { phase: 'trial_expired' | 'expired' | 'revoke
 
     if (result.success) {
       setActivationSuccess(true);
+      sendDesktopNotification('VukaPay Ativado!', 'A sua licença foi ativada com sucesso.');
     } else {
       const errorMessages: Record<string, string> = {
         NOT_FOUND:         'Chave de licença não encontrada. Verifique e tente novamente.',
@@ -137,9 +160,9 @@ function BlockedScreen({ phase }: { phase: 'trial_expired' | 'expired' | 'revoke
         NETWORK_ERROR:     'Sem conexão à internet. Verifique a sua ligação e tente novamente.',
         UNKNOWN:           'Erro inesperado. Tente novamente ou contacte o suporte.',
       };
-      setActivationError(
-        errorMessages[result.errorCode ?? 'UNKNOWN'] || result.message || 'Falha na ativação.'
-      );
+      const errMsg = errorMessages[result.errorCode ?? 'UNKNOWN'] || result.message || 'Falha na ativação.';
+      setActivationError(errMsg);
+      sendDesktopNotification('Falha de Ativação VukaPay', errMsg);
     }
 
     setIsActivating(false);
@@ -162,7 +185,7 @@ function BlockedScreen({ phase }: { phase: 'trial_expired' | 'expired' | 'revoke
       icon: <ShieldAlert className="w-8 h-8 text-red-400" />,
       iconBg: 'from-red-500/20 to-rose-500/20 border-red-500/30',
       title: 'Acesso Suspenso',
-      description: 'A sua licença foi desativada. Contacte o suporte em vukapay@suporte.com para mais informações.',
+      description: 'A sua licença foi desativada. Contacte o suporte em suporte.vukapay@gmail.com para mais informações.',
     },
     error: {
       icon: <AlertTriangle className="w-8 h-8 text-amber-400" />,
@@ -363,11 +386,8 @@ function OfflineWarningScreen() {
 
 // ─── Banner: Trial Ativo ──────────────────────────────────────────────────────
 
-function TrialBanner() {
+function TrialBanner({ onDismiss }: { onDismiss: () => void }) {
   const { licenseState } = useLicense();
-  const [dismissed, setDismissed] = useState(false);
-
-  if (dismissed) return null;
 
   const daysLeft = licenseState.trialDaysRemaining ?? 0;
   const isUrgent = daysLeft <= 2;
@@ -402,7 +422,7 @@ function TrialBanner() {
         </a>
       </div>
       <button
-        onClick={() => setDismissed(true)}
+        onClick={onDismiss}
         className="p-1 rounded-full opacity-50 hover:opacity-100 transition-opacity"
         aria-label="Fechar banner"
       >
@@ -420,6 +440,7 @@ interface LicenseGuardProps {
 
 export default function LicenseGuard({ children }: LicenseGuardProps) {
   const { licenseState, isLoading } = useLicense();
+  const [bannerDismissed, setBannerDismissed] = useState(false);
 
   // Fase de carregamento inicial
   if (isLoading || licenseState.phase === 'loading') {
@@ -456,8 +477,10 @@ export default function LicenseGuard({ children }: LicenseGuardProps) {
   if (licenseState.phase === 'trial_active') {
     return (
       <div className="relative">
-        <TrialBanner />
-        <div style={{ paddingTop: '34px' }}>{children}</div>
+        {!bannerDismissed && <TrialBanner onDismiss={() => setBannerDismissed(true)} />}
+        <div style={{ paddingTop: bannerDismissed ? '0px' : '34px', transition: 'padding-top 0.2s ease' }}>
+          {children}
+        </div>
       </div>
     );
   }

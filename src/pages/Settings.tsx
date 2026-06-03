@@ -1384,7 +1384,7 @@ export default function Settings() {
                       <p className="text-sm text-gray-500 mt-1">Número de compilação ativo</p>
                     </div>
                     <span className="px-3 py-1.5 bg-indigo-50 border border-indigo-100 text-indigo-700 rounded-xl text-xs font-bold font-mono">
-                      v1.0.8
+                      v1.0.9
                     </span>
                   </div>
 

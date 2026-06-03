@@ -1353,18 +1353,36 @@ export default function Settings() {
                     </select>
                   </div>
 
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between py-2">
                     <div>
                       <p className="font-medium text-gray-900">Tema Escuro</p>
-                      <p className="text-sm text-gray-500 mt-1">Alternar entre claro e escuro</p>
+                      <p className="text-sm text-gray-500 mt-1">
+                        {preferences.theme === 'dark' ? '🌙 Modo Escuro ativado' : '☀️ Modo Claro ativado'}
+                      </p>
                     </div>
                     <button
-                      onClick={() => handlePreferenceChange('theme', preferences.theme === 'light' ? 'dark' : 'light')}
-                      className={`w-12 h-6 rounded-full relative transition-colors ${preferences.theme === 'dark' ? 'bg-gray-900' : 'bg-gray-200'}`}
+                      onClick={() => {
+                        const newTheme = preferences.theme === 'light' ? 'dark' : 'light';
+                        // Apply immediately to DOM as failsafe
+                        document.documentElement.classList.toggle('dark', newTheme === 'dark');
+                        localStorage.setItem('vukapay_theme', newTheme);
+                        handlePreferenceChange('theme', newTheme);
+                      }}
+                      className={`w-14 h-7 rounded-full relative transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 ${
+                        preferences.theme === 'dark'
+                          ? 'bg-indigo-600'
+                          : 'bg-gray-200'
+                      }`}
+                      aria-label={preferences.theme === 'dark' ? 'Desativar tema escuro' : 'Ativar tema escuro'}
                     >
-                      <div className={`w-4 h-4 bg-white rounded-full absolute top-1 shadow-sm transition-transform ${preferences.theme === 'dark' ? 'left-7' : 'left-1'}`}></div>
+                      <div className={`w-5 h-5 bg-white rounded-full absolute top-1 shadow-md transition-all duration-300 flex items-center justify-center text-[9px] ${
+                        preferences.theme === 'dark' ? 'left-8' : 'left-1'
+                      }`}>
+                        {preferences.theme === 'dark' ? '🌙' : '☀️'}
+                      </div>
                     </button>
                   </div>
+
                 </div>
               </div>
 

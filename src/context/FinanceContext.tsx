@@ -842,6 +842,10 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
         security: parsedSecurity
       });
       document.documentElement.classList.toggle('dark', prefsData.theme === 'dark');
+      // Also persist to localStorage for Login page to pick up before context loads
+      if (prefsData.theme) {
+        localStorage.setItem('vukapay_theme', prefsData.theme);
+      }
 
       if (lns) {
         setLoans(lns.map(l => {
@@ -1952,6 +1956,13 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
     try {
       const db = await getDatabase();
       await updateRow(db, 'user_preferences', user.id, updates, 'user_id');
+      // Apply theme immediately to DOM so UI reacts instantly without reload
+      if ('theme' in updates) {
+        const isDark = updates.theme === 'dark';
+        document.documentElement.classList.toggle('dark', isDark);
+        // Persist to localStorage as fallback for login screen
+        localStorage.setItem('vukapay_theme', updates.theme as string);
+      }
       await refreshData();
     } catch (error) {
       console.error('Error updating preferences:', error);

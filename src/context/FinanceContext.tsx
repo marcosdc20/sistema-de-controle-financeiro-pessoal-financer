@@ -232,6 +232,25 @@ export interface Account {
   hideFromTotal?: boolean;
   createdAt?: string;
   minBalanceLimit?: number;
+  iban?: string;
+  accountNumber?: string;
+  mcExpressPhone?: string;
+  mcExpressLimit?: number;
+  mcExpressCoords?: string;
+}
+
+export interface Contact {
+  id: string;
+  userId: string;
+  name: string;
+  phone?: string;
+  relationship: 'family' | 'friend' | 'business' | 'other';
+  hasAllowance: boolean;
+  allowanceAmount: number;
+  allowanceDay: number;
+  allowanceCurrency: string;
+  notes?: string;
+  createdAt: string;
 }
 
 export interface Transaction {
@@ -336,6 +355,11 @@ interface FinanceContextType {
   updateSaving: (id: string, saving: Database['public']['Tables']['savings']['Update']) => Promise<void>;
   deleteSaving: (id: string) => Promise<void>;
   kixiquilas: Kixiquila[];
+  contacts: Contact[];
+  addContact: (contact: Omit<Contact, 'id' | 'userId' | 'createdAt'>) => Promise<void>;
+  updateContact: (id: string, contact: Partial<Contact>) => Promise<void>;
+  deleteContact: (id: string) => Promise<void>;
+  payAllowance: (contactId: string, accountId: string, amount: number) => Promise<void>;
   addKixiquila: (kixiquila: Omit<Kixiquila, 'id' | 'userId' | 'createdAt'>) => Promise<void>;
   updateKixiquila: (id: string, updates: Partial<Kixiquila>) => Promise<void>;
   deleteKixiquila: (id: string) => Promise<void>;
@@ -418,6 +442,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
   const [budgets, setBudgets] = useState<Budget[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [exchangeRates, setExchangeRates] = useState<ExchangeRate[]>([]);
+  const [contacts, setContacts] = useState<Contact[]>([]);
   const [profile, setProfile] = useState<{
     full_name: string | null;
     avatar_url: string | null;
@@ -472,7 +497,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
     if (!user) return;
     try {
       const db = await getDatabase();
-      const [accs, trans, invs, gls, subs, bdgs, svgs, rates, lns, payments, cats, profiles, prefs, kixs, projs, tsks, rls] = await Promise.all([
+      const [accs, trans, invs, gls, subs, bdgs, svgs, rates, lns, payments, cats, profiles, prefs, kixs, projs, tsks, rls, cts] = await Promise.all([
         db.select<any[]>('SELECT * FROM accounts ORDER BY created_at'),
         db.select<any[]>('SELECT * FROM transactions ORDER BY date DESC'),
         db.select<any[]>('SELECT * FROM investments'),
@@ -489,7 +514,8 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
         db.select<any[]>('SELECT * FROM kixiquilas WHERE user_id = $1', [user.id]),
         db.select<any[]>('SELECT * FROM projects WHERE user_id = $1', [user.id]),
         db.select<any[]>('SELECT * FROM tasks WHERE user_id = $1', [user.id]),
-        db.select<any[]>('SELECT * FROM auto_categorization_rules WHERE user_id = $1', [user.id])
+        db.select<any[]>('SELECT * FROM auto_categorization_rules WHERE user_id = $1', [user.id]),
+        db.select<any[]>('SELECT * FROM contacts WHERE user_id = $1', [user.id])
       ]);
 
       const newNotifications: Notification[] = [];
@@ -545,7 +571,28 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
           isMain: acc.is_main === 1 || acc.is_main === true,
           hideFromTotal: acc.hide_from_total === 1 || acc.hide_from_total === true,
           minBalanceLimit: acc.min_balance_limit ? Number(acc.min_balance_limit) : undefined,
-          createdAt: acc.created_at
+          createdAt: acc.created_at,
+          iban: acc.iban,
+          accountNumber: acc.account_number,
+          mcExpressPhone: acc.mc_express_phone,
+          mcExpressLimit: acc.mc_express_limit ? Number(acc.mc_express_limit) : undefined,
+          mcExpressCoords: acc.mc_express_coords
+        })));
+      }
+
+      if (cts) {
+        setContacts(cts.map(c => ({
+          id: c.id,
+          userId: c.user_id,
+          name: c.name,
+          phone: c.phone,
+          relationship: c.relationship as any,
+          hasAllowance: c.has_allowance === 1 || c.has_allowance === true,
+          allowanceAmount: Number(c.allowance_amount),
+          allowanceDay: Number(c.allowance_day),
+          allowanceCurrency: c.allowance_currency || 'AOA',
+          notes: c.notes,
+          createdAt: c.created_at
         })));
       }
 
@@ -1176,13 +1223,19 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const addAccount = async (account: Omit<Database['public']['Tables']['accounts']['Insert'], 'user_id'>) => {
+  const addAccount = async (account: Omit<Database['public']['Tables']['accounts']['Insert'], 'user_id'> & {
+    iban?: string;
+    account_number?: string;
+    mc_express_phone?: string;
+    mc_express_limit?: number;
+    mc_express_coords?: string;
+  }) => {
     if (!user) return;
     try {
       const db = await getDatabase();
       const id = crypto.randomUUID();
       await db.execute(
-        'INSERT INTO accounts (id, user_id, name, type, category, currency, balance, status, color, icon, institution, is_main, hide_from_total, min_balance_limit) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)',
+        'INSERT INTO accounts (id, user_id, name, type, category, currency, balance, status, color, icon, institution, is_main, hide_from_total, min_balance_limit, iban, account_number, mc_express_phone, mc_express_limit, mc_express_coords) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)',
         [
           id,
           user.id,
@@ -1197,7 +1250,12 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
           account.institution,
           account.is_main ? 1 : 0,
           account.hide_from_total ? 1 : 0,
-          account.min_balance_limit
+          account.min_balance_limit,
+          account.iban || null,
+          account.account_number || null,
+          account.mc_express_phone || null,
+          account.mc_express_limit || 0.0,
+          account.mc_express_coords || null
         ]
       );
       await refreshData();
@@ -1751,6 +1809,85 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const addContact = async (contact: Omit<Contact, 'id' | 'userId' | 'createdAt'>) => {
+    if (!user) return;
+    try {
+      const db = await getDatabase();
+      const id = crypto.randomUUID();
+      await db.execute(
+        'INSERT INTO contacts (id, user_id, name, phone, relationship, has_allowance, allowance_amount, allowance_day, allowance_currency, notes) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)',
+        [
+          id,
+          user.id,
+          contact.name,
+          contact.phone || null,
+          contact.relationship || 'family',
+          contact.hasAllowance ? 1 : 0,
+          contact.allowanceAmount || 0.0,
+          contact.allowanceDay || 5,
+          contact.allowanceCurrency || 'AOA',
+          contact.notes || null
+        ]
+      );
+      await refreshData();
+    } catch (error) {
+      console.error('Error adding contact:', error);
+    }
+  };
+
+  const updateContact = async (id: string, contactUpdates: Partial<Contact>) => {
+    if (!user) return;
+    try {
+      const db = await getDatabase();
+      const dbUpdates: Record<string, any> = {};
+      if (contactUpdates.name !== undefined) dbUpdates.name = contactUpdates.name;
+      if (contactUpdates.phone !== undefined) dbUpdates.phone = contactUpdates.phone;
+      if (contactUpdates.relationship !== undefined) dbUpdates.relationship = contactUpdates.relationship;
+      if (contactUpdates.hasAllowance !== undefined) dbUpdates.has_allowance = contactUpdates.hasAllowance ? 1 : 0;
+      if (contactUpdates.allowanceAmount !== undefined) dbUpdates.allowance_amount = contactUpdates.allowanceAmount;
+      if (contactUpdates.allowanceDay !== undefined) dbUpdates.allowance_day = contactUpdates.allowanceDay;
+      if (contactUpdates.allowanceCurrency !== undefined) dbUpdates.allowance_currency = contactUpdates.allowanceCurrency;
+      if (contactUpdates.notes !== undefined) dbUpdates.notes = contactUpdates.notes;
+
+      await updateRow(db, 'contacts', id, dbUpdates);
+      await refreshData();
+    } catch (error) {
+      console.error('Error updating contact:', error);
+    }
+  };
+
+  const deleteContact = async (id: string) => {
+    if (!user) return;
+    try {
+      const db = await getDatabase();
+      await db.execute('DELETE FROM contacts WHERE id = $1', [id]);
+      await refreshData();
+    } catch (error) {
+      console.error('Error deleting contact:', error);
+    }
+  };
+
+  const payAllowance = async (contactId: string, accountId: string, amount: number) => {
+    if (!user) return;
+    const contact = contacts.find(c => c.id === contactId);
+    if (!contact) return;
+    try {
+      await addTransaction({
+        description: `Pagamento de Mesada: ${contact.name}`,
+        amount,
+        currency: contact.allowanceCurrency as any,
+        type: 'expense',
+        category: 'Mesada',
+        account_id: accountId,
+        date: new Date().toISOString(),
+        status: 'paid'
+      });
+      await refreshData();
+    } catch (error) {
+      console.error('Error paying allowance:', error);
+    }
+  };
+
   const updateExchangeRate = async (from: string, to: string, rate: number) => {
     try {
       const db = await getDatabase();
@@ -2152,7 +2289,12 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
         addDbCategory,
         updateDbCategory,
         deleteDbCategory,
-        optimizeDatabaseVacuum
+        optimizeDatabaseVacuum,
+        contacts,
+        addContact,
+        updateContact,
+        deleteContact,
+        payAllowance
       }}
     >
       {children}

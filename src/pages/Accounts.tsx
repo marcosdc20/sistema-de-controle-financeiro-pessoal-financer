@@ -33,6 +33,9 @@ export default function Accounts() {
   const [isMain, setIsMain] = useState(false);
   const [hideFromTotal, setHideFromTotal] = useState(false);
   const [institution, setInstitution] = useState('');
+  const [iban, setIban] = useState('');
+  const [accountNumber, setAccountNumber] = useState('');
+  const [mcExpressPhone, setMcExpressPhone] = useState('');
 
 
 
@@ -47,6 +50,9 @@ export default function Accounts() {
     setIsMain(account.isMain || false);
     setHideFromTotal(account.hideFromTotal || false);
     setInstitution(account.institution || '');
+    setIban(account.iban || '');
+    setAccountNumber(account.accountNumber || '');
+    setMcExpressPhone(account.mcExpressPhone || '');
     setIsModalOpen(true);
   };
 
@@ -59,6 +65,9 @@ export default function Accounts() {
     setIsMain(false);
     setHideFromTotal(false);
     setInstitution('');
+    setIban('');
+    setAccountNumber('');
+    setMcExpressPhone('');
     setIsModalOpen(true);
   };
 
@@ -74,7 +83,10 @@ export default function Accounts() {
         color,
         is_main: isMain,
         hide_from_total: hideFromTotal,
-        institution
+        institution,
+        iban,
+        account_number: accountNumber,
+        mc_express_phone: mcExpressPhone
       });
     } else {
       await addAccount({
@@ -88,7 +100,10 @@ export default function Accounts() {
         is_main: isMain,
         hide_from_total: hideFromTotal,
         created_at: new Date().toISOString(),
-        institution
+        institution,
+        iban,
+        account_number: accountNumber,
+        mc_express_phone: mcExpressPhone
       });
     }
     setIsModalOpen(false);
@@ -391,6 +406,16 @@ export default function Accounts() {
                   <h3 className="text-3xl font-semibold text-gray-900 tracking-tight blur-amount">
                     {formatCurrency(account.balance, account.currency)}
                   </h3>
+                  {account.iban && (
+                    <p className="text-[10px] font-mono text-gray-400 mt-1.5 truncate">
+                      IBAN: {account.iban}
+                    </p>
+                  )}
+                  {account.mcExpressPhone && (
+                    <p className="text-[10px] text-gray-400 mt-0.5">
+                      MCX: {account.mcExpressPhone}
+                    </p>
+                  )}
                 </div>
 
                 <div className="mt-8 pt-5 border-t border-gray-100/50 flex justify-between items-center">
@@ -501,6 +526,41 @@ export default function Accounts() {
                           </optgroup>
                         </select>
                       </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">IBAN Bancário</label>
+                        <input
+                          type="text"
+                          value={iban}
+                          onChange={(e) => setIban(e.target.value)}
+                          className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-black focus:border-black outline-none transition-all text-gray-900 font-mono text-sm"
+                          placeholder="AO06 0040 0000 1234 5678 9015 5"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Número de Conta</label>
+                        <input
+                          type="text"
+                          value={accountNumber}
+                          onChange={(e) => setAccountNumber(e.target.value)}
+                          className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-black focus:border-black outline-none transition-all text-gray-900 text-sm"
+                          placeholder="Ex: 12345678901"
+                        />
+                      </div>
+
+                      {(institution === 'Multicaixa Express' || category === 'digital') && (
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Telemóvel Multicaixa Express</label>
+                          <input
+                            type="tel"
+                            value={mcExpressPhone}
+                            onChange={(e) => setMcExpressPhone(e.target.value)}
+                            className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-black focus:border-black outline-none transition-all text-gray-900 text-sm"
+                            placeholder="Ex: +244 923 456 789"
+                          />
+                        </div>
+                      )}
                     </div>
 
                     {/* Right Column */}

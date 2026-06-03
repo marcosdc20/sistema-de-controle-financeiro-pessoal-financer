@@ -26,7 +26,10 @@ import {
   PiggyBank,
   Eye,
   EyeOff,
-  FolderKanban
+  FolderKanban,
+  Users,
+  Briefcase,
+  MessageSquare
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/context/AuthContext';
@@ -119,11 +122,17 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     { icon: PieChart, label: 'Relatórios', path: '/reports' },
   ];
 
+  const businessNavItems = [
+    { icon: Users, label: 'Contactos & Mesadas', path: '/contacts' },
+    { icon: Briefcase, label: 'Área de Negócios', path: '/business' },
+    { icon: MessageSquare, label: 'Comunidade', path: '/community' },
+  ];
+
   const bottomNavItems = [
     { icon: Settings, label: 'Definições', path: '/settings' },
   ];
 
-  const allNavItems = [...navItems, ...bottomNavItems];
+  const allNavItems = [...navItems, ...businessNavItems, ...bottomNavItems];
   const currentPathLabel = allNavItems.find(item => item.path === location.pathname)?.label || 'Finanças';
 
   const handleLogout = async () => {
@@ -278,6 +287,45 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 )}
 
                 {/* Active Indicator for Collapsed State */}
+                {isCollapsed && isActive && (
+                  <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-white rounded-r-full" />
+                )}
+              </NavLink>
+            );
+          })}
+
+          {/* Business Section */}
+          {!isCollapsed && (
+            <div className="px-3 mt-4 mb-2 text-xs font-bold text-gray-600 uppercase tracking-wider">
+              Negócios & Comunidade
+            </div>
+          )}
+          {isCollapsed && <div className="my-2 border-t border-gray-800 mx-2" />}
+
+          {businessNavItems.map((item) => {
+            const isActive = location.pathname === item.path;
+            return (
+              <NavLink
+                key={item.path}
+                to={item.path}
+                onClick={() => setIsSidebarOpen(false)}
+                className={cn(
+                  "flex items-center px-3 py-3 rounded-xl text-sm font-medium transition-all duration-200 group relative",
+                  isActive
+                    ? "text-white bg-indigo-600 shadow-lg shadow-indigo-900/20"
+                    : "text-gray-400 hover:text-white hover:bg-gray-800",
+                  isCollapsed && "justify-center px-0 w-full"
+                )}
+              >
+                <item.icon className={cn("w-5 h-5 transition-all shrink-0", !isCollapsed && "mr-3", isActive ? "text-white" : "text-gray-400 group-hover:text-white", isCollapsed && "scale-110")} />
+                {!isCollapsed && <span className="truncate">{item.label}</span>}
+
+                {isCollapsed && (
+                  <div className="absolute left-full ml-4 px-4 py-2 bg-indigo-600 text-white text-xs font-bold rounded-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 whitespace-nowrap z-[100] shadow-[0_10px_25px_rgba(79,70,229,0.4)] border border-indigo-400/30 translate-x-[-10px] group-hover:translate-x-0 pointer-events-none">
+                    {item.label}
+                    <div className="absolute right-full top-1/2 -translate-y-1/2 border-[6px] border-transparent border-r-indigo-600" />
+                  </div>
+                )}
                 {isCollapsed && isActive && (
                   <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-white rounded-r-full" />
                 )}

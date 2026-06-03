@@ -511,6 +511,48 @@ async function initDatabaseInstance(db: Database): Promise<void> {
       console.log('Migração para Versão 5 concluída.');
     }
 
+    // MIGRATION 6: Angolan banking details and contacts table (Versão 6)
+    if (currentVersion < 6) {
+      console.log('Executando migração: Versão 6 (Campos bancários Angolanos e Contatos com Mesadas)...');
+      
+      const columnsToAdd = [
+        { name: 'iban', type: 'TEXT' },
+        { name: 'account_number', type: 'TEXT' },
+        { name: 'mc_express_phone', type: 'TEXT' },
+        { name: 'mc_express_limit', type: 'REAL DEFAULT 0.0' },
+        { name: 'mc_express_coords', type: 'TEXT' }
+      ];
+
+      for (const col of columnsToAdd) {
+        try {
+          await db.execute(`ALTER TABLE accounts ADD COLUMN ${col.name} ${col.type};`);
+        } catch (e) {
+          console.log(`Coluna ${col.name} já existe em accounts ou erro ao adicionar:`, e);
+        }
+      }
+
+      await db.execute(`
+        CREATE TABLE IF NOT EXISTS contacts (
+          id TEXT PRIMARY KEY,
+          user_id TEXT NOT NULL,
+          name TEXT NOT NULL,
+          phone TEXT,
+          relationship TEXT DEFAULT 'family',
+          has_allowance INTEGER DEFAULT 0,
+          allowance_amount REAL DEFAULT 0.00,
+          allowance_day INTEGER DEFAULT 5,
+          allowance_currency TEXT DEFAULT 'AOA',
+          notes TEXT,
+          created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY(user_id) REFERENCES profiles(id) ON DELETE CASCADE
+        );
+      `);
+
+      await db.execute('PRAGMA user_version = 6;');
+      currentVersion = 6;
+      console.log('Migração para Versão 6 concluída.');
+    }
+
     // Preenche categorias padrões se estiverem vazias
     const existingCats = await db.select('SELECT count(*) as count FROM categories');
     const catCount = (existingCats as any)[0]?.count || 0;
@@ -586,7 +628,8 @@ export async function exportDatabaseToJson(): Promise<string> {
     'user_sessions',
     'projects',
     'tasks',
-    'auto_categorization_rules'
+    'auto_categorization_rules',
+    'contacts'
   ];
 
   const backup: Record<string, any[]> = {};
@@ -629,7 +672,8 @@ export async function importDatabaseFromJson(jsonStr: string): Promise<void> {
     'user_sessions',
     'projects',
     'tasks',
-    'auto_categorization_rules'
+    'auto_categorization_rules',
+    'contacts'
   ];
 
   try {

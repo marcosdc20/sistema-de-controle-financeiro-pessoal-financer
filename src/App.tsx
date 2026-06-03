@@ -20,6 +20,9 @@ import Reports from '@/pages/Reports';
 import Settings from '@/pages/Settings';
 import ProjectsTasks from '@/pages/ProjectsTasks';
 import Login from '@/pages/Login';
+import Community from '@/pages/Community';
+import Contacts from '@/pages/Contacts';
+import Business from '@/pages/Business';
 import { useAuth } from '@/context/AuthContext';
 import AppSecurityGuard from '@/components/AppSecurityGuard';
 
@@ -64,6 +67,9 @@ export default function App() {
       <Route path="/education" element={isAuthenticated ? <ProtectedLayout><Education /></ProtectedLayout> : <Navigate to="/login" replace />} />
       <Route path="/reports" element={isAuthenticated ? <ProtectedLayout><Reports /></ProtectedLayout> : <Navigate to="/login" replace />} />
       <Route path="/settings" element={isAuthenticated ? <ProtectedLayout><Settings /></ProtectedLayout> : <Navigate to="/login" replace />} />
+      <Route path="/community" element={isAuthenticated ? <ProtectedLayout><Community /></ProtectedLayout> : <Navigate to="/login" replace />} />
+      <Route path="/contacts" element={isAuthenticated ? <ProtectedLayout><Contacts /></ProtectedLayout> : <Navigate to="/login" replace />} />
+      <Route path="/business" element={isAuthenticated ? <ProtectedLayout><Business /></ProtectedLayout> : <Navigate to="/login" replace />} />
 
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

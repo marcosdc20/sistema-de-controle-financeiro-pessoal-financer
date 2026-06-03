@@ -36,6 +36,8 @@ import PageTransition from '@/components/PageTransition';
 import { useFinance, DbCategory, AutoRule } from '@/context/FinanceContext';
 import { useAuth } from '@/context/AuthContext';
 import { CURRENCIES, cn } from '@/lib/utils';
+import { check } from '@tauri-apps/plugin-updater';
+import { relaunch } from '@tauri-apps/plugin-process';
 
 type SettingsTab = 'general' | 'categories' | 'notifications' | 'security' | 'data' | 'license';
 
@@ -320,6 +322,37 @@ export default function Settings() {
   const showToast = (message: string, type: 'success' | 'error' = 'success') => {
     setToast({ message, type });
     setTimeout(() => setToast(null), 3500);
+  };
+
+  const [checkingUpdate, setCheckingUpdate] = useState(false);
+  const [updateMessage, setUpdateMessage] = useState('');
+
+  const handleCheckUpdates = async () => {
+    const isTauri = typeof window !== 'undefined' && (window as any).__TAURI_INTERNALS__ !== undefined;
+    if (!isTauri) {
+      showToast('A verificação de atualizações só está disponível no aplicativo Desktop.', 'error');
+      return;
+    }
+    setCheckingUpdate(true);
+    setUpdateMessage('A procurar atualizações...');
+    try {
+      const update = await check();
+      if (update) {
+        setUpdateMessage(`Nova versão v${update.version} encontrada! A descarregar...`);
+        await update.downloadAndInstall();
+        setUpdateMessage('Atualização instalada. A reiniciar...');
+        await relaunch();
+      } else {
+        setUpdateMessage('Você está a utilizar a versão mais recente.');
+        showToast('Nenhuma atualização disponível.');
+      }
+    } catch (err) {
+      console.error(err);
+      setUpdateMessage('Erro ao verificar atualizações.');
+      showToast('Erro ao verificar atualizações.', 'error');
+    } finally {
+      setCheckingUpdate(false);
+    }
   };
 
   const sectionClass = "bg-white rounded-3xl border border-gray-100 shadow-[0_4px_30px_rgba(0,0,0,0.015)] p-8 relative overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500";
@@ -1298,6 +1331,9 @@ export default function Settings() {
                     >
                       <option value="pt-AO">Português (Angola)</option>
                       <option value="en">English</option>
+                      <option value="umb">Umbundu (Angola)</option>
+                      <option value="kmb">Kimbundu (Angola)</option>
+                      <option value="kg">Kikongo (Angola)</option>
                     </select>
                   </div>
 
@@ -1328,6 +1364,62 @@ export default function Settings() {
                     >
                       <div className={`w-4 h-4 bg-white rounded-full absolute top-1 shadow-sm transition-transform ${preferences.theme === 'dark' ? 'left-7' : 'left-1'}`}></div>
                     </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* App Version & Manual Update */}
+              <div className={sectionClass}>
+                <h2 className="text-lg font-semibold text-gray-900 mb-8 flex items-center">
+                  <div className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center mr-3 border border-gray-100/50">
+                    <Cpu className="w-4 h-4 text-gray-600" />
+                  </div>
+                  Informação do Sistema & Atualizações
+                </h2>
+
+                <div className="space-y-6">
+                  <div className="flex items-center justify-between pb-6 border-b border-gray-100/50">
+                    <div>
+                      <p className="font-medium text-gray-900">Versão do VukaPay</p>
+                      <p className="text-sm text-gray-500 mt-1">Número de compilação ativo</p>
+                    </div>
+                    <span className="px-3 py-1.5 bg-indigo-50 border border-indigo-100 text-indigo-700 rounded-xl text-xs font-bold font-mono">
+                      v1.0.8
+                    </span>
+                  </div>
+
+                  <div className="flex items-center justify-between pb-6 border-b border-gray-100/50">
+                    <div>
+                      <p className="font-medium text-gray-900">Verificar Atualizações</p>
+                      <p className="text-sm text-gray-500 mt-1">{updateMessage || 'Procurar novas versões disponíveis'}</p>
+                    </div>
+                    <button
+                      onClick={handleCheckUpdates}
+                      disabled={checkingUpdate}
+                      className="flex items-center gap-2 px-4 py-2 bg-gray-900 hover:bg-gray-800 text-white rounded-xl text-xs font-bold transition-colors disabled:opacity-50"
+                    >
+                      {checkingUpdate ? (
+                        <>
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          <span>A verificar...</span>
+                        </>
+                      ) : (
+                        <>
+                          <RefreshCw className="w-3.5 h-3.5" />
+                          <span>Verificar Atualizações</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                  
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-medium text-gray-900">Suporte Técnico</p>
+                      <p className="text-sm text-gray-500 mt-1">E-mail oficial para contato corporativo</p>
+                    </div>
+                    <a href="mailto:suporte.vukapay@gmail.com" className="text-sm font-semibold text-indigo-600 hover:underline">
+                      suporte.vukapay@gmail.com
+                    </a>
                   </div>
                 </div>
               </div>

@@ -60,6 +60,14 @@ service cloud.firestore {
       allow update, delete: if isAdmin();
     }
 
+    // ─── Coleção: payment_proofs ─────────────────────────────────────────────
+    match /payment_proofs/{proofId} {
+      // Qualquer cliente pode enviar um comprovativo de pagamento
+      allow create: if true;
+      // Apenas o Admin pode ler, atualizar ou excluir comprovativos
+      allow read, update, delete: if isAdmin();
+    }
+
     // ─── Todas as outras coleções: bloqueadas para não-admins ────────────────
     match /{document=**} {
       allow read, write: if isAdmin();

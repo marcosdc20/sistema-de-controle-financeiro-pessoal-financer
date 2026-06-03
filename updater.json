@@ -1,11 +1,11 @@
 {
-  "version": "1.0.7",
-  "notes": "VukaPay v1.0.7: Correções e atualizações.",
-  "pub_date": "2026-06-01T14:00:00Z",
+  "version": "1.0.8",
+  "notes": "VukaPay v1.0.8 — Grande atualização!\n\n✨ NOVIDADES:\n• Novos menus: Contactos & Mesadas, Área de Negócios, Comunidade\n• Gerador de Faturas, Recibos e Propostas com IVA angolano (14%)\n• Simulador de Lucros e Perdas para empreendedores\n• Campos IBAN, Número de Conta e Multicaixa Express nas contas\n• Dicas financeiras para a realidade angolana\n• Idiomas tradicionais: Umbundu, Kimbundu, Kikongo\n• Tema Claro/Escuro melhorado\n• Login premium redesenhado\n• Versão atualizada no painel de definições\n\n📧 Suporte: suporte.vukapay@gmail.com",
+  "pub_date": "2026-06-03T17:00:00Z",
   "platforms": {
     "windows-x86_64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVTUEh6TVdRZXFBTW9BT2dpMlNCMFZaWDQwZGdNNlg1YU9hdS95cDFYQUJSZEkzM2w0aE4rekdIR2tmSGI4WlZTL3UvOGd0M2FqaGR2a0N6OUxlNURDcVBCVlRSWkdyaEFZPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgwMzI1NjY5CWZpbGU6VnVrYVBheV8xLjAuN194NjQtc2V0dXAuZXhlCnd3ZG5tRjNJNzhEZ2F5UFBYM2VsVzF1OEN1a01nUWdPL2FJemk3NnpVUXJIalRDZ2U1MGI5bWxwcmQzZktzcEtzT0hBQWR0Z09ES1BOL0tYc2hEeENBPT0K",
-      "url": "https://github.com/marcosdc20/sistema-de-controle-financeiro-pessoal-financer/releases/download/v1.0.7/VukaPay_1.0.7_x64-setup.exe"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVTUEh6TVdRZXFBTWtva0NXR2Q1L09CNExxRFY0OXpxbWN2NTBEbXlmWCtaeUlyVmFCejN4aUFKR0dGWHA1aFlvY3FQaVd0aG1nV0ZYTmJNV3FpeXlRd0NPbnI5OWk0d3dNPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgwNTA1MTM1CWZpbGU6VnVrYVBheV8xLjAuOF94NjQtc2V0dXAuZXhlCmE5ZHRDcjZOQmtzVi80UjZubTVoUmFSekFTaDRsTkpHTDVDUEpMYjk3WUkrWEdZOUIwTWxlazdOajhxOFY1V3JJMkxoT2F5emhkUml1VkNCblFnUkRRPT0K",
+      "url": "https://github.com/marcosdc20/sistema-de-controle-financeiro-pessoal-financer/releases/download/v1.0.8/VukaPay_1.0.8_x64-setup.exe"
     }
   }
 }

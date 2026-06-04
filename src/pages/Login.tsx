@@ -186,7 +186,7 @@ export default function Login() {
 
   return (
     <div className={cn(
-      "min-h-screen w-full flex font-sans transition-colors duration-300 selection:bg-indigo-500/30",
+      "min-h-screen w-full flex font-sans transition-colors duration-300 selection:bg-brand-500/30",
       theme === 'dark' ? "bg-[#030712] text-gray-100" : "bg-gray-50 text-gray-900"
     )}>
       {/* Left Side: Premium Branding Panel */}
@@ -197,7 +197,7 @@ export default function Login() {
         {/* Background Graphic */}
         <div className="absolute inset-0">
           <img
-            src="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=2064&auto=format&fit=crop"
+            src="https://images.unsplash.com/photo-1618005198143-e5283b519a7f?q=80&w=2064&auto=format&fit=crop"
             alt="Abstract Premium Gradient"
             className="w-full h-full object-cover opacity-20 scale-105"
             referrerPolicy="no-referrer"
@@ -205,35 +205,35 @@ export default function Login() {
           <div className={cn(
             "absolute inset-0",
             theme === 'dark' 
-              ? "bg-gradient-to-tr from-[#030712] via-[#060b18]/90 to-[#0a0d1a]/70"
-              : "bg-gradient-to-tr from-gray-50 via-gray-100/90 to-indigo-50/60"
+              ? "bg-gradient-to-tr from-[#030712] via-[#040c1c]/95 to-[#051427]/85"
+              : "bg-gradient-to-tr from-gray-50 via-gray-100/90 to-brand-50/40"
           )} />
         </div>
 
         {/* Ambient Glows */}
         <div className={cn(
           "absolute top-1/4 -left-1/4 w-[600px] h-[600px] rounded-full blur-[140px] transition-opacity duration-300",
-          theme === 'dark' ? "bg-indigo-600/10" : "bg-indigo-500/5"
+          theme === 'dark' ? "bg-brand-600/10" : "bg-brand-500/5"
         )} />
         <div className={cn(
           "absolute bottom-1/4 right-0 w-[400px] h-[400px] rounded-full blur-[120px] transition-opacity duration-300",
-          theme === 'dark' ? "bg-purple-600/10" : "bg-purple-500/5"
+          theme === 'dark' ? "bg-emerald-600/10" : "bg-emerald-500/5"
         )} />
 
         <div className="relative z-10 w-full p-16 flex flex-col justify-between">
           {/* Logo */}
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 flex items-center justify-center bg-indigo-600 rounded-2xl shadow-lg">
+            <div className="w-12 h-12 flex items-center justify-center bg-brand-600 rounded-2xl shadow-lg shadow-brand-600/25">
               <TrendingUp className="w-6 h-6 text-white" />
             </div>
             <div>
               <span className={cn(
                 "text-2xl font-extrabold tracking-tight bg-gradient-to-r bg-clip-text text-transparent",
-                theme === 'dark' ? "from-white to-gray-400" : "from-indigo-900 to-indigo-700"
+                theme === 'dark' ? "from-white to-gray-400" : "from-brand-900 to-brand-700"
               )}>
                 VukaPay
               </span>
-              <span className="ml-2 text-xs text-indigo-400/80 font-bold border border-indigo-500/30 bg-indigo-500/10 px-2 py-0.5 rounded-full">
+              <span className="ml-2 text-xs text-brand-400/80 font-bold border border-brand-500/30 bg-brand-500/10 px-2.5 py-0.5 rounded-full">
                 v1.0.9
               </span>
             </div>
@@ -241,13 +241,13 @@ export default function Login() {
 
           {/* Main Copy */}
           <div className="max-w-lg">
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-indigo-500/10 border border-indigo-500/20 rounded-full text-indigo-500 dark:text-indigo-400 text-xs font-semibold mb-6">
-              <Globe className="w-3.5 h-3.5 animate-spin-slow" />
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-brand-500/10 border border-brand-500/20 rounded-full text-brand-600 dark:text-brand-400 text-xs font-semibold mb-6">
+              <Globe className="w-3.5 h-3.5" />
               {b('madeForAngola')}
             </div>
             <h1 className={cn(
               "text-5xl font-black leading-[1.15] mb-6 bg-gradient-to-br bg-clip-text text-transparent",
-              theme === 'dark' ? "from-white via-gray-200 to-gray-500" : "from-indigo-950 via-indigo-900 to-slate-655"
+              theme === 'dark' ? "from-white via-gray-200 to-gray-500" : "from-brand-950 via-brand-800 to-emerald-950"
             )}>
               {b('heroTitle')}
             </h1>
@@ -266,32 +266,82 @@ export default function Login() {
                 { value: '100%', label: b('statsOffline') },
               ].map(({ value, label }) => (
                 <div key={label}>
-                  <p className={cn("text-3xl font-black", theme === 'dark' ? "text-white" : "text-indigo-900")}>{value}</p>
+                  <p className={cn("text-3xl font-black", theme === 'dark' ? "text-white" : "text-brand-900")}>{value}</p>
                   <p className={cn("text-xs mt-0.5 font-bold", theme === 'dark' ? "text-gray-500" : "text-gray-400")}>{label}</p>
                 </div>
               ))}
             </div>
 
-            {/* Feature Grid */}
+            {/* Premium Feature Grid (Real Stock Photos + Minimalist SVGs) */}
             <div className="grid grid-cols-2 gap-4">
               {[
-                { icon: ShieldCheck, label: b('feat1Title'), desc: b('feat1Desc') },
-                { icon: PieChart, label: b('feat2Title'), desc: b('feat2Desc') },
-                { icon: Users, label: b('feat3Title'), desc: b('feat3Desc') },
-                { icon: Briefcase, label: b('feat4Title'), desc: b('feat4Desc') },
-              ].map(({ icon: Icon, label, desc }) => (
-                <div key={label} className={cn(
-                  "flex items-start gap-3 p-3 border rounded-2xl transition-colors duration-300",
-                  theme === 'dark' 
-                    ? "bg-white/[0.03] border-white/[0.06]" 
-                    : "bg-indigo-50/20 border-indigo-100/40"
-                )}>
-                  <div className="p-2 bg-indigo-500/10 border border-indigo-500/20 rounded-xl shrink-0">
-                    <Icon className="w-4 h-4 text-indigo-500" />
-                  </div>
-                  <div>
-                    <p className={cn("font-bold text-sm", theme === 'dark' ? "text-gray-200" : "text-indigo-950")}>{label}</p>
-                    <p className={cn("text-xs mt-0.5", theme === 'dark' ? "text-gray-500" : "text-gray-400")}>{desc}</p>
+                {
+                  img: "https://images.unsplash.com/photo-1563986768609-322da13575f3?q=80&w=600&auto=format&fit=crop",
+                  svg: (
+                    <svg className="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                      <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                      <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                    </svg>
+                  ),
+                  label: b('feat1Title'),
+                  desc: b('feat1Desc')
+                },
+                {
+                  img: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=600&auto=format&fit=crop",
+                  svg: (
+                    <svg className="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                      <path d="M3 3v18h18" />
+                      <path d="M18.7 8l-5.1 5.2-2.8-2.7L7 14.3" />
+                    </svg>
+                  ),
+                  label: b('feat2Title'),
+                  desc: b('feat2Desc')
+                },
+                {
+                  img: "https://images.unsplash.com/photo-1522071820081-009f0129c71c?q=80&w=600&auto=format&fit=crop",
+                  svg: (
+                    <svg className="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                      <circle cx="9" cy="7" r="4" />
+                      <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                      <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                    </svg>
+                  ),
+                  label: b('feat3Title'),
+                  desc: b('feat3Desc')
+                },
+                {
+                  img: "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?q=80&w=600&auto=format&fit=crop",
+                  svg: (
+                    <svg className="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                      <rect x="2" y="7" width="20" height="14" rx="2" ry="2" />
+                      <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
+                    </svg>
+                  ),
+                  label: b('feat4Title'),
+                  desc: b('feat4Desc')
+                }
+              ].map((feat) => (
+                <div key={feat.label} className="group relative h-28 rounded-2xl overflow-hidden border border-white/[0.08] dark:border-white/[0.04] shadow-md transition-all duration-500 ease-out hover:-translate-y-1 hover:shadow-lg hover:shadow-brand-500/10">
+                  {/* Background Stock Photo */}
+                  <img
+                    src={feat.img}
+                    alt={feat.label}
+                    className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-110"
+                    referrerPolicy="no-referrer"
+                  />
+                  {/* Dark overlay with brand color mix */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/55 to-black/35" />
+                  
+                  {/* Content */}
+                  <div className="absolute inset-0 p-3.5 flex flex-col justify-between z-10">
+                    <div className="w-7 h-7 rounded-lg bg-black/40 backdrop-blur-md border border-white/10 flex items-center justify-center">
+                      {feat.svg}
+                    </div>
+                    <div>
+                      <p className="font-extrabold text-[11px] text-white leading-tight">{feat.label}</p>
+                      <p className="text-[9px] text-gray-300 mt-0.5 font-medium leading-normal">{feat.desc}</p>
+                    </div>
                   </div>
                 </div>
               ))}
@@ -300,7 +350,7 @@ export default function Login() {
 
           <div className="flex items-center justify-between">
             <p className="text-xs text-gray-500">{b('copyRight')}</p>
-            <a href="mailto:suporte.vukapay@gmail.com" className="text-xs text-gray-500 hover:text-indigo-500 transition-colors">
+            <a href="mailto:suporte.vukapay@gmail.com" className="text-xs text-gray-500 hover:text-brand-500 transition-colors">
               suporte.vukapay@gmail.com
             </a>
           </div>
@@ -312,8 +362,8 @@ export default function Login() {
         {/* Mobile Background */}
         <div className="lg:hidden absolute inset-0 -z-10 transition-colors duration-300">
           <div className={cn("absolute inset-0", theme === 'dark' ? "bg-[#030712]" : "bg-gray-50")} />
-          <div className="absolute top-0 right-0 w-[300px] h-[300px] bg-indigo-600/5 rounded-full blur-[80px]" />
-          <div className="absolute bottom-0 left-0 w-[200px] h-[200px] bg-purple-600/5 rounded-full blur-[60px]" />
+          <div className="absolute top-0 right-0 w-[300px] h-[300px] bg-brand-600/5 rounded-full blur-[80px]" />
+          <div className="absolute bottom-0 left-0 w-[200px] h-[200px] bg-emerald-600/5 rounded-full blur-[60px]" />
         </div>
 
         {/* Global Selectors Floating Top Right */}
@@ -346,7 +396,7 @@ export default function Login() {
               "w-8 h-8 rounded-full border flex items-center justify-center transition-colors shadow-sm",
               theme === 'dark' 
                 ? "bg-gray-900 border-gray-800 hover:bg-gray-800 text-amber-400" 
-                : "bg-white border-gray-250 hover:bg-gray-50 text-indigo-600"
+                : "bg-white border-gray-250 hover:bg-gray-50 text-brand-600"
             )}
             title={theme === 'dark' ? 'Modo Claro' : 'Modo Escuro'}
           >
@@ -357,15 +407,15 @@ export default function Login() {
         <div className="w-full max-w-md">
           {/* Mobile Logo */}
           <div className="flex items-center gap-3 mb-10 lg:hidden">
-            <div className="w-10 h-10 flex items-center justify-center bg-indigo-600 rounded-xl">
+            <div className="w-10 h-10 flex items-center justify-center bg-brand-600 rounded-xl">
               <TrendingUp className="w-5 h-5 text-white" />
             </div>
-            <span className={cn("text-xl font-bold", theme === 'dark' ? "text-white" : "text-indigo-950")}>VukaPay</span>
-            <span className="text-xs text-indigo-400/80 border border-indigo-500/30 bg-indigo-500/10 px-2 py-0.5 rounded-full">v1.0.9</span>
+            <span className={cn("text-xl font-bold", theme === 'dark' ? "text-white" : "text-brand-950")}>VukaPay</span>
+            <span className="text-xs text-brand-400/80 border border-brand-500/30 bg-brand-500/10 px-2 py-0.5 rounded-full">v1.0.9</span>
           </div>
 
           <div className="mb-10">
-            <h2 className={cn("text-3xl font-extrabold tracking-tight mb-3", theme === 'dark' ? "text-white" : "text-indigo-950")}>
+            <h2 className={cn("text-3xl font-extrabold tracking-tight mb-3", theme === 'dark' ? "text-white" : "text-brand-950")}>
               {t('welcome')}
             </h2>
             <p className={cn("text-sm leading-relaxed", theme === 'dark' ? "text-gray-400" : "text-gray-500")}>
@@ -379,10 +429,10 @@ export default function Login() {
               onClick={handleGoogleLogin}
               disabled={authLoading || isLoadingLocal}
               className={cn(
-                "w-full text-left p-5 border rounded-2xl transition-all duration-350 group focus:outline-none focus:ring-2 focus:ring-indigo-500/50 disabled:opacity-50 disabled:cursor-not-allowed",
+                "w-full text-left p-5 border rounded-2xl transition-all duration-350 group focus:outline-none focus:ring-2 focus:ring-brand-500/50 disabled:opacity-50 disabled:cursor-not-allowed",
                 theme === 'dark'
-                  ? "bg-gradient-to-br from-gray-900 to-gray-900/50 border-gray-800 hover:border-indigo-500/50 hover:bg-gray-900/80"
-                  : "bg-white border-gray-200 hover:border-indigo-500/35 hover:bg-indigo-50/10 shadow-sm"
+                  ? "bg-gradient-to-br from-gray-900 to-gray-900/50 border-gray-800 hover:border-brand-500/50 hover:bg-gray-900/80"
+                  : "bg-white border-gray-200 hover:border-brand-500/35 hover:bg-brand-50/10 shadow-sm"
               )}
             >
               <div className="flex items-center gap-4">
@@ -396,13 +446,13 @@ export default function Login() {
                 </div>
                 <div className="flex-1">
                   <div className="flex items-center justify-between">
-                    <h3 className={cn("font-bold text-base transition-colors", theme === 'dark' ? "text-white group-hover:text-indigo-300" : "text-gray-900 group-hover:text-indigo-600")}>
+                    <h3 className={cn("font-bold text-base transition-colors", theme === 'dark' ? "text-white group-hover:text-brand-300" : "text-gray-900 group-hover:text-brand-600")}>
                       {t('googleMode')}
                     </h3>
                     {authLoading ? (
-                      <div className="w-5 h-5 border-2 border-indigo-400 border-t-transparent rounded-full animate-spin" />
+                      <div className="w-5 h-5 border-2 border-brand-400 border-t-transparent rounded-full animate-spin" />
                     ) : (
-                      <ArrowRight className="w-4 h-4 text-gray-500 group-hover:text-indigo-500 group-hover:translate-x-1 transition-all" />
+                      <ArrowRight className="w-4 h-4 text-gray-500 group-hover:text-brand-500 group-hover:translate-x-1 transition-all" />
                     )}
                   </div>
                   <p className="text-gray-450 dark:text-gray-500 text-xs mt-0.5 leading-relaxed">
@@ -417,25 +467,25 @@ export default function Login() {
               onClick={handleLocalLogin}
               disabled={authLoading || isLoadingLocal}
               className={cn(
-                "w-full text-left p-5 border rounded-2xl transition-all duration-350 group focus:outline-none focus:ring-2 focus:ring-indigo-500/30 disabled:opacity-50 disabled:cursor-not-allowed",
+                "w-full text-left p-5 border rounded-2xl transition-all duration-350 group focus:outline-none focus:ring-2 focus:ring-brand-500/30 disabled:opacity-50 disabled:cursor-not-allowed",
                 theme === 'dark'
-                  ? "bg-gradient-to-br from-indigo-950/40 to-indigo-900/20 border-indigo-800/40 hover:border-indigo-600/60"
-                  : "bg-indigo-50/30 border-indigo-200/50 hover:border-indigo-500/40 hover:bg-indigo-50/50 shadow-sm"
+                  ? "bg-gradient-to-br from-brand-950/40 to-brand-900/20 border-brand-850 hover:border-brand-600/60"
+                  : "bg-brand-50/30 border-brand-200/50 hover:border-brand-500/40 hover:bg-brand-50/50 shadow-sm"
               )}
             >
               <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-indigo-600 rounded-xl flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform shadow-md">
+                <div className="w-12 h-12 bg-brand-600 rounded-xl flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform shadow-md">
                   <WifiOff className="w-5 h-5 text-white" />
                 </div>
                 <div className="flex-1">
                   <div className="flex items-center justify-between">
-                    <h3 className={cn("font-bold text-base transition-colors", theme === 'dark' ? "text-white group-hover:text-indigo-300" : "text-gray-900 group-hover:text-indigo-600")}>
+                    <h3 className={cn("font-bold text-base transition-colors", theme === 'dark' ? "text-white group-hover:text-brand-300" : "text-gray-900 group-hover:text-brand-600")}>
                       {t('guestMode')}
                     </h3>
                     {isLoadingLocal ? (
-                      <div className="w-5 h-5 border-2 border-indigo-400 border-t-transparent rounded-full animate-spin" />
+                      <div className="w-5 h-5 border-2 border-brand-400 border-t-transparent rounded-full animate-spin" />
                     ) : (
-                      <ArrowRight className="w-4 h-4 text-gray-500 group-hover:text-indigo-500 group-hover:translate-x-1 transition-all" />
+                      <ArrowRight className="w-4 h-4 text-gray-500 group-hover:text-brand-500 group-hover:translate-x-1 transition-all" />
                     )}
                   </div>
                   <p className="text-gray-450 dark:text-gray-500 text-xs mt-0.5 leading-relaxed">
@@ -451,11 +501,11 @@ export default function Login() {
             {[
               { text: b('trust1'), color: 'text-emerald-500' },
               { text: b('trust2'), color: 'text-emerald-500' },
-              { text: b('trust3'), color: 'text-indigo-500' },
+              { text: b('trust3'), color: 'text-brand-500' },
             ].map(({ text, color }) => (
               <div key={text} className="flex items-start gap-2.5">
                 <CheckCircle2 className={cn("w-4 h-4 mt-0.5 shrink-0", color)} />
-                <p className="text-xs text-gray-500 dark:text-gray-450">{text}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">{text}</p>
               </div>
             ))}
           </div>
@@ -463,10 +513,10 @@ export default function Login() {
           <div className={cn(
             "mt-8 p-4 border rounded-2xl flex items-center gap-3 text-xs leading-relaxed transition-colors duration-300",
             theme === 'dark' 
-              ? "bg-gray-950/40 border-gray-900 text-gray-500" 
-              : "bg-gray-100/50 border-gray-200/50 text-gray-600"
+              ? "bg-slate-950/45 border-gray-900 text-gray-550" 
+              : "bg-brand-50/10 border-brand-100/30 text-gray-650"
           )}>
-            <Database className="w-5 h-5 shrink-0 text-indigo-500/50" />
+            <Database className="w-5 h-5 shrink-0 text-brand-500/50" />
             <p>
               {t('localDataNote')}
             </p>

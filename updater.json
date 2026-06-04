@@ -1,10 +1,10 @@
 {
   "version": "1.1.0",
   "notes": "VukaPay v1.1.0 — Novo menu Comunidade com visual premium, secção de cursos integrada, tabela de reputação de membros e compilação multi-plataforma.",
-  "pub_date": "2026-06-04T10:29:27Z",
+  "pub_date": "2026-06-04T12:02:00Z",
   "platforms": {
     "windows-x86_64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVTUEh6TVdRZXFBTXFOLzNqL20rUGkyVllFMG4wU2NpS3o2ZVlLeXJjTnUzZS80OFh3aHNCcXplemEzYTU3MGdKaGZvMkNvSWljeiszZUtUeEFSVk9FaVh5WDE3ZzFLMHd3PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgwNTcxMDA5CWZpbGU6VnVrYVBheV8xLjEuMF94NjQtc2V0dXAuZXhlCjBmeVU0ZTBSNHJSeS9nL0VLbUlTeDFNQTFsYlV1MU5iRWpmcHVUU2N0Y2IvN21lc3NFZi92Z09FY0ZjVGZ0SU5HeTdHSjkzeGNGZThuMjhPaW1SUkFRPT0K",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVTUEh6TVdRZXFBTW40RVhUNjZnU2VxYjNRMlpUR0YxVEozVW5XZ2EzRGxHcFdVdGFCQXZqT2hYR2JCRVVETVc4RzMxNlVxUVMwQ2diakUzZ1hhQ1RuRGw4aHc5VjVnc0EwPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgwNTc0NDc2CWZpbGU6VnVrYVBheV8xLjEuMF94NjQtc2V0dXAuZXhlCnJ5YjJDejdyZk05SUlXRzFCZ2VIdFdCSmxSRVVpcDZURzNxbHYxSUR0d25EV1dlVlV2bGdOMmx3K2ErdW1TT2VCSUJ5Ulp4VnNRTzdlcTdZcVpvaUJ3PT0K",
       "url": "https://github.com/marcosdc20/sistema-de-controle-financeiro-pessoal-financer/releases/download/v1.1.0/VukaPay_1.1.0_x64-setup.exe"
     }
   }

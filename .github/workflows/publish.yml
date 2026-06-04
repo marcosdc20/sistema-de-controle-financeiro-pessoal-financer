@@ -54,6 +54,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+          VITE_LICENSE_HMAC_SECRET: ${{ secrets.VITE_LICENSE_HMAC_SECRET }}
         with:
           tagName: v__VERSION__ # Substitui automaticamente com a versão do tauri.conf.json
           releaseName: 'v__VERSION__'

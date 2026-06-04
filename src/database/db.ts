@@ -1,4 +1,4 @@
-interface IDatabase {
+export interface IDatabase {
   execute(query: string, values?: any[]): Promise<any>;
   select<T>(query: string, values?: any[]): Promise<T>;
   close(): Promise<boolean>;
@@ -76,7 +76,7 @@ function getDatabasePath(): string {
  * Retorna a instância do banco de dados SQLite local correspondente ao usuário ativo.
  * Se o usuário mudar, fecha a conexão antiga e abre a nova dinamicamente.
  */
-export async function getDatabase(): Promise<any> {
+export async function getDatabase(): Promise<IDatabase> {
   const targetPath = getDatabasePath();
 
   if (dbInstance) {
@@ -129,7 +129,7 @@ export async function initDatabase(): Promise<void> {
 /**
  * Inicializa uma instância específica do banco de dados (tabelas e migrações).
  */
-async function initDatabaseInstance(db: any): Promise<void> {
+async function initDatabaseInstance(db: IDatabase): Promise<void> {
   try {
     console.log('Inicializando banco de dados SQLite local com versionamento...');
 

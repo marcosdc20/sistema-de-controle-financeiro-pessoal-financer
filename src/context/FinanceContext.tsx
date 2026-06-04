@@ -2,8 +2,7 @@ import { createContext, useContext, useState, useEffect, ReactNode, useMemo, use
 import { CURRENCIES, CATEGORIES } from '@/lib/utils';
 import { useAuth } from '@/context/AuthContext';
 import { Database } from '@/types/database';
-import { getDatabase, exportDatabaseToJson, importDatabaseFromJson } from '@/database/db';
-import DatabasePlugin from '@tauri-apps/plugin-sql';
+import { getDatabase, exportDatabaseToJson, importDatabaseFromJson, IDatabase } from '@/database/db';
 
 export type TransactionType = 'expense' | 'income' | 'transfer' | 'adjustment';
 export type TransactionStatus = 'paid' | 'pending' | 'overdue' | 'cancelled' | 'scheduled';
@@ -410,12 +409,12 @@ interface FinanceContextType {
 const FinanceContext = createContext<FinanceContextType | undefined>(undefined);
 
 // Helper para ajustar o saldo da conta localmente
-const adjustAccountBalance = async (db: DatabasePlugin, accountId: string, change: number) => {
+const adjustAccountBalance = async (db: IDatabase, accountId: string, change: number) => {
   await db.execute('UPDATE accounts SET balance = balance + $1 WHERE id = $2', [change, accountId]);
 };
 
 // Helper para atualizar dinamicamente uma linha no SQLite
-async function updateRow(db: DatabasePlugin, table: string, id: string, updates: Record<string, any>, idCol: string = 'id') {
+async function updateRow(db: IDatabase, table: string, id: string, updates: Record<string, any>, idCol: string = 'id') {
   const fields: string[] = [];
   const values: any[] = [];
   let i = 1;

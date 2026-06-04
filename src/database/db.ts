@@ -1,6 +1,50 @@
-import Database from '@tauri-apps/plugin-sql';
+interface IDatabase {
+  execute(query: string, values?: any[]): Promise<any>;
+  select<T>(query: string, values?: any[]): Promise<T>;
+  close(): Promise<boolean>;
+}
 
-let dbInstance: Database | null = null;
+class MockDatabase implements IDatabase {
+  path: string;
+  constructor(path: string) {
+    this.path = path;
+    console.log(`[MockDatabase] Inicializado banco simulado para: ${path}`);
+  }
+
+  static async load(path: string): Promise<MockDatabase> {
+    return new MockDatabase(path);
+  }
+
+  async execute(query: string, values?: any[]): Promise<{ rowsAffected: number; lastInsertId: number }> {
+    console.log(`[MockDatabase] [execute] SQL: ${query}`, values || '');
+    return { rowsAffected: 0, lastInsertId: 0 };
+  }
+
+  async select<T = any[]>(query: string, values?: any[]): Promise<T> {
+    console.log(`[MockDatabase] [select] SQL: ${query}`, values || '');
+    const q = query.toLowerCase();
+    
+    // Simula retornos específicos de PRAGMA e contagens para evitar migrações desnecessárias na web
+    if (q.includes('pragma user_version')) {
+      return [{ user_version: 6 }] as any;
+    }
+    if (q.includes('select count(*) as count from categories')) {
+      return [{ count: 9 }] as any;
+    }
+    if (q.includes('select count(*) as count from exchange_rates')) {
+      return [{ count: 4 }] as any;
+    }
+    
+    return [] as any;
+  }
+
+  async close(): Promise<boolean> {
+    console.log('[MockDatabase] Conexão simulada fechada');
+    return true;
+  }
+}
+
+let dbInstance: IDatabase | null = null;
 let activeDbPath: string | null = null;
 
 /**
@@ -32,7 +76,7 @@ function getDatabasePath(): string {
  * Retorna a instância do banco de dados SQLite local correspondente ao usuário ativo.
  * Se o usuário mudar, fecha a conexão antiga e abre a nova dinamicamente.
  */
-export async function getDatabase(): Promise<Database> {
+export async function getDatabase(): Promise<any> {
   const targetPath = getDatabasePath();
 
   if (dbInstance) {
@@ -50,7 +94,22 @@ export async function getDatabase(): Promise<Database> {
   }
 
   console.log(`[Database] Abrindo conexão com: ${targetPath}`);
-  dbInstance = await Database.load(targetPath);
+
+  const isTauri = typeof window !== 'undefined' && (window as any).__TAURI_INTERNALS__ !== undefined;
+
+  if (isTauri) {
+    try {
+      const { default: TauriDatabase } = await import('@tauri-apps/plugin-sql');
+      dbInstance = await TauriDatabase.load(targetPath) as any;
+    } catch (err) {
+      console.error('[Database] Falha ao carregar plugin SQL do Tauri, usando fallback mock:', err);
+      dbInstance = await MockDatabase.load(targetPath);
+    }
+  } else {
+    console.log('[Database] Executando fora do ambiente Tauri. Inicializando MockDatabase...');
+    dbInstance = await MockDatabase.load(targetPath);
+  }
+
   activeDbPath = targetPath;
 
   // Inicializa a estrutura do banco (tabelas e migrações) de forma isolada para este arquivo
@@ -70,7 +129,7 @@ export async function initDatabase(): Promise<void> {
 /**
  * Inicializa uma instância específica do banco de dados (tabelas e migrações).
  */
-async function initDatabaseInstance(db: Database): Promise<void> {
+async function initDatabaseInstance(db: any): Promise<void> {
   try {
     console.log('Inicializando banco de dados SQLite local com versionamento...');
 

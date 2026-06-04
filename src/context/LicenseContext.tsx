@@ -18,7 +18,6 @@ import React, {
   useCallback,
   useRef,
 } from 'react';
-import { invoke } from '@tauri-apps/api/core';
 import type Database from '@tauri-apps/plugin-sql';
 import type { LicenseState, ActivationResult, PlanType } from '@/types/license';
 
@@ -89,17 +88,23 @@ export function LicenseProvider({ children }: { children: React.ReactNode }) {
   const getHardwareId = useCallback(async (): Promise<string> => {
     if (hardwareIdRef.current) return hardwareIdRef.current;
 
-    try {
-      const hwId = await invoke<string>('get_hardware_id');
-      hardwareIdRef.current = hwId;
-      return hwId;
-    } catch (error) {
-      console.error('[LicenseContext] Falha ao obter Hardware ID:', error);
-      // Fallback: usa um identificador baseado em dados do browser (menos confiável)
-      const fallbackId = await generateBrowserFallbackId();
-      hardwareIdRef.current = fallbackId;
-      return fallbackId;
+    const isTauri = typeof window !== 'undefined' && (window as any).__TAURI_INTERNALS__ !== undefined;
+
+    if (isTauri) {
+      try {
+        const { invoke } = await import('@tauri-apps/api/core');
+        const hwId = await invoke<string>('get_hardware_id');
+        hardwareIdRef.current = hwId;
+        return hwId;
+      } catch (error) {
+        console.error('[LicenseContext] Falha ao obter Hardware ID via Tauri:', error);
+      }
     }
+
+    // Fallback: usa um identificador baseado em dados do browser (menos confiável)
+    const fallbackId = await generateBrowserFallbackId();
+    hardwareIdRef.current = fallbackId;
+    return fallbackId;
   }, []);
 
   /**

@@ -1,11 +1,11 @@
 {
-  "version": "1.0.9",
-  "notes": "VukaPay v1.0.9 — Personalização dos ícones do executável e menu de instalação customizado com as cores da marca, além das correções de tema.",
-  "pub_date": "2026-06-03T22:00:00Z",
+  "version": "1.1.0",
+  "notes": "VukaPay v1.1.0 — Novo menu Comunidade com visual premium, secção de cursos integrada, tabela de reputação de membros e compilação multi-plataforma.",
+  "pub_date": "2026-06-04T10:29:27Z",
   "platforms": {
     "windows-x86_64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVTUEh6TVdRZXFBTW9ibUFqUUZtM09nd2VQRHlFN0JyY0hsS3kyOTB0KzRtem83L2x4SDBJdFZkc2E0VXFqQzhkeDhZaURwdHN3MTYzSzBWVmpNck16bWlzTUU5eGIzZEE4PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgwNTI5NjUzCWZpbGU6VnVrYVBheV8xLjAuOV94NjQtc2V0dXAuZXhlCjF5UGsyYkllME1qZmg5RVlBODJhbkFodENTcVNkL0V1SFJvUDJ5dU9TblVWNWs2ZHdUajh3U0xZaVVLNnBNU1FIS1UxWWY5T1VoNWFLOFJINktQMURRPT0K",
-      "url": "https://github.com/marcosdc20/sistema-de-controle-financeiro-pessoal-financer/releases/download/v1.0.9/VukaPay_1.0.9_x64-setup.exe"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVTUEh6TVdRZXFBTWt3bEhoMFplV2FNY2EveEdJaXNyc1g3a0xJK1p3MVpqd0JPM3RJOEw4cDhWODJTR2NsOVlaMVdFYllBbGFxZC9oY0o0UENtQTE3TmFrbWhZZzFoc2dNPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgwNTY4NDI5CWZpbGU6VnVrYVBheV8xLjEuMF94NjQtc2V0dXAuZXhlClF3MGV3bVRGMkxIK0ozL2c4VGhBYkNLU1JiTDhLWXd3TndyQnRJd2tMRVJJOWJsTFVxWmVQREMzeGRFMFlsSjRIbG9NY29oc0tqZ0VQOXpSNEtVRkNRPT0K",
+      "url": "https://github.com/marcosdc20/sistema-de-controle-financeiro-pessoal-financer/releases/download/v1.1.0/VukaPay_1.1.0_x64-setup.exe"
     }
   }
 }

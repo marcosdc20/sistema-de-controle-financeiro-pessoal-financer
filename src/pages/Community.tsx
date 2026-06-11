@@ -25,7 +25,8 @@ import {
   Star,
   Quote,
   Activity,
-  Plus
+  Plus,
+  Database
 } from 'lucide-react';
 import PageTransition from '@/components/PageTransition';
 

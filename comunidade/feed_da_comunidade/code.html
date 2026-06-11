@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+
+<html lang="pt-BR"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>FinTrust Community - Feed Principal</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;family=Geist:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "surface-dim": "#dadadc",
+                    "on-secondary-container": "#00732c",
+                    "on-surface": "#1a1c1e",
+                    "secondary-fixed-dim": "#3ce36a",
+                    "primary-fixed": "#dde1ff",
+                    "tertiary-container": "#7632fd",
+                    "surface-container-highest": "#e2e2e5",
+                    "on-tertiary-fixed-variant": "#5400cc",
+                    "background": "#f9f9fc",
+                    "inverse-on-surface": "#f0f0f3",
+                    "inverse-primary": "#b7c4ff",
+                    "surface-container-low": "#f3f3f6",
+                    "on-background": "#1a1c1e",
+                    "on-primary-container": "#dfe3ff",
+                    "secondary-container": "#5cfd80",
+                    "surface": "#f9f9fc",
+                    "error-container": "#ffdad6",
+                    "on-surface-variant": "#434656",
+                    "outline": "#737688",
+                    "surface-tint": "#004ced",
+                    "on-secondary-fixed-variant": "#00531e",
+                    "secondary": "#006e2a",
+                    "on-tertiary-container": "#ebe0ff",
+                    "tertiary": "#5d00de",
+                    "outline-variant": "#c3c5d9",
+                    "surface-variant": "#e2e2e5",
+                    "on-primary": "#ffffff",
+                    "on-error": "#ffffff",
+                    "primary-fixed-dim": "#b7c4ff",
+                    "primary-container": "#0052ff",
+                    "surface-container": "#eeeef0",
+                    "on-secondary": "#ffffff",
+                    "surface-bright": "#f9f9fc",
+                    "error": "#ba1a1a",
+                    "surface-container-high": "#e8e8ea",
+                    "inverse-surface": "#2f3133",
+                    "on-primary-fixed": "#001452",
+                    "on-primary-fixed-variant": "#0038b6",
+                    "tertiary-fixed-dim": "#cfbcff",
+                    "tertiary-fixed": "#e9ddff",
+                    "surface-container-lowest": "#ffffff",
+                    "on-secondary-fixed": "#002108",
+                    "primary": "#003ec7",
+                    "on-tertiary-fixed": "#22005d",
+                    "secondary-fixed": "#69ff87",
+                    "on-tertiary": "#ffffff",
+                    "on-error-container": "#93000a"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem"
+            },
+            "spacing": {
+                    "sm": "12px",
+                    "container-max": "1200px",
+                    "md": "24px",
+                    "xs": "4px",
+                    "xl": "64px",
+                    "base": "8px",
+                    "lg": "40px",
+                    "gutter": "24px"
+            },
+            "fontFamily": {
+                    "display": ["Inter"],
+                    "headline-md": ["Inter"],
+                    "label-md": ["Geist"],
+                    "body-lg": ["Inter"],
+                    "headline-lg": ["Inter"],
+                    "headline-lg-mobile": ["Inter"],
+                    "label-sm": ["Geist"],
+                    "body-md": ["Inter"]
+            },
+            "fontSize": {
+                    "display": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                    "label-md": ["14px", {"lineHeight": "20px", "letterSpacing": "0.01em", "fontWeight": "500"}],
+                    "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                    "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                    "headline-lg-mobile": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                    "label-sm": ["12px", {"lineHeight": "16px", "fontWeight": "600"}],
+                    "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body {
+            background-color: #f9f9fc;
+            color: #1a1c1e;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #e2e2e5;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body class="font-body-md text-on-surface">
+<!-- Top Navigation Bar -->
+<header class="w-full top-0 sticky bg-surface z-50 border-b border-outline-variant">
+<div class="flex justify-between items-center px-lg py-sm max-w-container-max mx-auto h-16">
+<div class="flex items-center gap-base">
+<span class="font-display text-headline-md font-bold text-primary">FinTrust Community</span>
+</div>
+<div class="hidden md:flex items-center flex-1 max-w-md mx-xl px-base py-xs bg-surface-container-low rounded-xl border border-outline-variant">
+<span class="material-symbols-outlined text-on-surface-variant px-xs">search</span>
+<input class="bg-transparent border-none focus:ring-0 text-label-md w-full" placeholder="Pesquisar discussões..." type="text"/>
+</div>
+<div class="flex items-center gap-md">
+<div class="hidden md:flex gap-md">
+<button class="font-display text-body-md text-primary font-bold border-b-2 border-primary pb-1 cursor-pointer active:scale-95 transition-transform">Forums</button>
+<button class="font-display text-body-md text-on-surface-variant hover:bg-surface-container-low transition-colors cursor-pointer active:scale-95 px-2 rounded-lg">Educação</button>
+</div>
+<div class="flex items-center gap-base">
+<button class="p-xs hover:bg-surface-container-low rounded-full transition-all cursor-pointer active:scale-95">
+<span class="material-symbols-outlined text-on-surface-variant">notifications</span>
+</button>
+<button class="p-xs hover:bg-surface-container-low rounded-full transition-all cursor-pointer active:scale-95">
+<span class="material-symbols-outlined text-on-surface-variant">account_balance_wallet</span>
+</button>
+<div class="w-8 h-8 rounded-full overflow-hidden border border-outline-variant">
+<img alt="User profile avatar" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAJx9WTqHN5vtB_3A-0HXAKfX28K9IXERvgU3vKqcjx0c2i50_A3g4R89hSAGZj0JhWAoDrnJHm2Y5KlPI_4Ew2dcGri3tiWCI9C9bIwNfblTHPSQogCJQf5pTfiksA3ssHRtEV1-pOEwKnLyiDFXlhUClG3X4_XZSKVcI9l2qdWixZToVfjI95ObnShCBYnsBiZno3Cl-9d7JMh7EJTla683oD2V8hq4tT6tXXLSUT_186k996eS8HPiwmcRz_iUx5wRGdHdXn3A"/>
+</div>
+</div>
+</div>
+</div>
+</header>
+<div class="flex max-w-container-max mx-auto">
+<!-- Side Navigation Bar -->
+<aside class="hidden md:flex flex-col h-[calc(100vh-64px)] w-64 sticky top-16 left-0 p-md gap-base border-r border-outline-variant bg-surface-container-lowest overflow-y-auto custom-scrollbar">
+<div class="mb-lg">
+<div class="flex items-center gap-sm mb-xs">
+<div class="w-10 h-10 bg-primary-container rounded-xl flex items-center justify-center">
+<span class="material-symbols-outlined text-on-primary-container" style="font-variation-settings: 'FILL' 1;">account_balance</span>
+</div>
+<div>
+<h3 class="font-display text-label-md font-bold text-primary">Wealth Circles</h3>
+<p class="text-[10px] text-on-surface-variant uppercase tracking-wider">Mentoria Financeira</p>
+</div>
+</div>
+</div>
+<nav class="flex flex-col gap-xs flex-1">
+<a class="flex items-center gap-sm px-sm py-base bg-secondary-container text-on-secondary-container font-bold rounded-xl duration-200 ease-in-out" href="#">
+<span class="material-symbols-outlined">forum</span>
+<span class="font-display text-label-md">Forums</span>
+</a>
+<a class="flex items-center gap-sm px-sm py-base text-on-surface-variant hover:bg-surface-container-high rounded-xl duration-200 ease-in-out group" href="#">
+<span class="material-symbols-outlined">group_work</span>
+<span class="font-display text-label-md">Investment Groups</span>
+</a>
+<a class="flex items-center gap-sm px-sm py-base text-on-surface-variant hover:bg-surface-container-high rounded-xl duration-200 ease-in-out group" href="#">
+<span class="material-symbols-outlined">military_tech</span>
+<span class="font-display text-label-md">Success Stories</span>
+</a>
+<a class="flex items-center gap-sm px-sm py-base text-on-surface-variant hover:bg-surface-container-high rounded-xl duration-200 ease-in-out group" href="#">
+<span class="material-symbols-outlined">school</span>
+<span class="font-display text-label-md">Financial Education</span>
+</a>
+<a class="flex items-center gap-sm px-sm py-base text-on-surface-variant hover:bg-surface-container-high rounded-xl duration-200 ease-in-out group" href="#">
+<span class="material-symbols-outlined">emoji_events</span>
+<span class="font-display text-label-md">Community Challenges</span>
+</a>
+<div class="mt-lg pt-lg border-t border-outline-variant">
+<button class="w-full py-base px-md bg-primary text-on-primary rounded-xl font-bold text-label-md hover:shadow-lg transition-all active:scale-95">
+                        Start a Discussion
+                    </button>
+</div>
+</nav>
+<div class="mt-auto flex flex-col gap-xs">
+<a class="flex items-center gap-sm px-sm py-base text-on-surface-variant hover:bg-surface-container-high rounded-xl duration-200 ease-in-out" href="#">
+<span class="material-symbols-outlined">person_search</span>
+<span class="font-display text-label-md">Member Directory</span>
+</a>
+<a class="flex items-center gap-sm px-sm py-base text-on-surface-variant hover:bg-surface-container-high rounded-xl duration-200 ease-in-out" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-display text-label-md">Settings</span>
+</a>
+</div>
+</aside>
+<!-- Main Content Canvas -->
+<main class="flex-1 min-w-0 p-gutter lg:p-lg">
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-gutter items-start">
+<!-- Main Feed Section (Col 1-8) -->
+<div class="lg:col-span-8 space-y-gutter">
+<!-- Welcome Hero / Banner -->
+<section class="relative overflow-hidden rounded-full bg-primary-container p-lg text-on-primary-container">
+<div class="relative z-10">
+<h1 class="font-display text-headline-lg mb-sm">Bem-vindo à Comunidade FinTrust</h1>
+<p class="font-body-md opacity-90 max-w-xl">Onde o conhecimento financeiro encontra a colaboração. Compartilhe estratégias, aprenda com especialistas e cresça seu patrimônio com segurança.</p>
+</div>
+<div class="absolute right-0 top-0 h-full w-1/3 opacity-20 pointer-events-none">
+<span class="material-symbols-outlined text-[160px] translate-x-12 translate-y-8" style="font-variation-settings: 'FILL' 1;">insights</span>
+</div>
+</section>
+<!-- Discussion Feed -->
+<div class="space-y-md">
+<div class="flex items-center justify-between mb-sm">
+<h2 class="font-display text-headline-md">Discussões Recentes</h2>
+<div class="flex gap-xs">
+<button class="px-sm py-xs bg-surface-container-high rounded-full text-label-sm font-bold">Populares</button>
+<button class="px-sm py-xs text-on-surface-variant hover:bg-surface-container-low rounded-full text-label-sm">Novas</button>
+</div>
+</div>
+<!-- Card 1 -->
+<article class="bg-surface-container-lowest border border-outline-variant rounded-xl p-md hover:border-primary transition-colors cursor-pointer group">
+<div class="flex items-start gap-sm mb-sm">
+<img alt="User" class="w-10 h-10 rounded-full" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD-KQXNgqiiUiTkRebZVaTog44iZsJwH6XFUdGKnjZfrxljV2IKU1XbLkpJ3BP9Wg23trfZ7AJ4YXqdY9v8hmQzBRHd_dDdryclzPpZ4ij4H6-I8yekR6L7V3RbcHTFy3Mn9qNcD_eo1Od7IFD2_vHzIUOMPWW4CqdLET4jBrqVzrITRP7nWglz0d5Unp6YIFzGihGjvXFZV39SR2tIslAFSri8XXtb9BWjG_V6_bEFL4SnkhPlP-HsiwgkxmAuc-urNr2Vz8u5hA"/>
+<div>
+<h3 class="font-display text-headline-md text-primary group-hover:underline">Estratégias de Dividendos para 2024: O que esperar?</h3>
+<div class="flex items-center gap-xs mt-1">
+<span class="bg-secondary-container text-on-secondary-container px-sm py-xs rounded-full text-[10px] font-bold uppercase tracking-widest">Investimentos</span>
+<span class="text-on-surface-variant text-label-sm">Postado por <span class="font-bold">@RicardInvesth</span> • 2h atrás</span>
+</div>
+</div>
+</div>
+<p class="text-on-surface-variant text-body-md line-clamp-2 mb-md">Com a recente mudança na taxa Selic, muitos investidores estão migrando para fundos imobiliários e ações focadas em renda passiva. Aqui está minha análise dos setores mais promissores...</p>
+<div class="pt-md border-t border-outline-variant flex items-center justify-between">
+<div class="flex items-center gap-md">
+<div class="flex items-center gap-xs text-on-surface-variant">
+<span class="material-symbols-outlined text-[20px]">thumb_up</span>
+<span class="text-label-sm">124</span>
+</div>
+<div class="flex items-center gap-xs text-on-surface-variant">
+<span class="material-symbols-outlined text-[20px]">forum</span>
+<span class="text-label-sm">42 comentários</span>
+</div>
+</div>
+<button class="text-primary font-bold text-label-sm flex items-center gap-xs">
+                                    Ler mais <span class="material-symbols-outlined text-[16px]">arrow_forward</span>
+</button>
+</div>
+</article>
+<!-- Card 2 -->
+<article class="bg-surface-container-lowest border border-outline-variant rounded-xl p-md hover:border-primary transition-colors cursor-pointer group">
+<div class="flex items-start gap-sm mb-sm">
+<img alt="User" class="w-10 h-10 rounded-full" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCxwyxqJ_0uQjXaPafqKFyFVS4SOxggVQqQ0UgOR4a9WNs1u3LMmN0zkMfaTdmlXmbGnaykTIhnruqVD9PbkOqHIAhkIabYIV8faw23oN3b_VOCAnT_w-_P3S68A-8KN6DBo0t2IIG_KIhkc86Sv6_ivf2JZdugwbSJIpWmGVqCtFDVRaH3FOcpvN8kl9mn0zCZUfDykefrMfGm5JjNKFsqQG3K2_qqdQVB2wJ8z4AcHUpgySndygIClTLe01gZ5YB4iQuwXO6kFA"/>
+<div>
+<h3 class="font-display text-headline-md text-primary group-hover:underline">Como quitei meu financiamento imobiliário em 5 anos</h3>
+<div class="flex items-center gap-xs mt-1">
+<span class="bg-tertiary-container text-on-tertiary-container px-sm py-xs rounded-full text-[10px] font-bold uppercase tracking-widest">Sucesso</span>
+<span class="text-on-surface-variant text-label-sm">Postado por <span class="font-bold">@AnaPoupança</span> • 5h atrás</span>
+</div>
+</div>
+</div>
+<p class="text-on-surface-variant text-body-md line-clamp-2 mb-md">A estratégia foi simples: amortização constante e uso inteligente do FGTS. Vou detalhar a planilha que usei para priorizar os pagamentos...</p>
+<div class="pt-md border-t border-outline-variant flex items-center justify-between">
+<div class="flex items-center gap-md">
+<div class="flex items-center gap-xs text-on-surface-variant">
+<span class="material-symbols-outlined text-[20px]">thumb_up</span>
+<span class="text-label-sm">382</span>
+</div>
+<div class="flex items-center gap-xs text-on-surface-variant">
+<span class="material-symbols-outlined text-[20px]">forum</span>
+<span class="text-label-sm">156 comentários</span>
+</div>
+</div>
+<button class="text-primary font-bold text-label-sm flex items-center gap-xs">
+                                    Ler mais <span class="material-symbols-outlined text-[16px]">arrow_forward</span>
+</button>
+</div>
+</article>
+</div>
+</div>
+<!-- Sidebar Widgets (Col 9-12) -->
+<aside class="lg:col-span-4 space-y-gutter">
+<!-- Trending Tips Widget -->
+<section class="bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden">
+<div class="p-md border-b border-outline-variant bg-surface-container-low">
+<h3 class="font-display text-label-md font-bold flex items-center gap-sm">
+<span class="material-symbols-outlined text-secondary" style="font-variation-settings: 'FILL' 1;">bolt</span>
+                                Dicas Financeiras do Dia
+                            </h3>
+</div>
+<div class="p-md space-y-md">
+<div class="flex gap-sm p-sm bg-[#F0FFF4] border-l-4 border-secondary rounded-lg">
+<div class="flex-1">
+<h4 class="font-bold text-label-sm text-on-secondary-fixed-variant mb-xs">Regra dos 50/30/20</h4>
+<p class="text-label-sm text-on-surface-variant">Ideal para quem está começando a organizar o orçamento mensal.</p>
+</div>
+</div>
+<div class="flex gap-sm p-sm bg-[#F0FFF4] border-l-4 border-secondary rounded-lg">
+<div class="flex-1">
+<h4 class="font-bold text-label-sm text-on-secondary-fixed-variant mb-xs">Reserva de Emergência</h4>
+<p class="text-label-sm text-on-surface-variant">Garanta pelo menos 6 meses de custo fixo em liquidez diária.</p>
+</div>
+</div>
+</div>
+</section>
+<!-- Top Members Widget -->
+<section class="bg-surface-container-lowest border border-outline-variant rounded-xl p-md">
+<h3 class="font-display text-label-md font-bold mb-md">Membros em Destaque</h3>
+<div class="space-y-md">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-sm">
+<img alt="Member" class="w-8 h-8 rounded-full" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDuMXHt0_PzZejtU3YRu6YZpCB3bIVabPH2auQ69zeUrydkdMDLa5feejMUpeYv2ugchDdSnm3FIRdGDBZFjb7VrzeMxLLGl6yU8w9hNli0ewiW9n-P72fXZIhO3krI5LyaCzvEzpHABV7FzBdmFXPCm9hoQ-_jGJUVD_8u5o37mtUMRaEMW-WHuFXg3_IVGzXF8lT6CrcmTbf7O9lMkGWA0o5MiK06Ltan9pYTBld7MgBWcP0fYKIEcLUZsoZ_bCNGI7FR3N-HYw"/>
+<div>
+<p class="text-label-sm font-bold">Dr. Carlos Invest</p>
+<span class="bg-surface-container-high px-xs py-[2px] rounded text-[8px] font-bold uppercase text-primary">Expert Verificado</span>
+</div>
+</div>
+<button class="text-primary text-[12px] font-bold hover:underline">Seguir</button>
+</div>
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-sm">
+<img alt="Member" class="w-8 h-8 rounded-full" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDod_ZLpgg1EYwpP-b8BiIng4oXkFaPYPxToiyzhmlpcdP1RzOBMS1cEWkgIrlK19S1lzut-PWFJNfOpOx9DDf7q8wSvGLm8h1ffszaK4CrTLWN8V8W0dvwslJb25SG4jsx7nDbhEFCAJ36huPlspfk_WsCmp875OcgUexB9klFqCdDJ_Y89AL6J2n83EA_28jbZqWwq7Pt_djs9jStJPkeOObfNKcGKdvXzgHx06zCs1opDD3vktJXc8sHVYaVyuaxtX0zv0VYgg"/>
+<div>
+<p class="text-label-sm font-bold">Mariana Finanças</p>
+<span class="bg-surface-container-high px-xs py-[2px] rounded text-[8px] font-bold uppercase text-secondary">Power Saver</span>
+</div>
+</div>
+<button class="text-primary text-[12px] font-bold hover:underline">Seguir</button>
+</div>
+</div>
+</section>
+<!-- Community Challenge Card -->
+<section class="bg-inverse-surface text-inverse-on-surface rounded-xl p-md relative overflow-hidden">
+<div class="relative z-10">
+<span class="text-[10px] font-bold bg-primary px-sm py-xs rounded-full uppercase mb-sm inline-block">Desafio Ativo</span>
+<h3 class="font-display text-headline-md mb-xs">30 Dias Sem Gastos Supérfluos</h3>
+<p class="text-label-sm opacity-80 mb-md">1.240 membros participando atualmente.</p>
+<button class="w-full py-base bg-on-primary text-primary font-bold rounded-xl active:scale-95 transition-transform">Participar Agora</button>
+</div>
+<div class="absolute -right-4 -bottom-4 opacity-10">
+<span class="material-symbols-outlined text-[100px]" style="font-variation-settings: 'FILL' 1;">emoji_events</span>
+</div>
+</section>
+</aside>
+</div>
+</main>
+</div>
+<!-- FAB for Mobile (Implicit Intent: Start Discussion) -->
+<button class="md:hidden fixed bottom-md right-md w-14 h-14 bg-primary text-on-primary rounded-full shadow-lg flex items-center justify-center z-50 active:scale-90 transition-transform">
+<span class="material-symbols-outlined">add_comment</span>
+</button>
+<!-- Bottom Nav for Mobile -->
+<nav class="md:hidden fixed bottom-0 left-0 w-full bg-surface-container-lowest flex justify-around items-center py-sm px-md z-40 border-t border-outline-variant">
+<a class="flex flex-col items-center gap-xs text-primary" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">forum</span>
+<span class="text-[10px] font-bold">Forums</span>
+</a>
+<a class="flex flex-col items-center gap-xs text-on-surface-variant" href="#">
+<span class="material-symbols-outlined">group_work</span>
+<span class="text-[10px]">Grupos</span>
+</a>
+<a class="flex flex-col items-center gap-xs text-on-surface-variant" href="#">
+<span class="material-symbols-outlined">emoji_events</span>
+<span class="text-[10px]">Desafios</span>
+</a>
+<a class="flex flex-col items-center gap-xs text-on-surface-variant" href="#">
+<span class="material-symbols-outlined">school</span>
+<span class="text-[10px]">Educação</span>
+</a>
+</nav>
+<script>
+        // Simple micro-interactions for the cards
+        document.querySelectorAll('article').forEach(card => {
+            card.addEventListener('mouseenter', () => {
+                card.style.transform = 'translateY(-2px)';
+                card.style.boxShadow = '0 10px 30px rgba(0, 0, 0, 0.04)';
+            });
+            card.addEventListener('mouseleave', () => {
+                card.style.transform = 'translateY(0)';
+                card.style.boxShadow = 'none';
+            });
+        });
+
+        // Search bar focus effect
+        const searchInput = document.querySelector('input[type="text"]');
+        const searchContainer = searchInput?.parentElement;
+        if (searchInput && searchContainer) {
+            searchInput.addEventListener('focus', () => {
+                searchContainer.classList.add('ring-2', 'ring-primary', 'ring-opacity-10', 'border-primary');
+            });
+            searchInput.addEventListener('blur', () => {
+                searchContainer.classList.remove('ring-2', 'ring-primary', 'ring-opacity-10', 'border-primary');
+            });
+        }
+    </script>
+</body></html>

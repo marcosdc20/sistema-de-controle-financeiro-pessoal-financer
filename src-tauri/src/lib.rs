@@ -245,95 +245,123 @@ async fn start_google_auth(
 // Fallback: se o UUID não estiver disponível, usa o serial do primeiro disco.
 #[tauri::command]
 fn get_hardware_id() -> Result<String, String> {
-    // Tentativa 1: UUID do produto do sistema (motherboard)
-    let uuid_output = std::process::Command::new("wmic")
-        .args(["csproduct", "get", "UUID", "/value"])
-        .output()
-        .map_err(|e| format!("Falha ao executar wmic csproduct: {}", e))?;
+    #[cfg(target_os = "windows")]
+    {
+        let uuid_output = std::process::Command::new("wmic")
+            .args(["csproduct", "get", "UUID", "/value"])
+            .output()
+            .map_err(|e| format!("Falha ao executar wmic csproduct: {}", e))?;
 
-    let uuid_str = String::from_utf8_lossy(&uuid_output.stdout);
+        let uuid_str = String::from_utf8_lossy(&uuid_output.stdout);
 
-    // Extrai o valor do UUID do output "UUID=XXXX-XXXX-..."
-    let uuid_value = uuid_str
-        .lines()
-        .find(|line| line.trim_start().starts_with("UUID="))
-        .and_then(|line| line.split('=').nth(1))
-        .map(|v| v.trim().to_string())
-        .filter(|v| !v.is_empty() && v != "None" && v.len() > 5);
+        // Extrai o valor do UUID do output "UUID=XXXX-XXXX-..."
+        let uuid_value = uuid_str
+            .lines()
+            .find(|line| line.trim_start().starts_with("UUID="))
+            .and_then(|line| line.split('=').nth(1))
+            .map(|v| v.trim().to_string())
+            .filter(|v| !v.is_empty() && v != "None" && v.len() > 5);
 
-    let raw_id = match uuid_value {
-        Some(uuid) => uuid,
-        None => {
-            // Fallback: Serial Number do primeiro disco rígido
-            let disk_output = std::process::Command::new("wmic")
-                .args(["diskdrive", "get", "SerialNumber", "/value"])
-                .output()
-                .map_err(|e| format!("Falha ao executar wmic diskdrive: {}", e))?;
+        let raw_id = match uuid_value {
+            Some(uuid) => uuid,
+            None => {
+                // Fallback: Serial Number do primeiro disco rígido
+                let disk_output = std::process::Command::new("wmic")
+                    .args(["diskdrive", "get", "SerialNumber", "/value"])
+                    .output()
+                    .map_err(|e| format!("Falha ao executar wmic diskdrive: {}", e))?;
 
-            let disk_str = String::from_utf8_lossy(&disk_output.stdout);
+                let disk_str = String::from_utf8_lossy(&disk_output.stdout);
 
-            disk_str
-                .lines()
-                .find(|line| line.trim_start().starts_with("SerialNumber="))
-                .and_then(|line| line.split('=').nth(1))
-                .map(|v| v.trim().to_string())
-                .filter(|v| !v.is_empty() && v != "None")
-                .ok_or_else(|| {
-                    "Não foi possível obter identificador de hardware único.".to_string()
-                })?
-        }
-    };
+                disk_str
+                    .lines()
+                    .find(|line| line.trim_start().starts_with("SerialNumber="))
+                    .and_then(|line| line.split('=').nth(1))
+                    .map(|v| v.trim().to_string())
+                    .filter(|v| !v.is_empty() && v != "None")
+                    .ok_or_else(|| {
+                        "Não foi possível obter identificador de hardware único.".to_string()
+                    })?
+            }
+        };
 
-    // Computa SHA-256 do identificador raw para anonimizar e padronizar o tamanho
-    let mut hasher = Sha256::new();
-    // Adiciona um salt fixo do app para dificultar rainbow tables
-    hasher.update(b"vukapay-hwid-salt-v1:");
-    hasher.update(raw_id.as_bytes());
-    let result = hasher.finalize();
+        // Computa SHA-256 do identificador raw para anonimizar e padronizar o tamanho
+        let mut hasher = Sha256::new();
+        // Adiciona um salt fixo do app para dificultar rainbow tables
+        hasher.update(b"vukapay-hwid-salt-v1:");
+        hasher.update(raw_id.as_bytes());
+        let result = hasher.finalize();
 
-    Ok(hex::encode(result))
+        Ok(hex::encode(result))
+    }
+
+    #[cfg(not(target_os = "windows"))]
+    {
+        // On non-Windows platforms (like Android, macOS, Linux), hardware identification falls back
+        // to browser-level UUIDs generated on the frontend.
+        Err("Hardware ID not supported natively on this platform".to_string())
+    }
 }
 
 // ─── Comando: get_system_info ────────────────────────────────────────────────
 // Retorna informações básicas do sistema para diagnóstico (não sensíveis).
 #[tauri::command]
 fn get_system_info() -> Result<serde_json::Value, String> {
-    let os_info = std::process::Command::new("wmic")
-        .args(["os", "get", "Caption,Version", "/value"])
-        .output()
-        .map_err(|e| e.to_string())?;
+    #[cfg(target_os = "windows")]
+    {
+        let os_info = std::process::Command::new("wmic")
+            .args(["os", "get", "Caption,Version", "/value"])
+            .output()
+            .map_err(|e| e.to_string())?;
 
-    let os_str = String::from_utf8_lossy(&os_info.stdout);
-    let mut caption = String::from("Windows");
-    let mut version = String::new();
+        let os_str = String::from_utf8_lossy(&os_info.stdout);
+        let mut caption = String::from("Windows");
+        let mut version = String::new();
 
-    for line in os_str.lines() {
-        if line.starts_with("Caption=") {
-            caption = line.replace("Caption=", "").trim().to_string();
+        for line in os_str.lines() {
+            if line.starts_with("Caption=") {
+                caption = line.replace("Caption=", "").trim().to_string();
+            }
+            if line.starts_with("Version=") {
+                version = line.replace("Version=", "").trim().to_string();
+            }
         }
-        if line.starts_with("Version=") {
-            version = line.replace("Version=", "").trim().to_string();
-        }
+
+        Ok(serde_json::json!({
+            "os_name": caption,
+            "os_version": version,
+            "arch": std::env::consts::ARCH,
+        }))
     }
 
-    Ok(serde_json::json!({
-        "os_name": caption,
-        "os_version": version,
-        "arch": std::env::consts::ARCH,
-    }))
+    #[cfg(not(target_os = "windows"))]
+    {
+        Ok(serde_json::json!({
+            "os_name": std::env::consts::OS,
+            "os_version": "unknown",
+            "arch": std::env::consts::ARCH,
+        }))
+    }
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    tauri::Builder::default()
+    let mut builder = tauri::Builder::default()
         .plugin(tauri_plugin_process::init())
-        .plugin(tauri_plugin_updater::Builder::new().build())
+        .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_sql::Builder::default().build())
         .invoke_handler(tauri::generate_handler![
             start_google_auth,
             get_hardware_id,
             get_system_info
-        ])
+        ]);
+
+    #[cfg(not(any(target_os = "android", target_os = "ios")))]
+    {
+        builder = builder.plugin(tauri_plugin_updater::Builder::new().build());
+    }
+
+    builder
         .setup(|app| {
             if cfg!(debug_assertions) {
                 app.handle().plugin(

@@ -14,6 +14,9 @@ import {
   getDoc,
   setDoc,
   updateDoc,
+  collection,
+  getDocs,
+  deleteDoc,
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type Database from '@tauri-apps/plugin-sql';
@@ -23,6 +26,8 @@ import type {
   LocalLicenseRecord,
   ActivationResult,
   ActivationErrorCode,
+  LicenseStatus,
+  PlanType,
 } from '@/types/license';
 
 
@@ -495,8 +500,135 @@ export async function readLocalLicense(
 export async function clearLocalLicense(
   db: Database
 ): Promise<void> {
-
   await db.execute(`DELETE FROM ${LOCAL_LICENSE_TABLE}`);
 }
 
+/**
+ * Obtém todas as licenças do Firestore (Painel Admin).
+ */
+export async function getAllLicenses(): Promise<FirestoreLicense[]> {
+  try {
+    const licensesCol = collection(db, 'licenses');
+    const snapshot = await getDocs(licensesCol);
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as FirestoreLicense));
+  } catch (error) {
+    console.error('[LicenseService] Erro ao buscar todas as licenças:', error);
+    throw error;
+  }
+}
+
+/**
+ * Obtém todos os registros de trial do Firestore (Painel Admin).
+ */
+export async function getAllTrials(): Promise<FirestoreTrial[]> {
+  try {
+    const trialsCol = collection(db, 'trials');
+    const snapshot = await getDocs(trialsCol);
+    return snapshot.docs.map(doc => ({ hardware_id: doc.id, ...doc.data() } as unknown as FirestoreTrial));
+  } catch (error) {
+    console.error('[LicenseService] Erro ao buscar todos os trials:', error);
+    throw error;
+  }
+}
+
+/**
+ * Cria/gera uma nova licença no Firestore (Painel Admin).
+ */
+export async function createLicenseRecord(
+  clientEmail: string,
+  planType: PlanType,
+  expiresAt: number | null
+): Promise<FirestoreLicense> {
+  try {
+    const licenseKey = generateLicenseKey();
+    const newLicense = {
+      client_email: clientEmail,
+      plan_type: planType,
+      status: 'active' as LicenseStatus,
+      hardware_id: null,
+      created_at: Date.now(),
+      expires_at: expiresAt,
+    };
+
+    const licenseRef = doc(db, 'licenses', licenseKey);
+    await setDoc(licenseRef, newLicense);
+
+    return { id: licenseKey, ...newLicense };
+  } catch (error) {
+    console.error('[LicenseService] Erro ao criar licença:', error);
+    throw error;
+  }
+}
+
+/**
+ * Atualiza o status de uma licença no Firestore (Painel Admin).
+ */
+export async function updateLicenseStatusInFirestore(
+  licenseKey: string,
+  status: LicenseStatus
+): Promise<void> {
+  try {
+    const licenseRef = doc(db, 'licenses', licenseKey.toUpperCase());
+    await updateDoc(licenseRef, { status });
+  } catch (error) {
+    console.error('[LicenseService] Erro ao atualizar status da licença:', error);
+    throw error;
+  }
+}
+
+/**
+ * Reseta o hardware_id de uma licença no Firestore (Painel Admin).
+ */
+export async function resetLicenseHardwareInFirestore(
+  licenseKey: string
+): Promise<void> {
+  try {
+    const licenseRef = doc(db, 'licenses', licenseKey.toUpperCase());
+    await updateDoc(licenseRef, { hardware_id: null });
+  } catch (error) {
+    console.error('[LicenseService] Erro ao resetar hardware da licença:', error);
+    throw error;
+  }
+}
+
+/**
+ * Apaga permanentemente uma licença no Firestore (Painel Admin).
+ */
+export async function deleteLicenseInFirestore(
+  licenseKey: string
+): Promise<void> {
+  try {
+    const licenseRef = doc(db, 'licenses', licenseKey.toUpperCase());
+    await deleteDoc(licenseRef);
+  } catch (error) {
+    console.error('[LicenseService] Erro ao deletar licença:', error);
+    throw error;
+  }
+}
+
+/**
+ * Apaga permanentemente um registro de trial no Firestore (Painel Admin).
+ */
+export async function deleteTrialInFirestore(
+  hardwareId: string
+): Promise<void> {
+  try {
+    const trialRef = doc(db, 'trials', hardwareId);
+    await deleteDoc(trialRef);
+  } catch (error) {
+    console.error('[LicenseService] Erro ao deletar trial:', error);
+    throw error;
+  }
+}
+
+/**
+ * Auxiliar: gera uma chave de licença no formato VUKA-XXXX-XXXX-XXXX-XXXX
+ */
+function generateLicenseKey(): string {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  const segment = () => Array.from({ length: 4 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+  return `VUKA-${segment()}-${segment()}-${segment()}-${segment()}`;
+}
+
 export { TRIAL_DURATION_MS, OFFLINE_GRACE_PERIOD_MS };
+

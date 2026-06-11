@@ -28,6 +28,15 @@ if (Test-Path $tauriPath) {
     Write-Host "✓ tauri.conf.json atualizado para a versão $newVersion" -ForegroundColor Green
 }
 
+# 3. Atualizar DownloadModal.tsx na pasta vukapay-docs
+$docsModalPath = "../vukapay-docs/src/components/DownloadModal.tsx"
+if (Test-Path $docsModalPath) {
+    $content = Get-Content $docsModalPath -Raw
+    $content = $content -replace "const APP_VERSION = '[0-9]+\.[0-9]+\.[0-9]+';", "const APP_VERSION = '$newVersion';"
+    $content | Set-Content $docsModalPath
+    Write-Host "✓ DownloadModal.tsx (vukapay-docs) atualizado para a versão $newVersion" -ForegroundColor Green
+}
+
 Write-Host "`nPróximos passos recomendados:" -ForegroundColor Cyan
 Write-Host "1. Faça commit das alterações: git commit -am 'bump: versao $newVersion'"
 Write-Host "2. Envie para o GitHub: git push"

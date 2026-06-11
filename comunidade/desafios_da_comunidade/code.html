@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+
+<html class="light" lang="pt-br"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;family=Geist:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind Theme Configuration -->
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                "surface-dim": "#dadadc",
+                "on-secondary-container": "#00732c",
+                "on-surface": "#1a1c1e",
+                "secondary-fixed-dim": "#3ce36a",
+                "primary-fixed": "#dde1ff",
+                "tertiary-container": "#7632fd",
+                "surface-container-highest": "#e2e2e5",
+                "on-tertiary-fixed-variant": "#5400cc",
+                "background": "#f9f9fc",
+                "inverse-on-surface": "#f0f0f3",
+                "inverse-primary": "#b7c4ff",
+                "surface-container-low": "#f3f3f6",
+                "on-background": "#1a1c1e",
+                "on-primary-container": "#dfe3ff",
+                "secondary-container": "#5cfd80",
+                "surface": "#f9f9fc",
+                "error-container": "#ffdad6",
+                "on-surface-variant": "#434656",
+                "outline": "#737688",
+                "surface-tint": "#004ced",
+                "on-secondary-fixed-variant": "#00531e",
+                "secondary": "#006e2a",
+                "on-tertiary-container": "#ebe0ff",
+                "tertiary": "#5d00de",
+                "outline-variant": "#c3c5d9",
+                "surface-variant": "#e2e2e5",
+                "on-primary": "#ffffff",
+                "on-error": "#ffffff",
+                "primary-fixed-dim": "#b7c4ff",
+                "primary-container": "#0052ff",
+                "surface-container": "#eeeef0",
+                "on-secondary": "#ffffff",
+                "surface-bright": "#f9f9fc",
+                "error": "#ba1a1a",
+                "surface-container-high": "#e8e8ea",
+                "inverse-surface": "#2f3133",
+                "on-primary-fixed": "#001452",
+                "on-primary-fixed-variant": "#0038b6",
+                "tertiary-fixed-dim": "#cfbcff",
+                "tertiary-fixed": "#e9ddff",
+                "surface-container-lowest": "#ffffff",
+                "on-secondary-fixed": "#002108",
+                "primary": "#003ec7",
+                "on-tertiary-fixed": "#22005d",
+                "secondary-fixed": "#69ff87",
+                "on-tertiary": "#ffffff",
+                "on-error-container": "#93000a"
+            },
+            "borderRadius": {
+                "DEFAULT": "0.125rem",
+                "lg": "0.25rem",
+                "xl": "0.5rem",
+                "full": "0.75rem"
+            },
+            "spacing": {
+                "sm": "12px",
+                "container-max": "1200px",
+                "md": "24px",
+                "xs": "4px",
+                "xl": "64px",
+                "base": "8px",
+                "lg": "40px",
+                "gutter": "24px"
+            },
+            "fontFamily": {
+                "display": ["Inter"],
+                "headline-md": ["Inter"],
+                "label-md": ["Geist"],
+                "body-lg": ["Inter"],
+                "headline-lg": ["Inter"],
+                "headline-lg-mobile": ["Inter"],
+                "label-sm": ["Geist"],
+                "body-md": ["Inter"]
+            },
+            "fontSize": {
+                "display": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                "label-md": ["14px", {"lineHeight": "20px", "letterSpacing": "0.01em", "fontWeight": "500"}],
+                "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                "headline-lg-mobile": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                "label-sm": ["12px", {"lineHeight": "16px", "fontWeight": "600"}],
+                "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}]
+            }
+          }
+        }
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .progress-ring {
+            transition: stroke-dashoffset 0.35s;
+            transform: rotate(-90deg);
+            transform-origin: 50% 50%;
+        }
+        body {
+            background-color: #f9f9fc;
+            color: #1a1c1e;
+        }
+        /* Custom scrollbar for sidebar */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #c3c5d9;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body class="font-display">
+<div class="flex min-h-screen max-w-screen-2xl mx-auto">
+<!-- SideNavBar Component (Shared Anchor) -->
+<aside class="h-screen w-64 sticky top-0 left-0 bg-surface-container-lowest border-r border-outline-variant flex flex-col p-md gap-base z-50">
+<div class="mb-lg">
+<h1 class="font-display text-headline-md font-bold text-primary">Wealth Circles</h1>
+<p class="font-display text-label-md text-on-surface-variant">Financial Mentorship</p>
+</div>
+<nav class="flex-1 space-y-2 overflow-y-auto custom-scrollbar">
+<a class="flex items-center gap-sm p-sm text-on-surface-variant hover:bg-surface-container rounded-xl transition-all duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="forum">forum</span>
+<span class="font-display text-label-md">Forums</span>
+</a>
+<a class="flex items-center gap-sm p-sm text-on-surface-variant hover:bg-surface-container rounded-xl transition-all duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="group_work">group_work</span>
+<span class="font-display text-label-md">Investment Groups</span>
+</a>
+<a class="flex items-center gap-sm p-sm text-on-surface-variant hover:bg-surface-container rounded-xl transition-all duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="military_tech">military_tech</span>
+<span class="font-display text-label-md">Success Stories</span>
+</a>
+<a class="flex items-center gap-sm p-sm text-on-surface-variant hover:bg-surface-container rounded-xl transition-all duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="school">school</span>
+<span class="font-display text-label-md">Financial Education</span>
+</a>
+<!-- Active Tab: Community Challenges -->
+<a class="flex items-center gap-sm p-sm bg-secondary-container text-on-secondary-container font-bold rounded-xl duration-200 ease-in-out" href="#">
+<span class="material-symbols-outlined" data-icon="emoji_events" style="font-variation-settings: 'FILL' 1;">emoji_events</span>
+<span class="font-display text-label-md">Community Challenges</span>
+</a>
+</nav>
+<div class="pt-base border-t border-outline-variant mt-auto space-y-2">
+<button class="w-full bg-primary text-on-primary py-sm px-md rounded-full font-bold transition-transform active:scale-95 mb-sm">
+                    Start a Discussion
+                </button>
+<a class="flex items-center gap-sm p-sm text-on-surface-variant hover:bg-surface-container rounded-xl transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="person_search">person_search</span>
+<span class="font-display text-label-md">Member Directory</span>
+</a>
+<a class="flex items-center gap-sm p-sm text-on-surface-variant hover:bg-surface-container rounded-xl transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span class="font-display text-label-md">Settings</span>
+</a>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class="flex-1 min-w-0 bg-background flex flex-col">
+<!-- TopNavBar (Shared Anchor) -->
+<header class="w-full top-0 sticky bg-surface border-b border-outline-variant z-40">
+<div class="flex justify-between items-center px-lg py-sm max-w-container-max mx-auto">
+<div class="flex items-center gap-md">
+<span class="font-display text-headline-md font-bold text-primary">FinTrust Community</span>
+</div>
+<div class="flex items-center gap-md">
+<div class="relative hidden lg:block">
+<input class="bg-surface-container-low border-none rounded-full px-md py-xs text-body-md w-64 focus:ring-2 focus:ring-primary/10 transition-all" placeholder="Pesquisar desafios..." type="text"/>
+</div>
+<div class="flex items-center gap-sm">
+<span class="material-symbols-outlined cursor-pointer p-xs hover:bg-surface-container-low rounded-full transition-colors text-on-surface-variant" data-icon="notifications">notifications</span>
+<span class="material-symbols-outlined cursor-pointer p-xs hover:bg-surface-container-low rounded-full transition-colors text-on-surface-variant" data-icon="account_balance_wallet">account_balance_wallet</span>
+<img alt="User profile avatar" class="w-8 h-8 rounded-full object-cover border border-outline-variant" data-alt="A professional headshot of a person with a friendly smile, clean lighting, and a soft-focus office background. The style is modern, bright, and trust-inspiring, adhering to a high-end corporate fintech aesthetic with balanced cool tones." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAWgGYShE2QC_m8h3ipZB1UNAPmJMLJtMhLjB80nOUJllHr3cPP36yV28JuSRY86EVAgDPB4awVkIjpoCB6JpANQ2TbIMcZzLOPx3W9IN2I6itxt8oBigcr_zU3N9XeHskxAFxAtGG9b_CLiWNQDf7U0O0sZy3Z4RPYnNVWxjNV9031FH-PCsWxmSbHH2AJknJT1ajOoISDrA2DOH7FCCLa6bI0pQft_63hGdaw3H3V0tucVzFJ5yMxdyA4X26gXjf586qNIEHgrg"/>
+</div>
+</div>
+</div>
+</header>
+<!-- Page Canvas -->
+<div class="p-lg overflow-y-auto">
+<!-- Bento Grid Header -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-gutter mb-lg">
+<div class="md:col-span-2 bg-surface-container-lowest border border-outline-variant rounded-xl p-md flex items-center justify-between overflow-hidden relative group">
+<div class="z-10 relative">
+<h2 class="font-display text-headline-lg mb-xs">Desafios da Comunidade</h2>
+<p class="text-on-surface-variant max-w-md">Transforme sua saúde financeira em um jogo. Participe de metas coletivas, ganhe emblemas e construa riqueza com suporte mútuo.</p>
+<button class="mt-md bg-secondary text-on-secondary px-md py-sm rounded-full font-bold flex items-center gap-xs hover:shadow-lg transition-all active:scale-95">
+<span class="material-symbols-outlined" data-icon="add_circle">add_circle</span>
+                                Criar Novo Desafio
+                            </button>
+</div>
+<div class="absolute right-0 top-0 h-full w-1/3 opacity-20 group-hover:opacity-30 transition-opacity">
+
+</div>
+</div>
+<div class="bg-primary text-on-primary rounded-xl p-md flex flex-col justify-between shadow-lg">
+<div class="flex justify-between items-start">
+<span class="material-symbols-outlined text-headline-md" data-icon="insights">insights</span>
+<span class="bg-on-primary/20 px-sm py-xs rounded-full text-label-sm uppercase tracking-wider">Seu Rank</span>
+</div>
+<div>
+<div class="text-display leading-tight">#12</div>
+<div class="text-label-md opacity-80">Entre 2.4k investidores</div>
+</div>
+<div class="mt-sm pt-sm border-t border-on-primary/20 flex items-center justify-between">
+<span class="text-label-sm">Próximo nível: Mestre Poupador</span>
+<span class="text-label-sm">850 XP</span>
+</div>
+</div>
+</div>
+<!-- Active Challenges Section -->
+<div class="mb-lg">
+<div class="flex items-center justify-between mb-md">
+<h3 class="font-display text-headline-md">Seus Desafios Ativos</h3>
+<a class="text-primary text-label-md font-bold flex items-center hover:underline" href="#">Ver Histórico <span class="material-symbols-outlined text-sm ml-xs" data-icon="chevron_right">chevron_right</span></a>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-gutter">
+<!-- Progress Card 1: 30 Days No Spend -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-md flex gap-md items-center">
+<div class="relative w-24 h-24 flex-shrink-0">
+<svg class="w-full h-full progress-ring" viewbox="0 0 100 100">
+<circle cx="50" cy="50" fill="transparent" r="45" stroke="#e2e8f0" stroke-width="8"></circle>
+<circle cx="50" cy="50" fill="transparent" r="45" stroke="#003ec7" stroke-dasharray="282.7" stroke-dashoffset="84.8" stroke-linecap="round" stroke-width="8"></circle>
+</svg>
+<div class="absolute inset-0 flex flex-col items-center justify-center">
+<span class="font-bold text-headline-md">70%</span>
+</div>
+</div>
+<div class="flex-1">
+<div class="flex items-center gap-xs mb-xs">
+<span class="bg-error-container text-on-error-container px-base py-[2px] rounded-full text-label-sm">Urgente</span>
+<span class="text-on-surface-variant text-label-sm">Faltam 9 dias</span>
+</div>
+<h4 class="font-headline-md text-on-surface mb-xs">30 Dias Sem Gastos Extras</h4>
+<p class="text-on-surface-variant text-label-md mb-md">Meta: R$ 1.500,00 economizados em entretenimento.</p>
+<div class="flex items-center -space-x-2">
+<img alt="Member" class="w-8 h-8 rounded-full border-2 border-white" data-alt="Close-up portrait of a diverse man with glasses, smiling confidently. Soft natural light illuminates his face in a modern professional setting, with a clean and bright office background, reflecting financial stability and expert confidence." src="https://lh3.googleusercontent.com/aida-public/AB6AXuA6oL5RAjPqGfmlFqA5orgpVGrCrVpYsqbcY9ZauRRrYFB23zF7Lx3yD9QrV-8ZDHj50MYCcBlE4BLfgNIxUlIGTdWqWGeLFQarmBLiiRShUePUbiI8MsgzFGuLncO3nGl-qxd5yovnqVChrCKwmU2PfsCkD2AHCAYptpS7bTYQYQPWvsdboA2iPnf3UI6g1sLZSkXmqVtiJM7I0_TaMSFB6LLz5he3fXQsVbMUazmy4fl4JRgV63hJC8vrO_vf_JjjUI6DaMN3cw"/>
+<img alt="Member" class="w-8 h-8 rounded-full border-2 border-white" data-alt="A portrait of a cheerful professional woman with a bright smile. The lighting is crisp and airy, following a light-mode corporate aesthetic. The background is a minimalist, modern workspace, suggesting a high-trust financial community environment." src="https://lh3.googleusercontent.com/aida-public/AB6AXuD-r7RUcuRP-Ed5HVTr_sDeAdUbDIVkfpjS7b6D1rvHnWGTAXhZSFqSYTqf_HOvBllGe7rSIqqAzdUbmNuO5XhySNyBnRkD9598ERocUIFy84kIdFCdexo94zR0qm7oIenJ6uyv7yxmM9PyII4VB_ejCZYlqu6g-RyJtQTfJd9XI4xjOxuTcdqA1xHmhrAOmSHBEhEmkIia7PeH9i-7UI5JqxgQWWdSHurKdW1fO62ZNiDjAhStkqQKlB7HZwDtKy4u0pbPrXtspw"/>
+<div class="w-8 h-8 rounded-full bg-surface-container-high border-2 border-white flex items-center justify-center text-label-sm font-bold text-on-surface-variant">+42</div>
+</div>
+</div>
+</div>
+<!-- Progress Card 2: Emergency Fund -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-md flex gap-md items-center">
+<div class="relative w-24 h-24 flex-shrink-0">
+<svg class="w-full h-full progress-ring" viewbox="0 0 100 100">
+<circle cx="50" cy="50" fill="transparent" r="45" stroke="#e2e8f0" stroke-width="8"></circle>
+<circle cx="50" cy="50" fill="transparent" r="45" stroke="#006e2a" stroke-dasharray="282.7" stroke-dashoffset="197.9" stroke-linecap="round" stroke-width="8"></circle>
+</svg>
+<div class="absolute inset-0 flex flex-col items-center justify-center">
+<span class="font-bold text-headline-md">30%</span>
+</div>
+</div>
+<div class="flex-1">
+<div class="flex items-center gap-xs mb-xs">
+<span class="bg-secondary-container text-on-secondary-container px-base py-[2px] rounded-full text-label-sm">Progresso</span>
+<span class="text-on-surface-variant text-label-sm">Meta de 12 meses</span>
+</div>
+<h4 class="font-headline-md text-on-surface mb-xs">Construtor de Reserva de Emergência</h4>
+<p class="text-on-surface-variant text-label-md mb-md">Meta: R$ 10.000,00 guardados em renda fixa.</p>
+<div class="flex items-center gap-xs">
+<span class="material-symbols-outlined text-secondary" data-icon="stars" style="font-variation-settings: 'FILL' 1;">stars</span>
+<span class="text-label-sm font-bold">Ganhe o selo "Inabalável"</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Leaderboard & Exploration Grid -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-gutter">
+<!-- Global Leaderboard -->
+<div class="lg:col-span-1 bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden flex flex-col">
+<div class="p-md bg-surface-container-low border-b border-outline-variant flex justify-between items-center">
+<h3 class="font-display font-bold">Ranking Semanal</h3>
+<span class="material-symbols-outlined text-on-surface-variant cursor-pointer" data-icon="more_vert">more_vert</span>
+</div>
+<div class="divide-y divide-outline-variant">
+<!-- Leaderboard Item 1 -->
+<div class="p-sm flex items-center justify-between hover:bg-surface-container-lowest transition-colors">
+<div class="flex items-center gap-sm">
+<span class="w-6 text-label-md font-bold text-secondary">01</span>
+<img alt="Avatar" class="w-10 h-10 rounded-full object-cover" data-alt="Professional portrait of a male financier in his late 30s. He has a warm, approachable expression. The lighting is sophisticated and directional, highlighting his features against a soft, neutral professional background with light blue accents." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAI2PVWABqmc5Jcc-5MkuhWS5IDiLXImZN7Pxsed4OVhjx1Fz_BVVhfztxxLDC3B8xZ79KuzLiXluyLDGgt3-FN43IneZUuFIzN6H3YooCfMEAra4aWIhY_opi07pa9C9XVs1-2-hIMwrYjjh_oobOlAQdpK42Lxh9_yrCYhb7jfue1Yy_3GtBMwdY4cEcaTL2gQT0BgEfbh8JFZl3-QzG2gNU-Hmp0Hu5KBiKE07BR5f9dc36QJ6Qx4UzCNE_cviLo-PbvZLU0mg"/>
+<div>
+<p class="text-label-md font-bold">Carlos Mendes</p>
+<p class="text-label-sm text-on-surface-variant">2.840 XP • Expert</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-secondary" data-icon="trending_up">trending_up</span>
+</div>
+<!-- Leaderboard Item 2 -->
+<div class="p-sm flex items-center justify-between hover:bg-surface-container-lowest transition-colors">
+<div class="flex items-center gap-sm">
+<span class="w-6 text-label-md font-bold text-outline">02</span>
+<img alt="Avatar" class="w-10 h-10 rounded-full object-cover" data-alt="A studio portrait of a woman looking thoughtful and confident. The setting is bright and clean with a minimalist aesthetic. Her expression suggests focus and success, fitting into a premium financial community context." src="https://lh3.googleusercontent.com/aida-public/AB6AXuComivfNxlxXNA_0rQ93qNZ0W8iy8v0W-kyPYNG-k34HrDoUWwfpK7vl5Nj1pNBCHhoVZmLvfHnUu8bzkfNZOyTDf5U0eAA9_nmfSbyCikdMYG1JbN8LQ21aeqx8Wt9wktzxKyMYxPKIqVXycJTuy02Aiv_SRmbm78gHjq8g60EQtYNQLZqq8lnHKqnTdNSClSjOK00dPLOGER465vgd5vCjSvIsFelM3NFUTESPe2KQ7j5w40Lc3ucLfuVIqGDdxaxW4KSo4K6PQ"/>
+<div>
+<p class="text-label-md font-bold">Ana Julia</p>
+<p class="text-label-sm text-on-surface-variant">2.710 XP • Pro</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-outline" data-icon="horizontal_rule">horizontal_rule</span>
+</div>
+<!-- Leaderboard Item 3 -->
+<div class="p-sm flex items-center justify-between hover:bg-surface-container-lowest transition-colors">
+<div class="flex items-center gap-sm">
+<span class="w-6 text-label-md font-bold text-outline">03</span>
+<img alt="Avatar" class="w-10 h-10 rounded-full object-cover" data-alt="Close up of a smiling man with a beard, dressed in professional attire. Soft, warm lighting creates an inviting and trustworthy vibe. The background is a clean, modern interior space, maintaining the high-contrast fintech aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCiM9UUj0WZRdjSvHao8gDuxmQoov2oKLXZJkX2f7e3oc-WIT7GWm1Mz_Wc59in1Ry-1I7kp8ldIvuUzSBanU0DO2VnZ_LRBlDfYMkHErTG8ISkxd6euHhD7IT_0F4obXpPlJsLjjzjS4YvCsu-CIfU4B_o2299vyjH73JbF1rNz09tgcq67X77Jwn_47ONM5Ekc1Rts_0QSserRzInMiaWHEpsgr5QgPev-UYrmGOv_vej3a7p-lvDmUkZf3xPbqN_kOoDNFr-UA"/>
+<div>
+<p class="text-label-md font-bold">Roberto Silva</p>
+<p class="text-label-sm text-on-surface-variant">2.450 XP • Ativo</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-error" data-icon="trending_down">trending_down</span>
+</div>
+</div>
+<div class="p-sm mt-auto border-t border-outline-variant bg-surface-container-low text-center">
+<button class="text-primary text-label-sm font-bold uppercase tracking-widest">Ver Ranking Completo</button>
+</div>
+</div>
+<!-- Recommended Challenges -->
+<div class="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-gutter">
+<!-- Challenge Card: Dividend Investor -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden flex flex-col group cursor-pointer hover:border-primary transition-all">
+<div class="h-32 bg-surface-container overflow-hidden relative">
+<img alt="Investment" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" data-alt="A clean, minimalist workspace with a laptop displaying financial charts and a green plant. The scene is bathed in natural morning light, creating a calm and focused atmosphere. The visual style is crisp, airy, and professional, utilizing a neutral and soft green palette." src="https://lh3.googleusercontent.com/aida-public/AB6AXuC6t-Y9nNsurRWPREMGYHUgBHuEEpbLflk72rHbvJ68LYPV5Sv6izdIYx9PIMmXmmxTrvKNzZZp45ZO7-nCisF7qexj1lYCgqe05UI1S145Uy_SGQFvfe3jkPfUpdMs1lubd3-VdRsyXYJ8_2UYaQ7lxTBlJed82_WiFotS6VoGMuxGsEBcxuZclnV59yNA_fHgGOxlzV3R7fP_P0CAVkodfCtm3_xrr4mSuAgsB4TFR4oklP_2zo6oT1Y-loW06-Ur7x2ESLJUdA"/>
+<div class="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
+<div class="absolute bottom-sm left-sm bg-secondary text-on-secondary px-sm py-xs rounded-full text-label-sm font-bold flex items-center gap-xs">
+<span class="material-symbols-outlined text-xs" data-icon="paid">paid</span> Renda Passiva
+                                </div>
+</div>
+<div class="p-md flex flex-col flex-1">
+<h4 class="font-headline-md mb-xs">Mestre dos Dividendos</h4>
+<p class="text-on-surface-variant text-body-md mb-md flex-1">Receba seus primeiros R$ 50,00 em dividendos no mês. Aprenda a selecionar boas pagadoras.</p>
+<div class="flex items-center justify-between">
+<span class="text-label-sm font-bold">1.2k participantes</span>
+<button class="bg-primary text-on-primary px-md py-xs rounded-full text-label-md font-bold transition-colors hover:bg-primary-container">Participar</button>
+</div>
+</div>
+</div>
+<!-- Challenge Card: Zero Debt -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden flex flex-col group cursor-pointer hover:border-primary transition-all">
+<div class="h-32 bg-surface-container overflow-hidden relative">
+<img alt="Debt Free" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" data-alt="An artistic composition of a pair of scissors cutting a credit card, symbolizing financial freedom. The background is a clean white surface with sharp shadows and high-contrast lighting. The aesthetic is modern and symbolic, with subtle primary blue accents." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAcdShZA-KTQMBoKeHOdxOfCRXa_NyOWFdj5Z6IFTtZi81Xv80vsW96zP20isiXQiI5QKp-ZynhTa2FN5M4Lgg502dA7KGbOnLNuUHONSGFzkHBxsIR7ORGspAUPN2yL0TPtVPiqrWaU1NOKCACmk1YLEbWh39wd0qw7fR2MU7qOZDq5--DZMrN9dFYKJSv_Dr01usxryPDQZ8jH5d0sJiR1jjp4C8pjhDQ_GB0X75aADzOp1UzInmLceXPpGaspsoaCCQyMWrjng"/>
+<div class="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
+<div class="absolute bottom-sm left-sm bg-error text-on-error px-sm py-xs rounded-full text-label-sm font-bold flex items-center gap-xs">
+<span class="material-symbols-outlined text-xs" data-icon="cancel">cancel</span> Dívida Zero
+                                </div>
+</div>
+<div class="p-md flex flex-col flex-1">
+<h4 class="font-headline-md mb-xs">Eliminador de Dívidas</h4>
+<p class="text-on-surface-variant text-body-md mb-md flex-1">Quite uma dívida de pequeno valor este mês e recupere seu fôlego financeiro.</p>
+<div class="flex items-center justify-between">
+<span class="text-label-sm font-bold">850 participantes</span>
+<button class="bg-primary text-on-primary px-md py-xs rounded-full text-label-md font-bold transition-colors hover:bg-primary-container">Participar</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Financial Tip Widget (Shared Style) -->
+<div class="mt-lg bg-[#F0FFF4] border-l-4 border-secondary rounded-r-xl p-md flex items-center gap-md">
+<span class="material-symbols-outlined text-secondary text-headline-md shrink-0" data-icon="lightbulb">lightbulb</span>
+<div>
+<h4 class="font-bold text-secondary text-label-md uppercase tracking-wider mb-xs">Dica da Semana</h4>
+<p class="text-on-surface text-body-md">"A gamificação não é apenas sobre ganhar pontos, mas sobre criar o hábito visual de ver seu patrimônio crescer. Pequenas vitórias geram grandes impulsos."</p>
+</div>
+</div>
+</div>
+</main>
+</div>
+<!-- Floating Action Button (FAB) - Contextual for Challenges -->
+<button class="fixed bottom-lg right-lg w-14 h-14 bg-primary text-on-primary rounded-full shadow-2xl flex items-center justify-center transition-transform hover:scale-110 active:scale-90 z-50">
+<span class="material-symbols-outlined text-headline-md" data-icon="add">add</span>
+</button>
+<script>
+        // Simple micro-interaction for progress rings
+        document.addEventListener('DOMContentLoaded', () => {
+            const rings = document.querySelectorAll('.progress-ring circle:last-child');
+            rings.forEach(ring => {
+                const percent = ring.parentElement.nextElementSibling.innerText.replace('%', '');
+                const radius = ring.r.baseVal.value;
+                const circumference = radius * 2 * Math.PI;
+                const offset = circumference - (percent / 100 * circumference);
+                ring.style.strokeDasharray = `${circumference} ${circumference}`;
+                ring.style.strokeDashoffset = offset;
+            });
+        });
+    </script>
+</body></html>

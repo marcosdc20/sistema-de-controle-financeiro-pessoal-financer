@@ -52,6 +52,49 @@ export default function AppSecurityGuard({ children }: AppSecurityGuardProps) {
     }
   }, [profile, user]);
 
+  // Inactivity timeout handler
+  useEffect(() => {
+    if (!isUnlocked) return;
+
+    const timeoutStr = localStorage.getItem('vukapay_auto_lock_timeout') || '5';
+    if (timeoutStr === 'disabled') return;
+
+    const timeoutMinutes = parseInt(timeoutStr, 10);
+    if (isNaN(timeoutMinutes) || timeoutMinutes <= 0) return;
+
+    const timeoutMs = timeoutMinutes * 60 * 1000;
+    let timer: number;
+
+    const resetTimer = () => {
+      clearTimeout(timer);
+      timer = window.setTimeout(() => {
+        sessionStorage.removeItem('vukapay_session_unlocked');
+        setIsUnlocked(false);
+      }, timeoutMs);
+    };
+
+    // Events to monitor user activity
+    const events = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart'];
+    
+    const handleActivity = () => {
+      resetTimer();
+    };
+
+    events.forEach(event => {
+      window.addEventListener(event, handleActivity);
+    });
+
+    // Start timer on mount/unlock
+    resetTimer();
+
+    return () => {
+      clearTimeout(timer);
+      events.forEach(event => {
+        window.removeEventListener(event, handleActivity);
+      });
+    };
+  }, [isUnlocked]);
+
   const handleSetup = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);

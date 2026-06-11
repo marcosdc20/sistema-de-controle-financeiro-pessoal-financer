@@ -126,7 +126,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
   const businessNavItems = [
     { icon: Users, label: 'Contactos & Mesadas', path: '/contacts' },
-    { icon: Briefcase, label: 'Área de Negócios', path: '/business' },
     { icon: MessageSquare, label: 'Comunidade', path: '/community' },
   ];
 
@@ -136,6 +135,22 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
   const allNavItems = [...navItems, ...businessNavItems, ...bottomNavItems];
   const currentPathLabel = allNavItems.find(item => item.path === location.pathname)?.label || 'Finanças';
+
+  const handleVisitWebsite = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    const url = "https://marcosdc20.github.io/vukapay-docs/";
+    if (typeof window !== 'undefined' && (window as any).__TAURI_INTERNALS__ !== undefined) {
+      try {
+        const { openUrl } = await import('@tauri-apps/plugin-opener');
+        await openUrl(url);
+      } catch (err) {
+        console.error('Failed to open URL in Tauri:', err);
+        window.open(url, '_blank');
+      }
+    } else {
+      window.open(url, '_blank');
+    }
+  };
 
   const handleLogout = async () => {
     await signOut();
@@ -367,12 +382,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             );
           })}
 
-          <a
-            href="https://marcosdc20.github.io/vukapay-docs/"
-            target="_blank"
-            rel="noopener noreferrer"
+          <button
+            onClick={handleVisitWebsite}
             className={cn(
-              "flex items-center px-3 py-3 rounded-xl text-sm font-medium transition-all duration-200 text-gray-400 hover:text-white hover:bg-gray-800 group relative",
+              "flex items-center px-3 py-3 rounded-xl text-sm font-medium transition-all duration-200 text-gray-400 hover:text-white hover:bg-gray-800 group relative w-full text-left border-none cursor-pointer",
               isCollapsed && "justify-center px-0 w-full"
             )}
           >
@@ -387,7 +400,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 <div className="absolute right-full top-1/2 -translate-y-1/2 border-[6px] border-transparent border-r-indigo-600" />
               </div>
             )}
-          </a>
+          </button>
 
           <button
             onClick={handleLogout}

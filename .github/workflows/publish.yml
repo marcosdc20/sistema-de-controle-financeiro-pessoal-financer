@@ -19,6 +19,8 @@ jobs:
             args: '--target x86_64-apple-darwin'  # Compila para Intel Macs
           - platform: 'ubuntu-22.04'
             args: ''                              # Compila para Linux (.deb e AppImage)
+          - platform: 'ubuntu-22.04'
+            args: 'android build --apk'           # Compila para Android (.apk)
           - platform: 'windows-latest'
             args: ''                              # Compila para Windows (.exe e .msi)
 
@@ -39,8 +41,26 @@ jobs:
           # Adiciona os targets necessários para cross-compilation no Mac
           targets: ${{ matrix.platform == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
 
-      - name: Install system dependencies (Ubuntu only)
-        if: matrix.platform == 'ubuntu-22.04'
+      - name: Setup Java (Android only)
+        if: matrix.platform == 'ubuntu-22.04' && contains(matrix.args, 'android')
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Setup Android NDK (Android only)
+        if: matrix.platform == 'ubuntu-22.04' && contains(matrix.args, 'android')
+        uses: nttld/setup-ndk@v1
+        id: setup-ndk
+        with:
+          ndk-version: r25c
+
+      - name: Install Android Rust targets (Android only)
+        if: matrix.platform == 'ubuntu-22.04' && contains(matrix.args, 'android')
+        run: rustup target add aarch64-linux-android armv7-linux-androideabi i686-linux-android x86_64-linux-android
+
+      - name: Install system dependencies (Ubuntu desktop only)
+        if: matrix.platform == 'ubuntu-22.04' && !contains(matrix.args, 'android')
         run: |
           sudo apt-get update
           sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
@@ -55,6 +75,7 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
           VITE_LICENSE_HMAC_SECRET: ${{ secrets.VITE_LICENSE_HMAC_SECRET }}
+          NDK_HOME: ${{ matrix.platform == 'ubuntu-22.04' && contains(matrix.args, 'android') && steps.setup-ndk.outputs.ndk-path || '' }}
         with:
           tagName: v__VERSION__ # Substitui automaticamente com a versão do tauri.conf.json
           releaseName: 'v__VERSION__'

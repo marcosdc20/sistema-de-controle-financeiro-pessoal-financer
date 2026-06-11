@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, Book, Command, MessageCircle, HelpCircle, ExternalLink, Globe } from 'lucide-react';
 
 interface HelpModalProps {
@@ -7,6 +7,24 @@ interface HelpModalProps {
 }
 
 export default function HelpModal({ isOpen, onClose }: HelpModalProps) {
+    const [appVersion, setAppVersion] = useState('1.1.1');
+
+    useEffect(() => {
+        const fetchVersion = async () => {
+            const isTauri = typeof window !== 'undefined' && (window as any).__TAURI_INTERNALS__ !== undefined;
+            if (isTauri) {
+                try {
+                    const { getVersion } = await import('@tauri-apps/api/app');
+                    const v = await getVersion();
+                    setAppVersion(v);
+                } catch (e) {
+                    console.error('Failed to get Tauri version:', e);
+                }
+            }
+        };
+        fetchVersion();
+    }, []);
+
     if (!isOpen) return null;
 
     const sections = [
@@ -118,7 +136,7 @@ export default function HelpModal({ isOpen, onClose }: HelpModalProps) {
 
                 <div className="mt-8 pt-6 border-t border-gray-100 text-center">
                     <p className="text-xs text-gray-400">
-                        VukaPay v1.0.9 • <button className="hover:text-indigo-600 font-medium">Notas da Versão</button>
+                        VukaPay v{appVersion} • <button className="hover:text-indigo-600 font-medium">Notas da Versão</button>
                     </p>
                 </div>
             </div>

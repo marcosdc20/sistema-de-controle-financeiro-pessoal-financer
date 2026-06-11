@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+
+<html lang="pt"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Histórias de Sucesso | FinTrust Community</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;family=Geist:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "surface-dim": "#dadadc",
+                    "on-secondary-container": "#00732c",
+                    "on-surface": "#1a1c1e",
+                    "secondary-fixed-dim": "#3ce36a",
+                    "primary-fixed": "#dde1ff",
+                    "tertiary-container": "#7632fd",
+                    "surface-container-highest": "#e2e2e5",
+                    "on-tertiary-fixed-variant": "#5400cc",
+                    "background": "#f9f9fc",
+                    "inverse-on-surface": "#f0f0f3",
+                    "inverse-primary": "#b7c4ff",
+                    "surface-container-low": "#f3f3f6",
+                    "on-background": "#1a1c1e",
+                    "on-primary-container": "#dfe3ff",
+                    "secondary-container": "#5cfd80",
+                    "surface": "#f9f9fc",
+                    "error-container": "#ffdad6",
+                    "on-surface-variant": "#434656",
+                    "outline": "#737688",
+                    "surface-tint": "#004ced",
+                    "on-secondary-fixed-variant": "#00531e",
+                    "secondary": "#006e2a",
+                    "on-tertiary-container": "#ebe0ff",
+                    "tertiary": "#5d00de",
+                    "outline-variant": "#c3c5d9",
+                    "surface-variant": "#e2e2e5",
+                    "on-primary": "#ffffff",
+                    "on-error": "#ffffff",
+                    "primary-fixed-dim": "#b7c4ff",
+                    "primary-container": "#0052ff",
+                    "surface-container": "#eeeef0",
+                    "on-secondary": "#ffffff",
+                    "surface-bright": "#f9f9fc",
+                    "error": "#ba1a1a",
+                    "surface-container-high": "#e8e8ea",
+                    "inverse-surface": "#2f3133",
+                    "on-primary-fixed": "#001452",
+                    "on-primary-fixed-variant": "#0038b6",
+                    "tertiary-fixed-dim": "#cfbcff",
+                    "tertiary-fixed": "#e9ddff",
+                    "surface-container-lowest": "#ffffff",
+                    "on-secondary-fixed": "#002108",
+                    "primary": "#003ec7",
+                    "on-tertiary-fixed": "#22005d",
+                    "secondary-fixed": "#69ff87",
+                    "on-tertiary": "#ffffff",
+                    "on-error-container": "#93000a"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem"
+            },
+            "spacing": {
+                    "sm": "12px",
+                    "container-max": "1200px",
+                    "md": "24px",
+                    "xs": "4px",
+                    "xl": "64px",
+                    "base": "8px",
+                    "lg": "40px",
+                    "gutter": "24px"
+            },
+            "fontFamily": {
+                    "display": ["Inter"],
+                    "headline-md": ["Inter"],
+                    "label-md": ["Geist"],
+                    "body-lg": ["Inter"],
+                    "headline-lg": ["Inter"],
+                    "headline-lg-mobile": ["Inter"],
+                    "label-sm": ["Geist"],
+                    "body-md": ["Inter"]
+            },
+            "fontSize": {
+                    "display": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                    "label-md": ["14px", {"lineHeight": "20px", "letterSpacing": "0.01em", "fontWeight": "500"}],
+                    "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                    "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                    "headline-lg-mobile": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                    "label-sm": ["12px", {"lineHeight": "16px", "fontWeight": "600"}],
+                    "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body {
+            background-color: #f9f9fc;
+            color: #1a1c1e;
+            -webkit-font-smoothing: antialiased;
+        }
+        .bento-grid {
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            gap: 24px;
+        }
+    </style>
+</head>
+<body class="font-body-md text-on-surface">
+<!-- TopNavBar -->
+<header class="w-full top-0 sticky bg-surface border-b border-outline-variant z-50">
+<div class="flex justify-between items-center px-lg py-sm max-w-container-max mx-auto">
+<div class="font-display text-headline-md font-bold text-primary">
+                FinTrust Community
+            </div>
+<div class="hidden md:flex gap-md items-center">
+<nav class="flex gap-base">
+<a class="text-on-surface-variant font-display text-body-md hover:bg-surface-container-low transition-colors px-base py-xs rounded" href="#">Início</a>
+<a class="text-primary font-bold border-b-2 border-primary pb-1 font-display text-body-md" href="#">Comunidade</a>
+<a class="text-on-surface-variant font-display text-body-md hover:bg-surface-container-low transition-colors px-base py-xs rounded" href="#">Recursos</a>
+</nav>
+<div class="flex items-center bg-surface-container rounded-full px-base py-xs ml-md">
+<span class="material-symbols-outlined text-on-surface-variant mr-xs">search</span>
+<input class="bg-transparent border-none focus:ring-0 text-label-md w-32" placeholder="Pesquisar..." type="text"/>
+</div>
+<div class="flex gap-sm">
+<button class="cursor-pointer active:scale-95 transition-transform">
+<span class="material-symbols-outlined text-primary">notifications</span>
+</button>
+<button class="cursor-pointer active:scale-95 transition-transform">
+<span class="material-symbols-outlined text-primary">account_balance_wallet</span>
+</button>
+<img alt="User profile avatar" class="w-8 h-8 rounded-full border border-outline-variant" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDyXdPzkgBPwchQpe4_uR_lroHwAudhpz49qQWUASqvt1hYPYIxbdH4wORHlQ1G0LRkRxjioAx8Ww9i-o0hAO1B1xfm5tERNH0cYT5yyPTEayX5Vr3Xpo3QLtITFk9TnnI5iibDW5MY3IMVacFUzhynShClFYoeItP-BW5xRDaNGg6R2PhaCL2_OI26u_CmgyykzhOCL6GXzLBWYGwJ_4W7KQ9CP1WpIj0mx30wbXvrmIzHize6XdugAsM5_r0mbjIHYstUkO2NaA"/>
+</div>
+</div>
+</div>
+</header>
+<div class="flex max-w-container-max mx-auto">
+<!-- SideNavBar -->
+<aside class="hidden md:flex flex-col h-[calc(100vh-72px)] w-64 sticky top-[72px] left-0 p-md gap-base border-r border-outline-variant bg-surface-container-lowest">
+<div class="flex items-center gap-sm mb-md">
+<div class="w-10 h-10 bg-primary-container rounded-xl flex items-center justify-center">
+<span class="material-symbols-outlined text-on-primary">account_balance</span>
+</div>
+<div>
+<div class="font-display text-label-md font-bold text-primary">Wealth Circles</div>
+<div class="font-display text-xs text-on-surface-variant">Financial Mentorship</div>
+</div>
+</div>
+<nav class="flex-1 flex flex-col gap-xs">
+<a class="flex items-center gap-sm px-base py-sm text-on-surface-variant hover:bg-surface-container rounded-xl transition-all duration-200" href="#">
+<span class="material-symbols-outlined">forum</span>
+<span class="font-display text-label-md">Forums</span>
+</a>
+<a class="flex items-center gap-sm px-base py-sm text-on-surface-variant hover:bg-surface-container rounded-xl transition-all duration-200" href="#">
+<span class="material-symbols-outlined">group_work</span>
+<span class="font-display text-label-md">Investment Groups</span>
+</a>
+<a class="flex items-center gap-sm px-base py-sm bg-secondary-container text-on-secondary-container font-bold rounded-xl transition-all duration-200" href="#">
+<span class="material-symbols-outlined">military_tech</span>
+<span class="font-display text-label-md">Success Stories</span>
+</a>
+<a class="flex items-center gap-sm px-base py-sm text-on-surface-variant hover:bg-surface-container rounded-xl transition-all duration-200" href="#">
+<span class="material-symbols-outlined">school</span>
+<span class="font-display text-label-md">Financial Education</span>
+</a>
+<a class="flex items-center gap-sm px-base py-sm text-on-surface-variant hover:bg-surface-container rounded-xl transition-all duration-200" href="#">
+<span class="material-symbols-outlined">emoji_events</span>
+<span class="font-display text-label-md">Community Challenges</span>
+</a>
+</nav>
+<button class="bg-primary text-on-primary font-display text-label-md py-sm rounded-xl font-bold shadow-sm hover:opacity-90 transition-opacity">
+                Start a Discussion
+            </button>
+<div class="mt-auto flex flex-col gap-xs border-t border-outline-variant pt-md">
+<a class="flex items-center gap-sm px-base py-sm text-on-surface-variant hover:bg-surface-container rounded-xl transition-all duration-200" href="#">
+<span class="material-symbols-outlined">person_search</span>
+<span class="font-display text-label-md">Member Directory</span>
+</a>
+<a class="flex items-center gap-sm px-base py-sm text-on-surface-variant hover:bg-surface-container rounded-xl transition-all duration-200" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-display text-label-md">Settings</span>
+</a>
+</div>
+</aside>
+<!-- Main Content Canvas -->
+<main class="flex-1 p-md md:p-lg overflow-y-auto">
+<!-- Hero Section -->
+<section class="mb-lg">
+<div class="relative rounded-xl overflow-hidden h-64 md:h-80 bg-primary-container flex items-center p-lg">
+<div class="absolute inset-0 z-0 opacity-20">
+
+</div>
+<div class="relative z-10 max-w-2xl">
+<h1 class="font-display text-headline-lg text-on-primary mb-sm">Histórias que Inspiram</h1>
+<p class="font-body-lg text-on-primary-container opacity-90">
+                            Descubra como membros da nossa comunidade transformaram suas realidades financeiras através de disciplina, conhecimento e apoio mútuo.
+                        </p>
+</div>
+</div>
+</section>
+<!-- Success Stories Bento Grid -->
+<div class="bento-grid">
+<!-- Featured Story (Large Card) -->
+<article class="col-span-12 lg:col-span-8 bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden flex flex-col md:flex-row group transition-all hover:border-primary">
+<div class="md:w-1/2 relative overflow-hidden">
+<img class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" data-alt="A professional woman smiling confidently in a modern, brightly lit office environment. She is dressed in corporate attire, reflecting financial success and stability. The lighting is soft and natural, emphasizing a high-trust and authoritative atmosphere. The color palette is clean with neutral tones and corporate blue accents, mirroring the financial community branding." src="https://lh3.googleusercontent.com/aida-public/AB6AXuD9yNMkFWAolMFn-BaZSw7kRpPR7WjamcoclF9c0AIP4tmOZYB0E8PDYlQgYA24yxdpJDoX5RKAH2PVWC7v6lj8wf7BaTeIpq1aIAQiUWF05r5jkOPBRGRMiGoZrzG4hdLr232l3EX3MBM_t0difRSFn1Wetx51llHvi57_0Gl4-OyQYNkwetUa9YVMwqwN_oYkN2vb07DwZhPVxwVsODyzVYgSq6zJiBPfYtNMgY8SBEFzyCW47k0DtC-gaTfR0JzWaVR_gX0_dg"/>
+<div class="absolute top-4 left-4 bg-secondary-container text-on-secondary-container px-base py-xs rounded-full font-label-sm text-xs uppercase tracking-wider">Destaque do Mês</div>
+</div>
+<div class="md:w-1/2 p-lg flex flex-col justify-center">
+<div class="flex items-center gap-xs mb-sm">
+<span class="material-symbols-outlined text-secondary text-sm">verified</span>
+<span class="font-label-sm text-on-surface-variant">Expert em Investimentos</span>
+</div>
+<h2 class="font-headline-md mb-md">De Dívidas a Investidora: A Jornada de Mariana</h2>
+<p class="font-body-md text-on-surface-variant mb-lg line-clamp-3">
+                            "Nunca imaginei que em 24 meses eu sairia de um vermelho de 50 mil para uma carteira diversificada. A FinTrust não foi apenas uma plataforma, foi meu mentor silencioso em cada passo..."
+                        </p>
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-sm">
+<img alt="Mariana avatar" class="w-8 h-8 rounded-full" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAvGh96uu-KeXh_KU3nbSvN44Tb2jUxA33350AcKkggVc505PDKaP3UWa_2IwbjoajH7CPA9er7zr0vLFPKc4y_ZCoiKMXA1uqVxGi8FDIZ_w4RT00J2CmARdXwCbV9AHPuUAugt6i9CV11sYvEhQgVHUthxwApNfillZB-01YbmtA-c0SdNzFId5ERD0s1ufSTcDKOsVfIKUMpGvVQolGLoBi3Sn4bdW2RTObKgNFHmvkcqHPT_8QtrUzj_UJwZRoh94Dmh-YNSQ"/>
+<span class="font-label-md">Mariana Costa</span>
+</div>
+<button class="text-primary font-bold flex items-center gap-xs hover:gap-sm transition-all">
+                                Ler mais <span class="material-symbols-outlined">arrow_forward</span>
+</button>
+</div>
+</div>
+</article>
+<!-- Tip Widget -->
+<aside class="col-span-12 lg:col-span-4 bg-[#F0FFF4] border-l-4 border-secondary p-lg rounded-xl flex flex-col justify-between">
+<div>
+<div class="flex items-center gap-sm mb-md text-secondary">
+<span class="material-symbols-outlined">lightbulb</span>
+<h3 class="font-display font-bold">Dica de Sucesso</h3>
+</div>
+<p class="font-body-md text-on-surface mb-md">
+                            A maioria dos membros de sucesso começaram com o **Desafio dos 30 Dias**. Pequenos hábitos geram grandes fortunas.
+                        </p>
+</div>
+<button class="bg-secondary text-on-secondary py-sm px-md rounded-xl font-bold font-display text-label-md hover:bg-opacity-90 transition-all">
+                        Ver Desafios
+                    </button>
+</aside>
+<!-- Story Card 2 -->
+<article class="col-span-12 md:col-span-6 lg:col-span-4 bg-surface-container-lowest border border-outline-variant rounded-xl p-md hover:border-primary transition-colors flex flex-col">
+<img class="w-full h-48 object-cover rounded-xl mb-md" data-alt="A portrait of a smiling young man in a minimalist setting, lit by warm afternoon sun. He represents a successful entrepreneur who has achieved financial freedom. The aesthetic is clean and professional, using a palette of soft neutrals and deep blues to maintain a high-trust, financial mentoring tone. The mood is optimistic and successful." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDPIqaB88FYfMWJHTlkyaWKSBA8rCl38UotSaxV-kNNHPsD3daL92WYMcEM-HHk4rNcuZjdq1cyHVpEE0RWcxzEZDVyq0ubGT3XdVpoJ9yLQxaZ6AYeO1nnurxtmtGAVSk3MVFoN234cfGL64bvyTPhZSEC8fUYRO-IxLucKbka81mbKQmC09sZCcZi9dMaeUEILPUxWwUFwdDL5QhlVMgLq-ORN6bscn-TwmfJdKgz_hfu098QBOYhN8cOCVcHWOEqfh3xBFOX0Q"/>
+<div class="font-label-sm text-secondary mb-xs">Aposentadoria Precoce</div>
+<h3 class="font-headline-md text-lg mb-sm">Estratégias de Dividendos para o Longo Prazo</h3>
+<p class="font-body-md text-on-surface-variant mb-md line-clamp-3">
+                        Como Ricardo organizou seu fluxo de caixa para viver exclusivamente de renda passiva aos 45 anos.
+                    </p>
+<div class="mt-auto flex items-center justify-between pt-md border-t border-outline-variant">
+<span class="font-label-sm text-on-surface-variant">Há 2 dias</span>
+<div class="flex gap-sm text-on-surface-variant">
+<button class="flex items-center gap-xs"><span class="material-symbols-outlined text-sm">thumb_up</span> 142</button>
+<button class="flex items-center gap-xs"><span class="material-symbols-outlined text-sm">chat_bubble</span> 28</button>
+</div>
+</div>
+</article>
+<!-- Story Card 3 -->
+<article class="col-span-12 md:col-span-6 lg:col-span-4 bg-surface-container-lowest border border-outline-variant rounded-xl p-md hover:border-primary transition-colors flex flex-col">
+<img class="w-full h-48 object-cover rounded-xl mb-md" data-alt="Close-up of hands typing on a sleek laptop with a digital banking interface visible on the screen. The setting is a clean, modern home office with soft, professional lighting. The color scheme is dominated by cool whites and corporate blues, symbolizing digital financial management and community engagement. The mood is focused and productive." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBH0YjVv-sFwxlHlzieKvquDzvAoUvgwffUXZ2KK2uGfMWT4An6mdG-5tzkxiYzkjWwEl4Fo9Zzi9yowrzK30K4gV7yAQsos4wn4iFX4HtmItgXQUcnYjkjicfYbTirEe44PyVgs8f9RKvs2jglExMYiu-S6rFa3FXjhgGCjsI92yZtGUn4Xeu9J6xb4d-IkMAhRUfVd5VZpuylwZZdWlyXFf5Y8B7zAdcWocojZsFvsBfLa_THJdeC56SVeAcUwwr-6qUa7ABZIQ"/>
+<div class="font-label-sm text-tertiary mb-xs">Educação Familiar</div>
+<h3 class="font-headline-md text-lg mb-sm">Ensinando Finanças para os Filhos</h3>
+<p class="font-body-md text-on-surface-variant mb-md line-clamp-3">
+                        O método de gamificação que ajudou a família Souza a economizar para a primeira viagem internacional.
+                    </p>
+<div class="mt-auto flex items-center justify-between pt-md border-t border-outline-variant">
+<span class="font-label-sm text-on-surface-variant">Há 1 semana</span>
+<div class="flex gap-sm text-on-surface-variant">
+<button class="flex items-center gap-xs"><span class="material-symbols-outlined text-sm">thumb_up</span> 89</button>
+<button class="flex items-center gap-xs"><span class="material-symbols-outlined text-sm">chat_bubble</span> 15</button>
+</div>
+</div>
+</article>
+<!-- Growth Stats Widget -->
+<aside class="col-span-12 lg:col-span-4 bg-primary text-on-primary p-lg rounded-xl flex flex-col justify-center items-center text-center">
+<div class="text-display font-display mb-xs">R$ 1.2M</div>
+<p class="font-label-md mb-lg">Economizados pela comunidade este mês</p>
+<div class="w-full h-2 bg-on-primary/20 rounded-full overflow-hidden">
+<div class="w-3/4 h-full bg-secondary-fixed"></div>
+</div>
+<p class="font-label-sm mt-sm opacity-80 text-xs">75% da meta mensal atingida</p>
+</aside>
+<!-- Member Quote Card -->
+<article class="col-span-12 lg:col-span-12 bg-surface-container-low p-lg rounded-xl italic text-on-surface-variant flex gap-md items-start">
+<span class="material-symbols-outlined text-primary text-4xl opacity-50">format_quote</span>
+<div>
+<p class="font-body-lg mb-md">
+                            "O segredo da riqueza não é quanto você ganha, mas como você gerencia o que tem. Na FinTrust, aprendi que a liberdade financeira é uma maratona, não um sprint."
+                        </p>
+<div class="flex items-center gap-sm not-italic">
+<img alt="João Paulo avatar" class="w-6 h-6 rounded-full" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAevI3lurXNlU1W_CZ6cguhk1yuU0rtjGYyLPoFI4jM7eqx1rIP_ZZh_4UMAwDYNqVuSD06eJeHfvUd5nDw4j6C7qbKpJaadJm9JZm44H9kL31iMx2jAudwGPP4sezm5Txrbjd2hduPO3KaIGsC9izeGJZ9uzEvLZNteCz5nrGg-T8MyjeA00HEfqbcJyuHCzD28uQU5Yhyr2OLCMNZBsUcgpn7WJyCMPrkMsEnp_kP6ZC0T4ZfrYJicRkoUFNz5HvZVfqhR9Texw"/>
+<span class="font-label-md font-bold text-on-surface">João Paulo, Membro VIP</span>
+</div>
+</div>
+</article>
+</div>
+<!-- Footer Pagination -->
+<footer class="mt-xl py-lg flex flex-col items-center border-t border-outline-variant">
+<div class="flex gap-base mb-md">
+<button class="w-10 h-10 rounded-full border border-outline-variant flex items-center justify-center hover:bg-surface-container transition-colors">
+<span class="material-symbols-outlined">chevron_left</span>
+</button>
+<button class="w-10 h-10 rounded-full bg-primary text-on-primary flex items-center justify-center font-bold">1</button>
+<button class="w-10 h-10 rounded-full border border-outline-variant flex items-center justify-center hover:bg-surface-container transition-colors">2</button>
+<button class="w-10 h-10 rounded-full border border-outline-variant flex items-center justify-center hover:bg-surface-container transition-colors">3</button>
+<button class="w-10 h-10 rounded-full border border-outline-variant flex items-center justify-center hover:bg-surface-container transition-colors">
+<span class="material-symbols-outlined">chevron_right</span>
+</button>
+</div>
+<p class="text-label-sm text-on-surface-variant">Exibindo 1-6 de 24 histórias de sucesso</p>
+</footer>
+</main>
+</div>
+<!-- Floating Action Button -->
+<button class="fixed bottom-lg right-lg w-16 h-16 bg-primary text-on-primary rounded-full shadow-lg flex items-center justify-center hover:scale-105 active:scale-95 transition-all z-50">
+<span class="material-symbols-outlined text-3xl">add</span>
+</button>
+<script>
+        // Simple scroll interaction for header
+        window.addEventListener('scroll', () => {
+            const header = document.querySelector('header');
+            if (window.scrollY > 20) {
+                header.classList.add('shadow-sm');
+                header.classList.remove('border-b');
+            } else {
+                header.classList.remove('shadow-sm');
+                header.classList.add('border-b');
+            }
+        });
+
+        // Search bar focus effect
+        const searchInput = document.querySelector('input[type="text"]');
+        const searchContainer = searchInput.parentElement;
+        searchInput.addEventListener('focus', () => {
+            searchContainer.classList.add('ring-2', 'ring-primary', 'ring-opacity-10');
+            searchContainer.classList.remove('bg-surface-container');
+            searchContainer.classList.add('bg-white');
+        });
+        searchInput.addEventListener('blur', () => {
+            searchContainer.classList.remove('ring-2', 'ring-primary', 'ring-opacity-10');
+            searchContainer.classList.add('bg-surface-container');
+            searchContainer.classList.remove('bg-white');
+        });
+    </script>
+</body></html>

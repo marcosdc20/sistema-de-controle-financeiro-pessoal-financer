@@ -1,5 +1,16 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useLicense } from '@/context/LicenseContext';
+import { 
+  getAllLicenses,
+  getAllTrials,
+  createLicenseRecord,
+  updateLicenseStatusInFirestore,
+  resetLicenseHardwareInFirestore,
+  deleteLicenseInFirestore,
+  deleteTrialInFirestore
+} from '@/services/licenseService';
+import { uploadBackupToDrive, downloadBackupFromDrive } from '@/services/googleDrive';
+import type { FirestoreLicense, FirestoreTrial, PlanType, LicenseStatus } from '@/types/license';
 
 import { 
   User, 
@@ -29,6 +40,11 @@ import {
   Copy,
   RefreshCw,
   Loader2,
+  Cloud,
+  CloudOff,
+  Calendar,
+  Search,
+  Zap,
 } from 'lucide-react';
 
 
@@ -39,7 +55,7 @@ import { CURRENCIES, cn } from '@/lib/utils';
 import { check } from '@tauri-apps/plugin-updater';
 import { relaunch } from '@tauri-apps/plugin-process';
 
-type SettingsTab = 'general' | 'categories' | 'notifications' | 'security' | 'data' | 'license';
+type SettingsTab = 'general' | 'categories' | 'notifications' | 'security' | 'data' | 'license' | 'admin';
 
 // ─── Sub-componente: Aba de Licença ─────────────────────────────────────────
 function LicenseSettingsTab({ showToast }: { showToast: (msg: string, type?: 'success' | 'error') => void }) {
@@ -314,8 +330,246 @@ export default function Settings() {
     optimizeDatabaseVacuum
   } = useFinance();
   
-  const { user, signOut } = useAuth();
+  const { user, signOut, loginWithGoogle } = useAuth();
   const [activeTab, setActiveTab] = useState<SettingsTab>('general');
+  
+  // ─── Cloud Backup e Restore ───────────────────────────────────────────────
+  const [isCloudSyncing, setIsCloudSyncing] = useState(false);
+  const [cloudLastBackup, setCloudLastBackup] = useState<string | null>(
+    localStorage.getItem('vukapay_last_backup')
+  );
+
+  const handleCloudBackup = async () => {
+    setIsCloudSyncing(true);
+    try {
+      const jsonStr = await exportDatabase();
+      const success = await uploadBackupToDrive(jsonStr);
+      if (success) {
+        const nowStr = new Date().toLocaleString('pt-AO');
+        localStorage.setItem('vukapay_last_backup', nowStr);
+        setCloudLastBackup(nowStr);
+        showToast('Cópia de segurança enviada para o Google Drive com sucesso!');
+      } else {
+        showToast('Erro ao carregar backup no Google Drive. Verifique a conta Google.', 'error');
+      }
+    } catch (err) {
+      console.error(err);
+      showToast('Erro ao realizar backup na nuvem.', 'error');
+    } finally {
+      setIsCloudSyncing(false);
+    }
+  };
+
+  const handleCloudRestore = async () => {
+    if (!window.confirm('ATENÇÃO: Restaurar o backup da nuvem irá SOBRESCREVER todos os seus dados locais atuais. Deseja prosseguir com a restauração?')) {
+      return;
+    }
+    setIsCloudSyncing(true);
+    try {
+      const jsonStr = await downloadBackupFromDrive();
+      if (jsonStr) {
+        await importDatabase(jsonStr);
+        showToast('Base de dados restaurada com sucesso! A reiniciar...');
+        setTimeout(() => {
+          window.location.reload();
+        }, 1500);
+      } else {
+        showToast('Nenhum backup encontrado no Google Drive.', 'error');
+      }
+    } catch (err) {
+      console.error(err);
+      showToast('Erro ao restaurar backup da nuvem.', 'error');
+    } finally {
+      setIsCloudSyncing(false);
+    }
+  };
+
+  const handleCloudExtract = async () => {
+    setIsCloudSyncing(true);
+    try {
+      const jsonStr = await downloadBackupFromDrive();
+      if (jsonStr) {
+        const blob = new Blob([jsonStr], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `backup_vukapay_extraido_${new Date().toISOString().split('T')[0]}.json`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        showToast('Backup extraído da nuvem com sucesso!');
+      } else {
+        showToast('Nenhum arquivo de backup encontrado no Google Drive.', 'error');
+      }
+    } catch (err) {
+      console.error(err);
+      showToast('Erro ao extrair backup do Google Drive.', 'error');
+    } finally {
+      setIsCloudSyncing(false);
+    }
+  };
+
+  // ─── Painel Admin de Licenciamento ─────────────────────────────────────────
+  const [licenses, setLicenses] = useState<FirestoreLicense[]>([]);
+  const [trials, setTrials] = useState<FirestoreTrial[]>([]);
+  const [isLoadingAdminData, setIsLoadingAdminData] = useState(false);
+  const [adminError, setAdminError] = useState<string | null>(null);
+
+  // Admin form state
+  const [newLicenseEmail, setNewLicenseEmail] = useState('');
+  const [newLicensePlan, setNewLicensePlan] = useState<PlanType>('lifetime');
+  const [newLicenseDuration, setNewLicenseDuration] = useState('lifetime'); // '30', '365', 'lifetime'
+  const [isGeneratingLicense, setIsGeneratingLicense] = useState(false);
+  const [generatedKey, setGeneratedKey] = useState<string | null>(null);
+
+  // Admin filter states
+  const [adminSearchQuery, setAdminSearchQuery] = useState('');
+  const [adminStatusFilter, setAdminStatusFilter] = useState<LicenseStatus | 'all'>('all');
+  const [adminPlanFilter, setAdminPlanFilter] = useState<PlanType | 'all'>('all');
+
+  const loadAdminData = async () => {
+    setIsLoadingAdminData(true);
+    setAdminError(null);
+    try {
+      const [licensesList, trialsList] = await Promise.all([
+        getAllLicenses(),
+        getAllTrials()
+      ]);
+      setLicenses(licensesList);
+      setTrials(trialsList);
+    } catch (err: any) {
+      console.error(err);
+      setAdminError('Erro ao carregar dados do Firestore. Verifique suas regras de segurança ou permissões.');
+    } finally {
+      setIsLoadingAdminData(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === 'admin') {
+      loadAdminData();
+    }
+  }, [activeTab]);
+
+  const adminStats = useMemo(() => {
+    const stats = {
+      total: licenses.length,
+      active: licenses.filter(l => l.status === 'active').length,
+      expired: licenses.filter(l => l.status === 'expired').length,
+      revoked: licenses.filter(l => l.status === 'revoked').length,
+      trials: trials.length,
+      monthly: licenses.filter(l => l.plan_type === 'monthly').length,
+      annual: licenses.filter(l => l.plan_type === 'annual').length,
+      lifetime: licenses.filter(l => l.plan_type === 'lifetime').length,
+    };
+    return stats;
+  }, [licenses, trials]);
+
+  const filteredLicenses = useMemo(() => {
+    return licenses.filter(lic => {
+      const emailMatch = lic.client_email.toLowerCase().includes(adminSearchQuery.toLowerCase());
+      const keyMatch = lic.id.toLowerCase().includes(adminSearchQuery.toLowerCase());
+      const statusMatch = adminStatusFilter === 'all' || lic.status === adminStatusFilter;
+      const planMatch = adminPlanFilter === 'all' || lic.plan_type === adminPlanFilter;
+      return (emailMatch || keyMatch) && statusMatch && planMatch;
+    });
+  }, [licenses, adminSearchQuery, adminStatusFilter, adminPlanFilter]);
+
+  const handleGenerateLicense = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newLicenseEmail.trim()) {
+      showToast('Por favor, insira o e-mail do cliente.', 'error');
+      return;
+    }
+    setIsGeneratingLicense(true);
+    setGeneratedKey(null);
+    try {
+      let expiresAt: number | null = null;
+      if (newLicenseDuration !== 'lifetime') {
+        const days = parseInt(newLicenseDuration, 10);
+        expiresAt = Date.now() + days * 24 * 60 * 60 * 1000;
+      }
+      const record = await createLicenseRecord(newLicenseEmail.trim(), newLicensePlan, expiresAt);
+      setGeneratedKey(record.id);
+      showToast('Nova chave de licença criada no Firestore!');
+      loadAdminData(); // Reload list
+      
+      // Confetti burst for futuristic admin feel!
+      try {
+        const { default: confetti } = await import('canvas-confetti');
+        confetti({
+          particleCount: 100,
+          spread: 70,
+          origin: { y: 0.6 }
+        });
+      } catch (err) {
+        console.warn('Canvas confetti não pôde ser carregado:', err);
+      }
+    } catch (err) {
+      console.error(err);
+      showToast('Erro ao criar chave de licença.', 'error');
+    } finally {
+      setIsGeneratingLicense(false);
+    }
+  };
+
+  const handleUpdateStatus = async (key: string, currentStatus: LicenseStatus) => {
+    const nextStatus: LicenseStatus = currentStatus === 'active' ? 'revoked' : 'active';
+    const actionText = nextStatus === 'revoked' ? 'revogar' : 'reativar';
+    if (!window.confirm(`Deseja realmente ${actionText} esta licença?`)) {
+      return;
+    }
+    try {
+      await updateLicenseStatusInFirestore(key, nextStatus);
+      showToast(`Licença ${nextStatus === 'revoked' ? 'revogada' : 'reativada'} com sucesso!`);
+      loadAdminData();
+    } catch (err) {
+      console.error(err);
+      showToast('Erro ao atualizar status da licença.', 'error');
+    }
+  };
+
+  const handleResetDevice = async (key: string) => {
+    if (!window.confirm('Deseja realmente desvincular o dispositivo desta licença? Isso permitirá que ela seja ativada em outro computador.')) {
+      return;
+    }
+    try {
+      await resetLicenseHardwareInFirestore(key);
+      showToast('Dispositivo desvinculado com sucesso!');
+      loadAdminData();
+    } catch (err) {
+      console.error(err);
+      showToast('Erro ao desvincular dispositivo.', 'error');
+    }
+  };
+
+  const handleDeleteLicense = async (key: string) => {
+    if (!window.confirm('ATENÇÃO: Deseja realmente excluir permanentemente esta chave de licença do Firestore?')) {
+      return;
+    }
+    try {
+      await deleteLicenseInFirestore(key);
+      showToast('Chave de licença excluída permanentemente.');
+      loadAdminData();
+    } catch (err) {
+      console.error(err);
+      showToast('Erro ao deletar licença.', 'error');
+    }
+  };
+
+  const handleDeleteTrial = async (hwId: string) => {
+    if (!window.confirm('Deseja realmente apagar o registro de trial deste dispositivo? Isso permitirá que ele inicie um novo período de testes de 7 dias.')) {
+      return;
+    }
+    try {
+      await deleteTrialInFirestore(hwId);
+      showToast('Registro de avaliação apagado com sucesso!');
+      loadAdminData();
+    } catch (err) {
+      console.error(err);
+      showToast('Erro ao apagar trial.', 'error');
+    }
+  };
 
   // local toast notification
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
@@ -356,6 +610,24 @@ export default function Settings() {
   };
 
   const sectionClass = "bg-white rounded-3xl border border-gray-100 shadow-[0_4px_30px_rgba(0,0,0,0.015)] p-8 relative overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500";
+
+  const [appVersion, setAppVersion] = useState('1.1.1');
+
+  useEffect(() => {
+    const fetchVersion = async () => {
+      const isTauri = typeof window !== 'undefined' && (window as any).__TAURI_INTERNALS__ !== undefined;
+      if (isTauri) {
+        try {
+          const { getVersion } = await import('@tauri-apps/api/app');
+          const v = await getVersion();
+          setAppVersion(v);
+        } catch (e) {
+          console.error(e);
+        }
+      }
+    };
+    fetchVersion();
+  }, []);
 
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [tempProfile, setTempProfile] = useState({
@@ -1047,14 +1319,22 @@ export default function Settings() {
     }
   };
 
-  const tabs = [
-    { id: 'general',       label: 'Geral',       icon: User },
-    { id: 'categories',    label: 'Categorias',  icon: List },
-    { id: 'notifications', label: 'Notificação', icon: Bell },
-    { id: 'security',      label: 'Segurança',   icon: Shield },
-    { id: 'data',          label: 'Dados',        icon: Save },
-    { id: 'license',       label: 'Licença',      icon: BadgeCheck },
-  ];
+  const isAdminUser = user?.email === (import.meta.env.VITE_ADMIN_EMAIL || 'narcisomarcos826@gmail.com');
+  
+  const tabs = useMemo(() => {
+    const baseTabs = [
+      { id: 'general',       label: 'Geral',       icon: User },
+      { id: 'categories',    label: 'Categorias',  icon: List },
+      { id: 'notifications', label: 'Notificação', icon: Bell },
+      { id: 'security',      label: 'Segurança',   icon: Shield },
+      { id: 'data',          label: 'Dados',        icon: Save },
+      { id: 'license',       label: 'Licença',      icon: BadgeCheck },
+    ];
+    if (isAdminUser) {
+      baseTabs.push({ id: 'admin', label: 'Painel Admin', icon: FolderLock });
+    }
+    return baseTabs;
+  }, [isAdminUser]);
 
 
   return (
@@ -1337,7 +1617,7 @@ export default function Settings() {
                     </select>
                   </div>
 
-                  <div className="flex items-center justify-between pb-6 border-b border-gray-100/50">
+                  <div className="flex items-center justify-between py-2">
                     <div>
                       <p className="font-medium text-gray-900">Formato de Data</p>
                       <p className="text-sm text-gray-500 mt-1">Como as datas são exibidas</p>
@@ -1351,36 +1631,6 @@ export default function Settings() {
                       <option value="MM/DD/YYYY">MM/DD/AAAA (02/24/2026)</option>
                       <option value="YYYY-MM-DD">AAAA-MM-DD (2026-02-24)</option>
                     </select>
-                  </div>
-
-                  <div className="flex items-center justify-between py-2">
-                    <div>
-                      <p className="font-medium text-gray-900">Tema Escuro</p>
-                      <p className="text-sm text-gray-500 mt-1">
-                        {preferences.theme === 'dark' ? '🌙 Modo Escuro ativado' : '☀️ Modo Claro ativado'}
-                      </p>
-                    </div>
-                    <button
-                      onClick={() => {
-                        const newTheme = preferences.theme === 'light' ? 'dark' : 'light';
-                        // Apply immediately to DOM as failsafe
-                        document.documentElement.classList.toggle('dark', newTheme === 'dark');
-                        localStorage.setItem('vukapay_theme', newTheme);
-                        handlePreferenceChange('theme', newTheme);
-                      }}
-                      className={`w-14 h-7 rounded-full relative transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 ${
-                        preferences.theme === 'dark'
-                          ? 'bg-indigo-600'
-                          : 'bg-gray-200'
-                      }`}
-                      aria-label={preferences.theme === 'dark' ? 'Desativar tema escuro' : 'Ativar tema escuro'}
-                    >
-                      <div className={`w-5 h-5 bg-white rounded-full absolute top-1 shadow-md transition-all duration-300 flex items-center justify-center text-[9px] ${
-                        preferences.theme === 'dark' ? 'left-8' : 'left-1'
-                      }`}>
-                        {preferences.theme === 'dark' ? '🌙' : '☀️'}
-                      </div>
-                    </button>
                   </div>
 
                 </div>
@@ -1402,7 +1652,7 @@ export default function Settings() {
                       <p className="text-sm text-gray-500 mt-1">Número de compilação ativo</p>
                     </div>
                     <span className="px-3 py-1.5 bg-indigo-50 border border-indigo-100 text-indigo-700 rounded-xl text-xs font-bold font-mono">
-                      v1.0.9
+                      v{appVersion}
                     </span>
                   </div>
 
@@ -2336,6 +2586,85 @@ export default function Settings() {
               </h2>
 
               <div className="space-y-6">
+                {/* Backup na Nuvem (Google Drive) */}
+                <div className="flex flex-col gap-4 p-6 bg-slate-50 rounded-3xl border border-gray-100">
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center">
+                        <Cloud className="w-5 h-5 text-indigo-650" />
+                      </div>
+                      <div>
+                        <h3 className="font-semibold text-gray-905">Backup Seguro na Nuvem (Google Drive)</h3>
+                        <p className="text-xs text-gray-500 mt-0.5">Salve suas finanças de forma criptografada no seu Google Drive</p>
+                      </div>
+                    </div>
+                    {user && !user.isLocal ? (
+                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-100">
+                        <Lock className="w-3 h-3" /> Conta Vinculada
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-100">
+                        <CloudOff className="w-3 h-3" /> Apenas Local
+                      </span>
+                    )}
+                  </div>
+
+                  {user && !user.isLocal ? (
+                    <div className="grid gap-3 mt-2">
+                      <div className="flex items-center justify-between p-3.5 bg-white rounded-xl border border-gray-100 text-xs">
+                        <span className="text-gray-500">Conta Google ativa:</span>
+                        <span className="font-semibold text-gray-800">{user.email}</span>
+                      </div>
+
+                      <div className="flex items-center justify-between p-3.5 bg-white rounded-xl border border-gray-100 text-xs">
+                        <span className="text-gray-500">Última sincronização na nuvem:</span>
+                        <span className="font-semibold text-gray-800">{cloudLastBackup || 'Nenhuma'}</span>
+                      </div>
+
+                      <div className="flex flex-wrap gap-3 mt-2">
+                        <button
+                          onClick={handleCloudBackup}
+                          disabled={isCloudSyncing}
+                          className="flex-1 min-w-[140px] flex items-center justify-center gap-2 py-2.5 px-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-all disabled:opacity-50 active:scale-[0.98] shadow-md shadow-indigo-600/10 cursor-pointer"
+                        >
+                          {isCloudSyncing ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Cloud className="w-3.5 h-3.5" />}
+                          Sincronizar Agora
+                        </button>
+
+                        <button
+                          onClick={handleCloudRestore}
+                          disabled={isCloudSyncing}
+                          className="flex-1 min-w-[140px] flex items-center justify-center gap-2 py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition-all disabled:opacity-50 active:scale-[0.98] shadow-md shadow-emerald-600/10 cursor-pointer"
+                        >
+                          <RefreshCw className="w-3.5 h-3.5" />
+                          Restaurar da Nuvem
+                        </button>
+
+                        <button
+                          onClick={handleCloudExtract}
+                          disabled={isCloudSyncing}
+                          className="flex-1 min-w-[140px] flex items-center justify-center gap-2 py-2.5 px-4 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-xs font-semibold transition-all disabled:opacity-50 active:scale-[0.98] border border-gray-200 cursor-pointer"
+                        >
+                          <Download className="w-3.5 h-3.5" />
+                          Extrair Backup (.json)
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="p-4 bg-amber-500/5 rounded-xl border border-amber-500/10 text-xs leading-relaxed mt-2">
+                      <p className="text-gray-600">
+                        Você está no <strong>Modo Convidado/Local</strong>. Para ativar backups automáticos na nuvem e proteger suas finanças contra perda física do dispositivo, conecte-se com sua conta Google.
+                      </p>
+                      <button
+                        onClick={loginWithGoogle}
+                        className="mt-3 inline-flex items-center gap-1.5 py-2 px-4 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-xl text-xs transition-all active:scale-[0.97] cursor-pointer"
+                      >
+                        <Cloud className="w-3.5 h-3.5" /> Vincular Conta Google
+                      </button>
+                    </div>
+                  )}
+                </div>
+
                 {/* Auto backup scheduler */}
                 <div className="flex items-center justify-between pb-6 border-b border-gray-100/50">
                   <div>
@@ -2440,6 +2769,375 @@ export default function Settings() {
 
           {/* ─── Tab: Licença VukaPay ─────────────────────────────────────────── */}
           {activeTab === 'license' && <LicenseSettingsTab showToast={showToast} />}
+
+          {/* ─── Tab: Painel Admin (Licenciamento e Trials) ────────────────────── */}
+          {activeTab === 'admin' && isAdminUser && (
+            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+              {/* Estatísticas */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-[0_4px_30px_rgba(0,0,0,0.015)] flex flex-col justify-between">
+                  <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Total Licenças</span>
+                  <div className="flex items-baseline gap-2 mt-4">
+                    <span className="text-3xl font-black text-gray-900">{adminStats.total}</span>
+                    <span className="text-xs text-gray-500 font-medium">chaves</span>
+                  </div>
+                </div>
+
+                <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-[0_4px_30px_rgba(0,0,0,0.015)] flex flex-col justify-between">
+                  <span className="text-xs font-semibold text-emerald-600 uppercase tracking-wider flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" /> Ativas
+                  </span>
+                  <div className="flex items-baseline gap-2 mt-4">
+                    <span className="text-3xl font-black text-emerald-650">{adminStats.active}</span>
+                    <span className="text-xs text-emerald-600 font-medium">pagas</span>
+                  </div>
+                </div>
+
+                <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-[0_4px_30px_rgba(0,0,0,0.015)] flex flex-col justify-between">
+                  <span className="text-xs font-semibold text-red-600 uppercase tracking-wider">Revogadas / Susp</span>
+                  <div className="flex items-baseline gap-2 mt-4">
+                    <span className="text-3xl font-black text-red-600">{adminStats.revoked}</span>
+                    <span className="text-xs text-red-500 font-medium">chaves</span>
+                  </div>
+                </div>
+
+                <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-[0_4px_30px_rgba(0,0,0,0.015)] flex flex-col justify-between">
+                  <span className="text-xs font-semibold text-amber-600 uppercase tracking-wider">Períodos de Teste</span>
+                  <div className="flex items-baseline gap-2 mt-4">
+                    <span className="text-3xl font-black text-amber-650">{adminStats.trials}</span>
+                    <span className="text-xs text-amber-600 font-medium">dispositivos</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Gerador de Licenças */}
+              <div className="bg-white rounded-3xl border border-gray-100 shadow-[0_4px_30px_rgba(0,0,0,0.015)] p-8 relative overflow-hidden">
+                <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-indigo-500 to-purple-650" />
+                <h3 className="font-bold text-gray-900 text-base mb-2">Gerar Nova Chave de Licença</h3>
+                <p className="text-xs text-gray-500 mb-6">Emita chaves únicas criptografadas para novos clientes VukaPay.</p>
+
+                <form onSubmit={handleGenerateLicense} className="grid md:grid-cols-3 gap-6 items-end">
+                  <div className="space-y-2">
+                    <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider">E-mail do Cliente</label>
+                    <input
+                      type="email"
+                      required
+                      placeholder="cliente@email.com"
+                      value={newLicenseEmail}
+                      onChange={(e) => setNewLicenseEmail(e.target.value)}
+                      className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-900 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition-all"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider">Plano de Subscrição</label>
+                    <select
+                      value={newLicensePlan}
+                      onChange={(e) => {
+                        const val = e.target.value as PlanType;
+                        setNewLicensePlan(val);
+                        if (val === 'lifetime') {
+                          setNewLicenseDuration('lifetime');
+                        } else if (val === 'monthly') {
+                          setNewLicenseDuration('30');
+                        } else {
+                          setNewLicenseDuration('365');
+                        }
+                      }}
+                      className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-900 focus:outline-none focus:border-indigo-500 transition-all"
+                    >
+                      <option value="lifetime">Vitalício (Lifetime)</option>
+                      <option value="annual">Anual</option>
+                      <option value="monthly">Mensal</option>
+                    </select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider">Duração da Licença</label>
+                    <select
+                      value={newLicenseDuration}
+                      onChange={(e) => setNewLicenseDuration(e.target.value)}
+                      disabled={newLicensePlan === 'lifetime'}
+                      className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-900 focus:outline-none focus:border-indigo-500 transition-all disabled:opacity-50"
+                    >
+                      <option value="lifetime">Sem expiração (Vitalício)</option>
+                      <option value="30">30 Dias (Mensal)</option>
+                      <option value="90">90 Dias (Trimestral)</option>
+                      <option value="365">365 Dias (Anual)</option>
+                    </select>
+                  </div>
+
+                  <div className="md:col-span-3 flex justify-end">
+                    <button
+                      type="submit"
+                      disabled={isGeneratingLicense || !newLicenseEmail.trim()}
+                      className="flex items-center gap-2 py-3 px-6 bg-gray-900 hover:bg-gray-800 text-white rounded-xl text-xs font-bold transition-all disabled:opacity-50 active:scale-[0.98] shadow-md shadow-gray-900/10 cursor-pointer"
+                    >
+                      {isGeneratingLicense ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          <span>A Criar Chave...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Zap className="w-4 h-4 text-amber-400" />
+                          <span>Gerar & Registrar Chave</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </form>
+
+                {generatedKey && (
+                  <div className="mt-6 p-4 bg-indigo-50/50 border border-indigo-100 rounded-2xl animate-in zoom-in-95 duration-200 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-indigo-100 flex items-center justify-center">
+                        <BadgeCheck className="w-5 h-5 text-indigo-650" />
+                      </div>
+                      <div>
+                        <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Chave Emitida com Sucesso!</p>
+                        <code className="text-sm font-mono text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-lg font-bold">{generatedKey}</code>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => {
+                        navigator.clipboard.writeText(generatedKey);
+                        showToast('Licença copiada!');
+                      }}
+                      className="flex items-center gap-1.5 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-all active:scale-[0.98] self-start md:self-auto cursor-pointer"
+                    >
+                      <Copy className="w-3.5 h-3.5" /> Copiar Licença
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* Tabela de Licenças Existentes */}
+              <div className="bg-white rounded-3xl border border-gray-100 shadow-[0_4px_30px_rgba(0,0,0,0.015)] p-8">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+                  <div>
+                    <h3 className="font-bold text-gray-900 text-base">Registros de Licenciamento</h3>
+                    <p className="text-xs text-gray-500 mt-0.5">Pesquise, suspenda, reative e gerencie as licenças dos clientes.</p>
+                  </div>
+                  <button
+                    onClick={loadAdminData}
+                    disabled={isLoadingAdminData}
+                    className="p-2 hover:bg-gray-100 rounded-xl border border-gray-200 text-gray-500 hover:text-gray-900 transition-colors self-start cursor-pointer"
+                    title="Recarregar dados"
+                  >
+                    <RefreshCw className={`w-4 h-4 ${isLoadingAdminData ? 'animate-spin' : ''}`} />
+                  </button>
+                </div>
+
+                {/* Filtros */}
+                <div className="grid md:grid-cols-3 gap-4 mb-6">
+                  <div className="relative">
+                    <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <input
+                      type="text"
+                      placeholder="Pesquisar por email ou chave..."
+                      value={adminSearchQuery}
+                      onChange={(e) => setAdminSearchQuery(e.target.value)}
+                      className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:outline-none focus:border-indigo-400 transition-all text-gray-900"
+                    />
+                  </div>
+
+                  <select
+                    value={adminStatusFilter}
+                    onChange={(e) => setAdminStatusFilter(e.target.value as LicenseStatus | 'all')}
+                    className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs text-gray-800 focus:outline-none"
+                  >
+                    <option value="all">Filtrar por Status (Todos)</option>
+                    <option value="active">Apenas Ativas</option>
+                    <option value="revoked">Apenas Revogadas</option>
+                    <option value="expired">Apenas Expiradas</option>
+                  </select>
+
+                  <select
+                    value={adminPlanFilter}
+                    onChange={(e) => setAdminPlanFilter(e.target.value as PlanType | 'all')}
+                    className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs text-gray-800 focus:outline-none"
+                  >
+                    <option value="all">Filtrar por Plano (Todos)</option>
+                    <option value="monthly">Plano Mensal</option>
+                    <option value="annual">Plano Anual</option>
+                    <option value="lifetime">Plano Vitalício</option>
+                  </select>
+                </div>
+
+                {adminError && (
+                  <div className="p-4 bg-red-50 text-red-650 border border-red-100 rounded-2xl text-xs leading-relaxed">
+                    {adminError}
+                  </div>
+                )}
+
+                {/* Lista / Tabela */}
+                <div className="overflow-x-auto">
+                  {isLoadingAdminData ? (
+                    <div className="py-20 flex flex-col items-center justify-center text-gray-400 gap-3">
+                      <Loader2 className="w-8 h-8 text-indigo-500 animate-spin" />
+                      <p className="text-xs">Buscando registros no Firestore...</p>
+                    </div>
+                  ) : filteredLicenses.length === 0 ? (
+                    <div className="py-16 text-center text-gray-400 text-xs">
+                      Nenhuma licença encontrada para os filtros selecionados.
+                    </div>
+                  ) : (
+                    <table className="w-full text-left text-xs border-collapse">
+                      <thead>
+                        <tr className="border-b border-gray-100 text-gray-400 font-bold uppercase tracking-wider">
+                          <th className="py-3 px-2">Cliente / E-mail</th>
+                          <th className="py-3 px-2">Chave de Licença</th>
+                          <th className="py-3 px-2">Plano</th>
+                          <th className="py-3 px-2">Dispositivo Vinculado</th>
+                          <th className="py-3 px-2">Data Expiração</th>
+                          <th className="py-3 px-2">Status</th>
+                          <th className="py-3 px-2 text-right">Ações</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-50 text-gray-700">
+                        {filteredLicenses.map((lic) => {
+                          const planLabels: Record<string, string> = {
+                            monthly: 'Mensal',
+                            annual: 'Anual',
+                            lifetime: 'Vitalício',
+                          };
+                          const statusColors: Record<string, string> = {
+                            active: 'text-emerald-700 bg-emerald-50 border-emerald-100',
+                            revoked: 'text-red-700 bg-red-50 border-red-100',
+                            expired: 'text-amber-700 bg-amber-50 border-amber-100',
+                          };
+
+                          return (
+                            <tr key={lic.id} className="hover:bg-gray-50/50 transition-colors">
+                              <td className="py-4 px-2 font-semibold text-gray-900">{lic.client_email}</td>
+                              <td className="py-4 px-2 font-mono text-gray-650 bg-gray-50/20 rounded px-1">{lic.id}</td>
+                              <td className="py-4 px-2 font-medium">{planLabels[lic.plan_type] || lic.plan_type}</td>
+                              <td className="py-4 px-2">
+                                {lic.hardware_id ? (
+                                  <div className="flex items-center gap-1.5 text-indigo-700">
+                                    <Smartphone className="w-3.5 h-3.5" />
+                                    <span className="font-mono text-[10px] select-all truncate max-w-[120px]">{lic.hardware_id.substring(0, 12)}...</span>
+                                  </div>
+                                ) : (
+                                  <span className="text-gray-400">Nenhum</span>
+                                )}
+                              </td>
+                              <td className="py-4 px-2 text-gray-500">
+                                {lic.expires_at ? new Date(lic.expires_at).toLocaleDateString('pt-AO') : 'Nunca'}
+                              </td>
+                              <td className="py-4 px-2">
+                                <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${statusColors[lic.status] || 'text-gray-600 bg-gray-50 border-gray-100'}`}>
+                                  {lic.status === 'active' ? 'Ativa' : lic.status === 'revoked' ? 'Revogada' : 'Expirada'}
+                                </span>
+                              </td>
+                              <td className="py-4 px-2 text-right">
+                                <div className="inline-flex items-center gap-1">
+                                  <button
+                                    onClick={() => handleUpdateStatus(lic.id, lic.status)}
+                                    className={`p-1.5 rounded-lg border transition-colors cursor-pointer ${
+                                      lic.status === 'active'
+                                        ? 'bg-red-50 border-red-105 text-red-600 hover:bg-red-100'
+                                        : 'bg-emerald-50 border-emerald-100 text-emerald-600 hover:bg-emerald-100'
+                                    }`}
+                                    title={lic.status === 'active' ? 'Revogar Chave' : 'Reativar Chave'}
+                                  >
+                                    {lic.status === 'active' ? <ShieldAlert className="w-3.5 h-3.5" /> : <Check className="w-3.5 h-3.5" />}
+                                  </button>
+
+                                  <button
+                                    onClick={() => handleResetDevice(lic.id)}
+                                    disabled={!lic.hardware_id}
+                                    className="p-1.5 rounded-lg border bg-blue-50 border-blue-105 text-blue-600 hover:bg-blue-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                                    title="Desvincular Hardware ID"
+                                  >
+                                    <Cpu className="w-3.5 h-3.5" />
+                                  </button>
+
+                                  <button
+                                    onClick={() => handleDeleteLicense(lic.id)}
+                                    className="p-1.5 rounded-lg border bg-gray-50 border-gray-250 text-gray-500 hover:bg-gray-100 transition-colors cursor-pointer"
+                                    title="Excluir Licença Permanente"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  )}
+                </div>
+              </div>
+
+              {/* Tabela de Dispositivos em Avaliação (Trials) */}
+              <div className="bg-white rounded-3xl border border-gray-100 shadow-[0_4px_30px_rgba(0,0,0,0.015)] p-8">
+                <h3 className="font-bold text-gray-900 text-base mb-2">Períodos de Teste (Trials)</h3>
+                <p className="text-xs text-gray-500 mb-6">Histórico de dispositivos que ativaram o período de testes gratuito de 7 dias.</p>
+
+                <div className="overflow-x-auto">
+                  {isLoadingAdminData ? (
+                    <div className="py-12 flex items-center justify-center text-gray-400 text-xs">
+                      Carregando trials...
+                    </div>
+                  ) : trials.length === 0 ? (
+                    <div className="py-12 text-center text-gray-400 text-xs">
+                      Nenhum dispositivo em período de teste registrado no Firestore.
+                    </div>
+                  ) : (
+                    <table className="w-full text-left text-xs border-collapse">
+                      <thead>
+                        <tr className="border-b border-gray-100 text-gray-400 font-bold uppercase tracking-wider">
+                          <th className="py-3 px-2">Hardware ID do Dispositivo</th>
+                          <th className="py-3 px-2">Data de Início</th>
+                          <th className="py-3 px-2">Data de Expiração</th>
+                          <th className="py-3 px-2">Tempo Restante</th>
+                          <th className="py-3 px-2 text-right">Ações</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-50 text-gray-700">
+                        {trials.map((tr) => {
+                          const now = Date.now();
+                          const msLeft = tr.expires_at - now;
+                          const daysLeft = Math.max(0, Math.ceil(msLeft / (24 * 60 * 60 * 1000)));
+
+                          return (
+                            <tr key={tr.hardware_id} className="hover:bg-gray-50/50 transition-colors">
+                              <td className="py-3.5 px-2 font-mono text-gray-900 select-all truncate max-w-[200px]">{tr.hardware_id}</td>
+                              <td className="py-3.5 px-2 text-gray-500">{new Date(tr.started_at).toLocaleString('pt-AO')}</td>
+                              <td className="py-3.5 px-2 text-gray-500">{new Date(tr.expires_at).toLocaleString('pt-AO')}</td>
+                              <td className="py-3.5 px-2">
+                                {msLeft > 0 ? (
+                                  <span className="text-xs font-bold text-amber-600 bg-amber-50 border border-amber-100 px-2 py-0.5 rounded-full">
+                                    {daysLeft} dia{daysLeft !== 1 ? 's' : ''} restante{daysLeft !== 1 ? 's' : ''}
+                                  </span>
+                                ) : (
+                                  <span className="text-xs font-bold text-red-650 bg-red-50 border border-red-100 px-2 py-0.5 rounded-full">
+                                    Expirado
+                                  </span>
+                                )}
+                              </td>
+                              <td className="py-3.5 px-2 text-right">
+                                <button
+                                  onClick={() => handleDeleteTrial(tr.hardware_id)}
+                                  className="p-1.5 rounded-lg border bg-gray-50 border-gray-250 text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
+                                  title="Apagar Registro (Reiniciar Trial)"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
 
         </div>
       </div>

@@ -9,6 +9,13 @@ import { initDatabase } from '@/database/db';
 import App from './App.tsx';
 import './index.css';
 
+// Force light theme and remove dark class failsafe
+if (typeof document !== 'undefined') {
+  document.documentElement.classList.remove('dark');
+  localStorage.setItem('vukapay_theme', 'light');
+  localStorage.setItem('vukapay_login_theme', 'light');
+}
+
 initDatabase()
   .then(() => {
     createRoot(document.getElementById('root')!).render(

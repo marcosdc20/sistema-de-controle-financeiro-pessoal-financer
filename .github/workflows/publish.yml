@@ -99,6 +99,6 @@ jobs:
           tagName: v__VERSION__ # Substitui automaticamente com a versão do tauri.conf.json
           releaseName: 'v__VERSION__'
           releaseBody: 'Notas de lançamento automáticas. Descarregue o instalador para a sua plataforma abaixo.'
-          releaseDraft: true
+          releaseDraft: false
           prerelease: false
           args: ${{ matrix.args }}

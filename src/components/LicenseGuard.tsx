@@ -441,8 +441,36 @@ interface LicenseGuardProps {
 export default function LicenseGuard({ children }: LicenseGuardProps) {
   const { licenseState, isLoading } = useLicense();
   const [bannerDismissed, setBannerDismissed] = useState(false);
+  const [isVideoFinished, setIsVideoFinished] = useState(() => {
+    return sessionStorage.getItem('vukapay_intro_played') === 'true';
+  });
 
-  // Fase de carregamento inicial
+  const handleVideoEnded = () => {
+    setIsVideoFinished(true);
+    sessionStorage.setItem('vukapay_intro_played', 'true');
+  };
+
+  if (!isVideoFinished) {
+    return (
+      <div className="fixed inset-0 z-[9999] bg-[#030712]">
+        <video
+          src="/videos/intro.mp4"
+          autoPlay
+          playsInline
+          className="w-full h-full object-cover pointer-events-none"
+          onEnded={handleVideoEnded}
+        />
+        <button
+          onClick={handleVideoEnded}
+          className="absolute bottom-8 right-8 px-4 py-2 bg-black/50 hover:bg-black/80 text-white/70 hover:text-white text-xs font-bold rounded-xl backdrop-blur-md transition-all border border-white/10"
+        >
+          Pular Introdução
+        </button>
+      </div>
+    );
+  }
+
+  // Fase de carregamento inicial (se o video acabar e ainda não estiver pronto)
   if (isLoading || licenseState.phase === 'loading') {
     return <LoadingScreen />;
   }

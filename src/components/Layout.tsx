@@ -124,8 +124,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     { icon: PieChart, label: 'Relatórios', path: '/reports' },
   ];
 
-  const businessNavItems = [
-    { icon: Users, label: 'Contactos & Mesadas', path: '/contacts' },
+  const communityNavItems = [
     { icon: MessageSquare, label: 'Comunidade', path: '/community' },
   ];
 
@@ -133,7 +132,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     { icon: Settings, label: 'Definições', path: '/settings' },
   ];
 
-  const allNavItems = [...navItems, ...businessNavItems, ...bottomNavItems];
+  const allNavItems = [...navItems, ...communityNavItems, ...bottomNavItems];
   const currentPathLabel = allNavItems.find(item => item.path === location.pathname)?.label || 'Finanças';
 
   const handleVisitWebsite = async (e: React.MouseEvent) => {
@@ -311,16 +310,16 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             );
           })}
 
-          {/* Business Section */}
+          {/* Community Section */}
           {!isCollapsed && (
             <div className="px-3 mt-4 mb-2 text-xs font-bold text-gray-600 uppercase tracking-wider">
-              Negócios & Comunidade
+              Comunidade VukaPay
             </div>
           )}
           {isCollapsed && <div className="my-2 border-t border-gray-800 mx-2" />}
 
-          {businessNavItems.map((item) => {
-            const isActive = location.pathname === item.path;
+          {communityNavItems.map((item) => {
+            const isActive = location.pathname.startsWith(item.path);
             return (
               <NavLink
                 key={item.path}

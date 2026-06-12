@@ -229,15 +229,14 @@ export default function Login() {
     <div className="min-h-screen w-full flex font-sans bg-gray-50 text-gray-900 selection:bg-brand-500/30">
       
       {/* Left Side: Premium Branding Panel (Split Layout) */}
-      <div className="hidden lg:flex lg:w-[50%] relative overflow-hidden border-r border-gray-200 bg-gradient-to-tr from-brand-950 via-brand-800 to-emerald-950">
+      <div className="hidden lg:flex lg:w-[50%] relative overflow-hidden border-r border-gray-200">
         
         {/* Background Graphic overlay */}
         <div className="absolute inset-0">
           <img
-            src="https://images.unsplash.com/photo-1618005198143-e5283b519a7f?q=80&w=2064&auto=format&fit=crop"
-            alt="Abstract Premium Gradient"
-            className="w-full h-full object-cover opacity-15 scale-105"
-            referrerPolicy="no-referrer"
+            src="/bg-login.png"
+            alt="VukaPay Background"
+            className="w-full h-full object-cover"
           />
         </div>
 
@@ -271,98 +270,17 @@ export default function Login() {
             <h1 className="text-4xl font-black leading-[1.2] mb-6 text-white tracking-tight">
               {b('heroTitle')}
             </h1>
-            <p className="text-base mb-10 leading-relaxed text-gray-300">
+            <p className="text-base mb-10 leading-relaxed text-gray-100 font-medium">
               {b('heroDesc')}
             </p>
 
-            {/* Stats */}
-            <div className="flex gap-8 mb-10">
-              {[
-                { value: '15+', label: b('statsFeatures') },
-                { value: '5', label: b('statsLanguages') },
-                { value: '100%', label: b('statsOffline') },
-              ].map(({ value, label }) => (
-                <div key={label}>
-                  <p className="text-3xl font-black text-white">{value}</p>
-                  <p className="text-xs mt-0.5 font-bold text-gray-400">{label}</p>
-                </div>
-              ))}
-            </div>
 
-            {/* Premium Feature Grid (Clean 2x2 Layout) */}
-            <div className="grid grid-cols-2 gap-4">
-              {[
-                {
-                  img: "https://images.unsplash.com/photo-1563986768609-322da13575f3?q=80&w=600&auto=format&fit=crop",
-                  svg: (
-                    <svg className="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                      <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-                      <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-                    </svg>
-                  ),
-                  label: b('feat1Title'),
-                  desc: b('feat1Desc')
-                },
-                {
-                  img: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=600&auto=format&fit=crop",
-                  svg: (
-                    <svg className="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                      <path d="M3 3v18h18" />
-                      <path d="M18.7 8l-5.1 5.2-2.8-2.7L7 14.3" />
-                    </svg>
-                  ),
-                  label: b('feat2Title'),
-                  desc: b('feat2Desc')
-                },
-                {
-                  img: "https://images.unsplash.com/photo-1522071820081-009f0129c71c?q=80&w=600&auto=format&fit=crop",
-                  svg: (
-                    <svg className="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-                      <circle cx="9" cy="7" r="4" />
-                      <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-                      <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-                    </svg>
-                  ),
-                  label: b('feat3Title'),
-                  desc: b('feat3Desc')
-                },
-                {
-                  img: "https://images.unsplash.com/photo-1579621970563-ebec7560ff3e?q=80&w=600&auto=format&fit=crop",
-                  svg: (
-                    <PiggyBank className="w-4 h-4 text-emerald-400" />
-                  ),
-                  label: b('feat4Title'),
-                  desc: b('feat4Desc')
-                }
-              ].map((feat) => (
-                <div key={feat.label} className="group relative h-28 rounded-2xl overflow-hidden border border-white/[0.08] shadow-md transition-all duration-500 ease-out hover:-translate-y-1 hover:shadow-lg hover:shadow-brand-500/10">
-                  <img
-                    src={feat.img}
-                    alt={feat.label}
-                    className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
-                    referrerPolicy="no-referrer"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/55 to-black/30" />
-                  
-                  <div className="absolute inset-0 p-3.5 flex flex-col justify-between z-10">
-                    <div className="w-7 h-7 rounded-lg bg-black/40 backdrop-blur-md border border-white/10 flex items-center justify-center">
-                      {feat.svg}
-                    </div>
-                    <div>
-                      <p className="font-extrabold text-[11px] text-white leading-tight">{feat.label}</p>
-                      <p className="text-[9px] text-gray-300 mt-0.5 font-medium leading-normal">{feat.desc}</p>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
           </div>
 
           {/* Footer branding */}
-          <div className="flex items-center justify-between text-[11px] text-gray-450">
+          <div className="flex items-center justify-between text-xs font-bold text-white bg-black/30 p-2.5 rounded-lg backdrop-blur-sm border border-white/10">
             <p>{b('copyRight')}</p>
-            <a href="mailto:suporte.vukapay@gmail.com" className="hover:text-white transition-colors">
+            <a href="mailto:suporte.vukapay@gmail.com" className="hover:text-emerald-300 transition-colors underline underline-offset-2">
               suporte.vukapay@gmail.com
             </a>
           </div>

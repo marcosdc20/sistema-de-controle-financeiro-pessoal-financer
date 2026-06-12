@@ -6,7 +6,7 @@ on:
       - 'v*' # Aciona quando você cria e envia uma tag como v1.0.10, v1.1.0, etc.
 
 jobs:
-  publish-tauri:
+  publish-desktop:
     permissions:
       contents: write
     strategy:
@@ -19,8 +19,6 @@ jobs:
             args: '--target x86_64-apple-darwin'  # Compila para Intel Macs
           - platform: 'ubuntu-22.04'
             args: ''                              # Compila para Linux (.deb e AppImage)
-          - platform: 'ubuntu-22.04'
-            args: 'android build --apk'           # Compila para Android (.apk)
           - platform: 'windows-latest'
             args: ''                              # Compila para Windows (.exe e .msi)
 
@@ -41,26 +39,8 @@ jobs:
           # Adiciona os targets necessários para cross-compilation no Mac
           targets: ${{ matrix.platform == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
 
-      - name: Setup Java (Android only)
-        if: matrix.platform == 'ubuntu-22.04' && contains(matrix.args, 'android')
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'zulu'
-          java-version: '17'
-
-      - name: Setup Android NDK (Android only)
-        if: matrix.platform == 'ubuntu-22.04' && contains(matrix.args, 'android')
-        uses: nttld/setup-ndk@v1
-        id: setup-ndk
-        with:
-          ndk-version: r25c
-
-      - name: Install Android Rust targets (Android only)
-        if: matrix.platform == 'ubuntu-22.04' && contains(matrix.args, 'android')
-        run: rustup target add aarch64-linux-android armv7-linux-androideabi i686-linux-android x86_64-linux-android
-
       - name: Install system dependencies (Ubuntu desktop only)
-        if: matrix.platform == 'ubuntu-22.04' && !contains(matrix.args, 'android')
+        if: matrix.platform == 'ubuntu-22.04'
         run: |
           sudo apt-get update
           sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
@@ -68,27 +48,7 @@ jobs:
       - name: Install frontend dependencies
         run: npm ci
 
-      - name: Build Android App
-        if: matrix.platform == 'ubuntu-22.04' && contains(matrix.args, 'android')
-        env:
-          NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
-          VITE_LICENSE_HMAC_SECRET: ${{ secrets.VITE_LICENSE_HMAC_SECRET }}
-        run: npm run tauri android build -- --apk
-
-      - name: Get Version
-        if: matrix.platform == 'ubuntu-22.04' && contains(matrix.args, 'android')
-        id: get_version
-        run: echo "VERSION=$(node -p "require('./src-tauri/tauri.conf.json').version")" >> $GITHUB_ENV
-
-      - name: Upload Android APK to Release
-        if: matrix.platform == 'ubuntu-22.04' && contains(matrix.args, 'android')
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          gh release upload v${{ env.VERSION }} src-tauri/gen/android/app/build/outputs/apk/universal/release/app-universal-release.apk || echo "Release not found or upload failed"
-
       - name: Build and Publish Tauri App
-        if: ${{ !contains(matrix.args, 'android') }}
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -102,3 +62,55 @@ jobs:
           releaseDraft: false
           prerelease: false
           args: ${{ matrix.args }}
+
+  publish-android:
+    needs: publish-desktop
+    permissions:
+      contents: write
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+          cache: 'npm'
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Setup Android NDK
+        uses: nttld/setup-ndk@v1
+        id: setup-ndk
+        with:
+          ndk-version: r25c
+
+      - name: Install Android Rust targets
+        run: rustup target add aarch64-linux-android armv7-linux-androideabi i686-linux-android x86_64-linux-android
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      - name: Build Android App
+        env:
+          NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
+          VITE_LICENSE_HMAC_SECRET: ${{ secrets.VITE_LICENSE_HMAC_SECRET }}
+        run: npm run tauri android build -- --apk
+
+      - name: Get Version
+        id: get_version
+        run: echo "VERSION=$(node -p "require('./src-tauri/tauri.conf.json').version")" >> $GITHUB_ENV
+
+      - name: Upload Android APK to Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release upload v${{ env.VERSION }} src-tauri/gen/android/app/build/outputs/apk/universal/release/app-universal-release.apk --clobber

@@ -803,34 +803,42 @@ export default function ChatsManager() {
               <div>
                 <label className="block text-xs font-black text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">Selecionar Membros *</label>
                 <div className="space-y-2 max-h-[180px] overflow-y-auto pr-1">
-                  {users.map(u => {
-                    const isSelected = selectedGroupMembers.includes(u.id);
-                    return (
-                      <div 
-                        key={u.id}
-                        onClick={() => {
-                          setSelectedGroupMembers(prev => 
-                            prev.includes(u.id) ? prev.filter(id => id !== u.id) : [...prev, u.id]
-                          );
-                        }}
-                        className={cn(
-                          "p-2.5 bg-gray-50 dark:bg-slate-950 border rounded-xl flex items-center justify-between cursor-pointer hover:border-indigo-500 transition-all text-left",
-                          isSelected ? "border-indigo-600 bg-indigo-50/10" : "border-gray-150 dark:border-slate-850"
-                        )}
-                      >
-                        <div className="flex items-center gap-2">
-                          <img className="w-8 h-8 rounded-full object-cover border border-gray-100 dark:border-slate-800" src={u.avatar} alt="" />
-                          <span className="text-xs font-black text-gray-800 dark:text-gray-200">@{u.name}</span>
+                  {users.length === 0 ? (
+                    <div className="p-4 bg-gray-50 dark:bg-slate-900 border border-gray-150 dark:border-slate-800 rounded-xl text-center">
+                      <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">
+                        Nenhum utilizador encontrado na comunidade para adicionar ao grupo.
+                      </p>
+                    </div>
+                  ) : (
+                    users.map(u => {
+                      const isSelected = selectedGroupMembers.includes(u.id);
+                      return (
+                        <div 
+                          key={u.id}
+                          onClick={() => {
+                            setSelectedGroupMembers(prev => 
+                              prev.includes(u.id) ? prev.filter(id => id !== u.id) : [...prev, u.id]
+                            );
+                          }}
+                          className={cn(
+                            "p-2.5 bg-gray-50 dark:bg-slate-950 border rounded-xl flex items-center justify-between cursor-pointer hover:border-indigo-500 transition-all text-left",
+                            isSelected ? "border-indigo-600 bg-indigo-50/10 dark:bg-indigo-950/20" : "border-gray-150 dark:border-slate-850"
+                          )}
+                        >
+                          <div className="flex items-center gap-2">
+                            <img className="w-8 h-8 rounded-full object-cover border border-gray-100 dark:border-slate-800" src={u.avatar} alt="" />
+                            <span className="text-xs font-black text-gray-800 dark:text-gray-200">@{u.name}</span>
+                          </div>
+                          <div className={cn(
+                            "w-4.5 h-4.5 rounded-md border flex items-center justify-center text-white text-[10px]",
+                            isSelected ? "bg-indigo-600 border-indigo-600" : "border-gray-300 bg-white dark:bg-slate-900 dark:border-slate-700"
+                          )}>
+                            {isSelected && <Check className="w-3 h-3" />}
+                          </div>
                         </div>
-                        <div className={cn(
-                          "w-4.5 h-4.5 rounded-md border flex items-center justify-center text-white text-[10px]",
-                          isSelected ? "bg-indigo-600 border-indigo-600" : "border-gray-300 bg-white dark:bg-slate-900"
-                        )}>
-                          {isSelected && <Check className="w-3 h-3" />}
-                        </div>
-                      </div>
-                    );
-                  })}
+                      );
+                    })
+                  )}
                 </div>
               </div>
               <div className="pt-4 flex gap-3 justify-end">

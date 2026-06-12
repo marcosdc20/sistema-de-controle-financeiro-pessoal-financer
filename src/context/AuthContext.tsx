@@ -1,4 +1,13 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { auth } from '@/lib/firebase';
+import { 
+  signInWithEmailAndPassword, 
+  createUserWithEmailAndPassword, 
+  signInWithCredential, 
+  GoogleAuthProvider, 
+  signOut as firebaseSignOut,
+  onAuthStateChanged 
+} from 'firebase/auth';
 
 // Tipagem simplificada compatível com o restante da aplicação
 interface AuthContextType {
@@ -27,18 +36,70 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     let unlistenFn: (() => void) | null = null;
 
     const initAuth = async () => {
-      // 1. Verifica se já existe um login salvo no localStorage
-      const savedUser = localStorage.getItem('vukapay_user');
-      if (savedUser) {
-        if (active) {
-          const parsed = JSON.parse(savedUser);
-          setUser(parsed);
+      // 1. Setup Firebase Auth listener to automatically manage session
+      const unsubscribeAuth = onAuthStateChanged(auth, async (firebaseUser) => {
+        if (!active) return;
+        
+        if (firebaseUser) {
+          // Firebase authenticated user
+          const isGoogle = firebaseUser.providerData.some(p => p.providerId === 'google.com');
+          
+          let userId = firebaseUser.uid;
+          
+          const tempUser = {
+            id: userId,
+            email: firebaseUser.email || '',
+            user_metadata: { 
+              full_name: firebaseUser.displayName || (firebaseUser.email ? firebaseUser.email.split('@')[0] : 'Utilizador'),
+              avatar_url: firebaseUser.photoURL || undefined
+            },
+            isLocal: false
+          };
+
+          // Save the mapping for Google users just in case
+          if (isGoogle && firebaseUser.email) {
+            localStorage.setItem(`vukapay_google_mapping_${firebaseUser.email.trim().toLowerCase()}`, userId);
+          }
+
+          localStorage.setItem('vukapay_user', JSON.stringify(tempUser));
+          setUser(tempUser);
+          
+          // Ensure local profile exists for SQLite functionality
+          try {
+            const { getDatabase } = await import('@/database/db');
+            const db = await getDatabase();
+            const profiles = await db.select<any[]>('SELECT * FROM profiles WHERE id = $1', [userId]);
+            if (!profiles[0]) {
+              await db.execute(
+                'INSERT INTO profiles (id, email, full_name, plan, role, created_at, vuka_coins, is_verified) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)',
+                [userId, tempUser.email, tempUser.user_metadata.full_name, 'free', 'user', new Date().toISOString(), 0, false]
+              );
+            }
+            await recordSession(userId, isGoogle ? 'Google' : 'Email');
+            await syncUserToFirebase(tempUser);
+          } catch (e) {
+             console.error("Local profile creation error", e);
+          }
+          
           setLoading(false);
-          // Atualiza a atividade da sessão em background
-          touchSession(parsed.id).catch(err => console.error(err));
+        } else {
+          // No Firebase session, check if it's a Local Guest session
+          const savedUser = localStorage.getItem('vukapay_user');
+          if (savedUser) {
+            try {
+              const parsed = JSON.parse(savedUser);
+              if (parsed.isLocal && parsed.id === 'local-user') {
+                setUser(parsed);
+                setLoading(false);
+                touchSession(parsed.id).catch(err => console.error(err));
+                return;
+              }
+            } catch {}
+          }
+          setUser(null);
+          setLoading(false);
         }
-        return;
-      }
+      });
 
       // Verifica se está rodando no Tauri
       const isTauri = typeof window !== 'undefined' && (window as any).__TAURI_INTERNALS__ !== undefined;
@@ -117,46 +178,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const loginWithCredentials = async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
     const cleanEmail = email.trim().toLowerCase();
     
-    // Determine the user ID
-    let userId = 'local-user';
-    if (cleanEmail !== 'local@vukapay.local') {
-      const googleId = localStorage.getItem(`vukapay_google_mapping_${cleanEmail}`);
-      if (googleId) {
-        userId = googleId;
-      } else {
-        userId = 'usr_' + cleanEmail.replace(/[^a-zA-Z0-9_-]/g, '_');
-      }
-    }
-
-    const tempUser = {
-      id: userId,
-      email: cleanEmail,
-      user_metadata: { full_name: cleanEmail.split('@')[0] || 'Usuário Local' },
-      isLocal: true
-    };
-
     try {
-      const { getDatabase } = await import('@/database/db');
-      const db = await getDatabase();
-      
-      const profiles = await db.select<any[]>('SELECT * FROM profiles WHERE id = $1', [userId]);
-      const profile = profiles[0];
-
-      if (profile) {
-        if (profile.password && profile.password !== password) {
-          return { success: false, error: 'Palavra-passe incorreta.' };
-        } else if (!profile.password) {
-          await db.execute('UPDATE profiles SET password = $1 WHERE id = $2', [password, userId]);
+      try {
+        // Tenta fazer login com o Firebase Auth
+        await signInWithEmailAndPassword(auth, cleanEmail, password);
+        return { success: true };
+      } catch (err: any) {
+        // Se a conta não existir, criamos a conta automaticamente!
+        if (err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential' || err.code === 'auth/invalid-login-credentials') {
+          try {
+            await createUserWithEmailAndPassword(auth, cleanEmail, password);
+            return { success: true };
+          } catch (createErr: any) {
+            console.error('Registration error:', createErr);
+            if (createErr.code === 'auth/email-already-in-use') {
+              return { success: false, error: 'A palavra-passe está incorreta.' };
+            }
+            return { success: false, error: 'Erro ao criar a conta: ' + createErr.message };
+          }
         }
-      } else {
-        return { success: false, error: 'Conta não encontrada. Por favor, crie uma conta primeiro.' };
+        
+        console.error('Firebase Login error:', err);
+        return { success: false, error: 'Palavra-passe incorreta ou erro de autenticação.' };
       }
-
-      localStorage.setItem('vukapay_user', JSON.stringify(tempUser));
-      setUser(tempUser);
-      await recordSession(userId, 'Local');
-      await syncUserToFirebase(tempUser);
-      return { success: true };
     } catch (err) {
       console.error('Login error:', err);
       return { success: false, error: 'Erro interno ao processar a autenticação.' };
@@ -164,63 +208,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const registerWithCredentials = async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
-    const cleanEmail = email.trim().toLowerCase();
-    
-    let userId = 'local-user';
-    if (cleanEmail !== 'local@vukapay.local') {
-      userId = 'usr_' + cleanEmail.replace(/[^a-zA-Z0-9_-]/g, '_');
-    }
-
-    const tempUser = {
-      id: userId,
-      email: cleanEmail,
-      user_metadata: { full_name: cleanEmail.split('@')[0] || 'Usuário Local' },
-      isLocal: true
-    };
-
-    try {
-      // Verificar se a conta já existe e está ativa no Firestore central
-      try {
-        const { db: firestoreDb } = await import('@/lib/firebase');
-        const { doc: firestoreDoc, getDoc: getFirestoreDoc } = await import('firebase/firestore');
-        
-        const firestoreUserRef = firestoreDoc(firestoreDb, 'community_users', userId);
-        const firestoreUserSnap = await getFirestoreDoc(firestoreUserRef);
-        
-        if (firestoreUserSnap.exists()) {
-          const userData = firestoreUserSnap.data();
-          if (userData && !userData.is_deleted && !userData.deleted) {
-            return { success: false, error: 'Este e-mail já está registado no sistema central. Inicie sessão em vez de criar uma conta.' };
-          }
-        }
-      } catch (firestoreErr) {
-        console.warn('Não foi possível verificar o registo no Firestore (offline?):', firestoreErr);
-      }
-
-      const { getDatabase } = await import('@/database/db');
-      const db = await getDatabase();
-      
-      const profiles = await db.select<any[]>('SELECT * FROM profiles WHERE id = $1', [userId]);
-      const profile = profiles[0];
-
-      if (profile) {
-        return { success: false, error: 'Este e-mail já está registado localmente.' };
-      } else {
-        await db.execute(
-          'INSERT INTO profiles (id, full_name, password) VALUES ($1, $2, $3)',
-          [userId, cleanEmail.split('@')[0] || 'Usuário Local', password]
-        );
-      }
-
-      localStorage.setItem('vukapay_user', JSON.stringify(tempUser));
-      setUser(tempUser);
-      await recordSession(userId, 'Local');
-      await syncUserToFirebase(tempUser);
-      return { success: true };
-    } catch (err) {
-      console.error('Registration error:', err);
-      return { success: false, error: 'Erro interno ao criar a conta.' };
-    }
+    return loginWithCredentials(email, password);
   };
 
   const loginWithGoogle = async () => {
@@ -250,9 +238,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } else {
       // Fluxo web padrão
       const redirectUri = window.location.origin; // Em desenvolvimento: http://localhost:1420
-      const responseType = 'token';
+      const responseType = 'token id_token';
+      const nonce = Math.random().toString(36).substring(2, 15);
 
-      const googleAuthUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=${responseType}&scope=${encodeURIComponent(scope)}&state=${state}&include_granted_scopes=true`;
+      const googleAuthUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=${encodeURIComponent(responseType)}&scope=${encodeURIComponent(scope)}&state=${state}&nonce=${nonce}&include_granted_scopes=true`;
 
       window.location.href = googleAuthUrl;
     }
@@ -261,6 +250,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const handleGoogleCallback = async (hash: string): Promise<boolean> => {
     const params = new URLSearchParams(hash.substring(1));
     const accessToken = params.get('access_token');
+    const idToken = params.get('id_token');
     const state = params.get('state');
     const savedState = localStorage.getItem('google_oauth_state');
 
@@ -269,40 +259,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       localStorage.setItem('google_access_token', accessToken);
 
       try {
-        const res = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
-          headers: { Authorization: `Bearer ${accessToken}` }
-        });
-        const data = await res.json();
-
-        if (data.error) {
-          console.error('Erro no token do Google:', data.error);
-          alert('Erro na autenticação do Google: ' + (data.error.message || JSON.stringify(data.error)));
-          setAuthLoading(false);
-          return false;
-        }
-
-        const googleUser = {
-          id: data.id,
-          email: data.email,
-          user_metadata: {
-            full_name: data.name,
-            avatar_url: data.picture
-          },
-          isLocal: false
-        };
-
-        // Save the Google ID mapping so offline login can find it
-        localStorage.setItem(`vukapay_google_mapping_${data.email.trim().toLowerCase()}`, data.id);
-
-        localStorage.setItem('vukapay_user', JSON.stringify(googleUser));
-        setUser(googleUser);
-        await recordSession(googleUser.id, 'Google');
-        await syncUserToFirebase(googleUser);
+        // Authenticate with Firebase using the Google Token
+        // Firebase accepts accessToken when idToken is not easily available, or idToken
+        const credential = GoogleAuthProvider.credential(idToken || null, accessToken);
+        await signInWithCredential(auth, credential);
+        
         setAuthLoading(false);
         return true;
-      } catch (err) {
-        console.error('Erro ao obter perfil do Google:', err);
-        alert('Erro ao obter perfil do Google: ' + err);
+      } catch (err: any) {
+        console.error('Erro ao autenticar no Firebase com Google:', err);
+        alert('Erro na autenticação do Google: ' + err.message);
         setAuthLoading(false);
         return false;
       }
@@ -315,6 +281,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signOut = async () => {
+    try {
+      await firebaseSignOut(auth);
+    } catch(e) {}
     localStorage.removeItem('vukapay_user');
     localStorage.removeItem('google_access_token');
     setUser(null);

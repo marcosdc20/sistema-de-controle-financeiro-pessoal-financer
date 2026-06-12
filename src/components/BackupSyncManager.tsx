@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { exportDatabaseToJson, importDatabaseFromJson, initDatabase } from '@/database/db';
-import { uploadBackupToDrive, downloadBackupFromDrive } from '@/services/googleDrive';
+import { exportDatabaseToJson, importDatabaseFromJson } from '@/database/db';
+import { uploadBackupToCloud, downloadBackupFromCloud } from '@/services/firebaseBackup';
 import { Cloud, CloudLightning, CloudOff, RefreshCw, X, CheckCircle, Wifi, AlertTriangle, ShieldCheck, Lock } from 'lucide-react';
 
 export default function BackupSyncManager() {
-  const { user, loginWithGoogle } = useAuth();
+  const { user } = useAuth();
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [showPrompt, setShowPrompt] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
@@ -17,7 +17,7 @@ export default function BackupSyncManager() {
   useEffect(() => {
     const handleOnline = () => {
       setIsOnline(true);
-      // Se estiver logado com o Google (não local), pergunta se quer sincronizar
+      // Se estiver logado (não local), pergunta se quer sincronizar
       if (user && !user.isLocal) {
         setShowPrompt(true);
       }
@@ -43,8 +43,8 @@ export default function BackupSyncManager() {
       // 1. Exporta o banco local para JSON
       const jsonStr = await exportDatabaseToJson();
 
-      // 2. Faz o upload para o Google Drive
-      const success = await uploadBackupToDrive(jsonStr);
+      // 2. Faz o upload para a Cloud (Firebase Storage)
+      const success = await uploadBackupToCloud(jsonStr);
 
       if (success) {
         const nowStr = new Date().toLocaleString('pt-AO');
@@ -74,18 +74,18 @@ export default function BackupSyncManager() {
     setIsSyncing(true);
     setSyncStatus('idle');
     try {
-      const backupJson = await downloadBackupFromDrive();
+      const backupJson = await downloadBackupFromCloud();
       if (backupJson) {
         await importDatabaseFromJson(backupJson);
         // Recarrega os dados reiniciando a instância de conexão se necessário
         alert('Backup restaurado com sucesso! A aplicação será atualizada.');
         window.location.reload();
       } else {
-        alert('Nenhum backup encontrado no Google Drive.');
+        alert('Nenhum backup encontrado na Nuvem.');
       }
     } catch (error) {
       console.error('Erro ao restaurar backup:', error);
-      alert('Ocorreu um erro ao restaurar o backup do Google Drive.');
+      alert('Ocorreu um erro ao restaurar o backup da Nuvem.');
     } finally {
       setIsSyncing(false);
     }
@@ -169,7 +169,7 @@ export default function BackupSyncManager() {
               <div>
                 <h3 className="text-lg font-bold text-white">Conexão Restabelecida!</h3>
                 <p className="text-gray-400 text-xs mt-1.5 leading-relaxed">
-                  Você está online. Deseja realizar a sincronização e salvar o backup atualizado das suas finanças locais no seu Google Drive?
+                  Você está online. Deseja realizar a sincronização e salvar o backup atualizado das suas finanças locais na sua Nuvem privada?
                 </p>
               </div>
             </div>
@@ -178,7 +178,7 @@ export default function BackupSyncManager() {
             {syncStatus === 'success' && (
               <div className="mt-4 p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl flex items-center gap-2 text-emerald-400 text-xs">
                 <CheckCircle className="w-4 h-4" />
-                <span>Backup realizado com sucesso no Google Drive!</span>
+                <span>Backup realizado com sucesso na Nuvem!</span>
               </div>
             )}
 
@@ -186,14 +186,8 @@ export default function BackupSyncManager() {
               <div className="mt-4 p-3 bg-red-500/10 border border-red-500/20 rounded-2xl flex flex-col gap-2 text-red-400 text-xs">
                 <div className="flex items-center gap-2">
                   <AlertTriangle className="w-4 h-4 shrink-0" />
-                  <span>Ocorreu um erro ao enviar para o Drive. Verifique a conta.</span>
+                  <span>Ocorreu um erro ao enviar para a Nuvem. Verifique a sua ligação.</span>
                 </div>
-                <button
-                  onClick={loginWithGoogle}
-                  className="mt-1 py-1.5 px-3 bg-red-500/20 hover:bg-red-500/30 text-red-300 rounded-xl text-[10px] font-bold transition-all self-start cursor-pointer active:scale-95"
-                >
-                  Reconectar Conta Google
-                </button>
               </div>
             )}
 

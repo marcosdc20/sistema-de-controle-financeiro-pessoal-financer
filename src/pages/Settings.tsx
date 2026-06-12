@@ -339,19 +339,20 @@ export default function Settings() {
   const handleCloudBackup = async () => {
     setIsCloudSyncing(true);
     try {
+      const { uploadBackupToCloud } = await import('@/services/firebaseBackup');
       const jsonStr = await exportDatabase();
-      const success = await uploadBackupToDrive(jsonStr);
+      const success = await uploadBackupToCloud(jsonStr);
       if (success) {
         const nowStr = new Date().toLocaleString('pt-AO');
         localStorage.setItem('vukapay_last_backup', nowStr);
         setCloudLastBackup(nowStr);
-        showToast('Cópia de segurança enviada para o Google Drive com sucesso!');
+        showToast('Cópia de segurança enviada para a Nuvem com sucesso!');
       } else {
-        showToast('Erro ao carregar backup no Google Drive. Verifique a conta Google.', 'error');
+        showToast('Erro ao carregar backup na Nuvem. Verifique a sua ligação.', 'error');
       }
     } catch (err) {
       console.error(err);
-      showToast('Erro ao realizar backup na nuvem.', 'error');
+      showToast('Erro ao realizar backup na Nuvem.', 'error');
     } finally {
       setIsCloudSyncing(false);
     }
@@ -363,7 +364,8 @@ export default function Settings() {
     }
     setIsCloudSyncing(true);
     try {
-      const jsonStr = await downloadBackupFromDrive();
+      const { downloadBackupFromCloud } = await import('@/services/firebaseBackup');
+      const jsonStr = await downloadBackupFromCloud();
       if (jsonStr) {
         await importDatabase(jsonStr);
         showToast('Base de dados restaurada com sucesso! A reiniciar...');
@@ -371,7 +373,7 @@ export default function Settings() {
           window.location.reload();
         }, 1500);
       } else {
-        showToast('Nenhum backup encontrado no Google Drive.', 'error');
+        showToast('Nenhum backup encontrado na Nuvem.', 'error');
       }
     } catch (err) {
       console.error(err);
@@ -384,7 +386,8 @@ export default function Settings() {
   const handleCloudExtract = async () => {
     setIsCloudSyncing(true);
     try {
-      const jsonStr = await downloadBackupFromDrive();
+      const { downloadBackupFromCloud } = await import('@/services/firebaseBackup');
+      const jsonStr = await downloadBackupFromCloud();
       if (jsonStr) {
         const blob = new Blob([jsonStr], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
@@ -394,13 +397,13 @@ export default function Settings() {
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
-        showToast('Backup extraído da nuvem com sucesso!');
+        showToast('Backup extraído da Nuvem com sucesso!');
       } else {
-        showToast('Nenhum arquivo de backup encontrado no Google Drive.', 'error');
+        showToast('Nenhum arquivo de backup encontrado na Nuvem.', 'error');
       }
     } catch (err) {
       console.error(err);
-      showToast('Erro ao extrair backup do Google Drive.', 'error');
+      showToast('Erro ao extrair backup da Nuvem.', 'error');
     } finally {
       setIsCloudSyncing(false);
     }

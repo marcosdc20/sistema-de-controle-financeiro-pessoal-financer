@@ -473,10 +473,11 @@ export default function LicenseGuard({ children }: LicenseGuardProps) {
           src="/videos/intro.mp4"
           autoPlay
           playsInline
-          muted={false}
+          muted
           className="w-full h-full object-cover pointer-events-none absolute inset-0"
           onEnded={handleVideoEnded}
           onError={handleVideoEnded}
+          onLoadedData={() => setVideoReady(true)}
           onCanPlay={() => setVideoReady(true)}
         />
         {/* Fallback loading while video loads */}
@@ -485,7 +486,7 @@ export default function LicenseGuard({ children }: LicenseGuardProps) {
             <div className="w-20 h-20 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-3xl flex items-center justify-center shadow-2xl shadow-indigo-500/30 animate-pulse">
               <TrendingUp className="w-10 h-10 text-white" />
             </div>
-            <p className="text-sm text-gray-400 animate-pulse">A carregar VukaPay...</p>
+            <p className="text-sm text-gray-400 animate-pulse">A iniciar VukaPay...</p>
           </div>
         )}
         <button

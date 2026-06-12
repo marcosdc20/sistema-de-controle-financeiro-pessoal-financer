@@ -18,6 +18,9 @@ const firebaseConfig = {
   appId:             import.meta.env.VITE_FIREBASE_APP_ID as string,
 };
 
+import { getAuth } from 'firebase/auth';
+import { getStorage } from 'firebase/storage';
+
 // ─── Inicialização singleton — evita re-inicialização em hot-reload ──────────
 let app: FirebaseApp;
 if (getApps().length === 0) {
@@ -25,6 +28,9 @@ if (getApps().length === 0) {
 } else {
   app = getApp();
 }
+
+const auth = getAuth(app);
+const storage = getStorage(app);
 
 // ─── Instância do Firestore com Suporte Offline ─────────────────────────────────
 const db: Firestore = initializeFirestore(app, {
@@ -48,4 +54,4 @@ if (
   }
 }
 
-export { app, db };
+export { app, db, auth, storage };

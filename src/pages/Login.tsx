@@ -132,8 +132,7 @@ const LANGUAGES = [
 ];
 
 export default function Login() {
-  const { loginAsLocal, loginWithCredentials, registerWithCredentials, loginWithGoogle, authLoading } = useAuth();
-  const [isRegisterMode, setIsRegisterMode] = useState(false);
+  const { loginWithCredentials, loginAsLocal, loginWithGoogle, authLoading } = useAuth();
   const [isLoadingLocal, setIsLoadingLocal] = useState(false);
   const [loginError, setLoginError] = useState<string | null>(null);
   const [appVersion, setAppVersion] = useState('1.1.1');
@@ -199,12 +198,7 @@ export default function Login() {
 
     setIsLoadingLocal(true);
     try {
-      let result;
-      if (isRegisterMode) {
-        result = await registerWithCredentials(email.trim(), password);
-      } else {
-        result = await loginWithCredentials(email.trim(), password);
-      }
+      const result = await loginWithCredentials(email.trim(), password);
 
       if (result.success) {
         // Guardar email para pré-preenchimento futuro
@@ -340,30 +334,11 @@ export default function Login() {
               <TrendingUp className="w-7 h-7" />
             </div>
             <h2 className="text-2xl font-black text-gray-900 tracking-tight">
-              {isRegisterMode ? 'Criar Nova Conta' : 'Olá! Bem-vindo de volta'}
+              Olá! Bem-vindo de volta
             </h2>
             <p className="text-xs text-gray-500 mt-1">
-              {isRegisterMode 
-                ? 'Preencha os dados abaixo para começar a sua jornada.' 
-                : 'Introduza os seus dados para aceder ao controle financeiro.'}
+              Introduza os seus dados para aceder ou criar o seu controle financeiro.
             </p>
-          </div>
-          
-          <div className="flex items-center justify-center gap-4 mb-6">
-            <button 
-              type="button"
-              onClick={() => { setIsRegisterMode(false); setLoginError(null); }}
-              className={cn("text-xs font-bold pb-1 border-b-2 transition-all", !isRegisterMode ? "text-brand-600 border-brand-600" : "text-gray-400 border-transparent hover:text-gray-600")}
-            >
-              Iniciar Sessão
-            </button>
-            <button 
-              type="button"
-              onClick={() => { setIsRegisterMode(true); setLoginError(null); }}
-              className={cn("text-xs font-bold pb-1 border-b-2 transition-all", isRegisterMode ? "text-brand-600 border-brand-600" : "text-gray-400 border-transparent hover:text-gray-600")}
-            >
-              Criar Conta
-            </button>
           </div>
 
           {loginError && (
@@ -442,7 +417,7 @@ export default function Login() {
                 <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
               ) : (
                 <>
-                  <span className="text-white font-bold">{isRegisterMode ? 'Criar Conta' : 'Aceder ao Painel'}</span>
+                  <span className="text-white font-bold">Aceder ao Painel</span>
                   <ArrowRight className="w-4 h-4 text-white" />
                 </>
               )}

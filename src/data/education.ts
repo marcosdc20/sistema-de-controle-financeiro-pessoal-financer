@@ -4,6 +4,7 @@ export interface Lesson {
   title: string;
   content: string; // Markdown-like or HTML
   duration: string;
+  videoUrl?: string;
 }
 
 export interface Course {

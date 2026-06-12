@@ -132,14 +132,26 @@ const LANGUAGES = [
 ];
 
 export default function Login() {
-  const { loginAsLocal, loginWithGoogle, authLoading } = useAuth();
+  const { loginAsLocal, loginWithCredentials, registerWithCredentials, loginWithGoogle, authLoading } = useAuth();
+  const [isRegisterMode, setIsRegisterMode] = useState(false);
   const [isLoadingLocal, setIsLoadingLocal] = useState(false);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [rememberMe, setRememberMe] = useState(false);
   const [loginError, setLoginError] = useState<string | null>(null);
   const [appVersion, setAppVersion] = useState('1.1.1');
   const navigate = useNavigate();
+
+  // Pre-fill email from last saved session
+  const [email, setEmail] = useState<string>(() => {
+    try {
+      const saved = localStorage.getItem('vukapay_user');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed?.email && parsed.email !== 'local@vukapay.local') return parsed.email;
+      }
+      return localStorage.getItem('vukapay_last_email') || '';
+    } catch { return ''; }
+  });
+  const [password, setPassword] = useState('');
+  const [rememberMe, setRememberMe] = useState(() => !!localStorage.getItem('vukapay_last_email'));
 
   // Language management
   const [lang, setLang] = useState<string>(() => {
@@ -176,7 +188,7 @@ export default function Login() {
     localStorage.setItem('vukapay_login_lang', newLang);
   };
 
-  const handleCredentialsSubmit = (e: React.FormEvent) => {
+  const handleCredentialsSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoginError(null);
 
@@ -186,18 +198,31 @@ export default function Login() {
     }
 
     setIsLoadingLocal(true);
-    setTimeout(() => {
-      // Create user session details inside localStorage
-      const localUser = {
-        id: 'local-user',
-        email: email.trim(),
-        user_metadata: { full_name: email.split('@')[0] || 'Usuário Local' },
-        isLocal: true
-      };
-      localStorage.setItem('vukapay_user', JSON.stringify(localUser));
-      loginAsLocal();
-      navigate('/');
-    }, 800);
+    try {
+      let result;
+      if (isRegisterMode) {
+        result = await registerWithCredentials(email.trim(), password);
+      } else {
+        result = await loginWithCredentials(email.trim(), password);
+      }
+
+      if (result.success) {
+        // Guardar email para pré-preenchimento futuro
+        if (rememberMe) {
+          localStorage.setItem('vukapay_last_email', email.trim());
+        } else {
+          localStorage.removeItem('vukapay_last_email');
+        }
+        navigate('/');
+      } else {
+        setLoginError(result.error || 'Erro na autenticação.');
+      }
+    } catch (err) {
+      console.error(err);
+      setLoginError('Ocorreu um erro ao tentar aceder.');
+    } finally {
+      setIsLoadingLocal(false);
+    }
   };
 
   const handleLocalGuestLogin = () => {
@@ -315,11 +340,30 @@ export default function Login() {
               <TrendingUp className="w-7 h-7" />
             </div>
             <h2 className="text-2xl font-black text-gray-900 tracking-tight">
-              Olá! Bem-vindo de volta
+              {isRegisterMode ? 'Criar Nova Conta' : 'Olá! Bem-vindo de volta'}
             </h2>
             <p className="text-xs text-gray-500 mt-1">
-              Introduza os seus dados para aceder ao controle financeiro.
+              {isRegisterMode 
+                ? 'Preencha os dados abaixo para começar a sua jornada.' 
+                : 'Introduza os seus dados para aceder ao controle financeiro.'}
             </p>
+          </div>
+          
+          <div className="flex items-center justify-center gap-4 mb-6">
+            <button 
+              type="button"
+              onClick={() => { setIsRegisterMode(false); setLoginError(null); }}
+              className={cn("text-xs font-bold pb-1 border-b-2 transition-all", !isRegisterMode ? "text-brand-600 border-brand-600" : "text-gray-400 border-transparent hover:text-gray-600")}
+            >
+              Iniciar Sessão
+            </button>
+            <button 
+              type="button"
+              onClick={() => { setIsRegisterMode(true); setLoginError(null); }}
+              className={cn("text-xs font-bold pb-1 border-b-2 transition-all", isRegisterMode ? "text-brand-600 border-brand-600" : "text-gray-400 border-transparent hover:text-gray-600")}
+            >
+              Criar Conta
+            </button>
           </div>
 
           {loginError && (
@@ -389,18 +433,17 @@ export default function Login() {
               </label>
             </div>
 
-            {/* Login Button */}
             <button
               type="submit"
               disabled={authLoading || isLoadingLocal}
-              className="w-full py-3.5 bg-brand-650 hover:bg-brand-700 active:scale-[0.98] text-white font-bold rounded-2xl text-xs transition-all shadow-md shadow-brand-600/10 flex items-center justify-center gap-2 cursor-pointer border-none"
+              className="w-full py-3.5 bg-brand-600 hover:bg-brand-700 active:scale-[0.98] text-white font-bold rounded-2xl text-xs transition-all shadow-md shadow-brand-500/10 flex items-center justify-center gap-2 cursor-pointer border-none"
             >
               {isLoadingLocal ? (
                 <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
               ) : (
                 <>
-                  <span>Aceder ao Painel</span>
-                  <ArrowRight className="w-4 h-4" />
+                  <span className="text-white font-bold">{isRegisterMode ? 'Criar Conta' : 'Aceder ao Painel'}</span>
+                  <ArrowRight className="w-4 h-4 text-white" />
                 </>
               )}
             </button>

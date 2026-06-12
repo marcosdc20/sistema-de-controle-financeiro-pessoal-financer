@@ -156,6 +156,7 @@ async function initDatabaseInstance(db: IDatabase): Promise<void> {
           full_name TEXT,
           avatar_url TEXT,
           password TEXT,
+          vuka_coins REAL DEFAULT 0.0,
           updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
         );
       `);
@@ -425,7 +426,8 @@ async function initDatabaseInstance(db: IDatabase): Promise<void> {
         { name: 'security_question', type: 'TEXT' },
         { name: 'security_answer', type: 'TEXT' },
         { name: 'recovery_email', type: 'TEXT' },
-        { name: 'pin_code', type: 'TEXT' }
+        { name: 'pin_code', type: 'TEXT' },
+        { name: 'vuka_coins', type: 'REAL DEFAULT 0.0' }
       ];
       for (const col of columnsToAddProfiles) {
         try {

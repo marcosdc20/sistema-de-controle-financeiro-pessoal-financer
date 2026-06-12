@@ -320,6 +320,7 @@ interface FinanceContextType {
     security_answer?: string | null;
     recovery_email?: string | null;
     pin_code?: string | null;
+    vuka_coins?: number;
   } | null;
   updateProfile: (profile: {
     full_name?: string;
@@ -329,7 +330,10 @@ interface FinanceContextType {
     security_answer?: string;
     recovery_email?: string;
     pin_code?: string;
+    vuka_coins?: number;
   }) => Promise<void>;
+  addVukaCoins: (amount: number, reason: string) => Promise<void>;
+  spendVukaCoins: (amount: number, reason: string) => Promise<boolean>;
   addTransaction: (transaction: Omit<Database['public']['Tables']['transactions']['Insert'], 'user_id'> & { payment_method?: string }) => Promise<void>;
   updateTransaction: (id: string, transaction: Database['public']['Tables']['transactions']['Update']) => Promise<void>;
   deleteTransaction: (id: string) => Promise<void>;
@@ -1001,6 +1005,69 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
 
     fetchData();
   }, [user, refreshData]);
+
+  // Firebase Listener for Remote VukaCoin Rewards
+  useEffect(() => {
+    if (!user) return;
+    
+    let unsubscribe = () => {};
+    
+    const listenForRewards = async () => {
+      try {
+        const { collection, query, where, onSnapshot, doc, updateDoc } = await import('firebase/firestore');
+        const { db: firestoreDb } = await import('../lib/firebase');
+        
+        const q = query(
+          collection(firestoreDb, 'vukacoin_rewards'), 
+          where('userId', '==', user.id),
+          where('claimed', '==', false)
+        );
+        
+        unsubscribe = onSnapshot(q, (snapshot) => {
+          snapshot.docChanges().forEach(async (change) => {
+            if (change.type === 'added') {
+              const data = change.doc.data();
+              const amount = Number(data.amount);
+              
+              if (amount > 0) {
+                // 1. Mark as claimed in Firebase immediately to prevent race conditions
+                try {
+                  await updateDoc(doc(firestoreDb, 'vukacoin_rewards', change.doc.id), { claimed: true });
+                  
+                  // 2. Add to Local SQLite DB
+                  setProfile(prev => {
+                    const currentCoins = prev.vuka_coins || 0;
+                    const newCoins = currentCoins + amount;
+                    // Persist to local DB
+                    getDatabase().then(localDb => {
+                      updateRow(localDb, 'profiles', user.id, { vuka_coins: newCoins }).catch(e => console.error('Erro ao atualizar SQLite com VukaCoins', e));
+                    });
+                    return { ...prev, vuka_coins: newCoins };
+                  });
+
+                  // 3. Notify the user
+                  addNotification({
+                    type: 'opportunity',
+                    title: 'Bónus Recebido!',
+                    message: `O Administrador enviou-te ${amount} VukaCoins! (${data.reason || 'Recompensa'})`,
+                    action: 'Ver Loja',
+                    targetTab: 'store'
+                  });
+                } catch (e) {
+                  console.error('Erro ao processar VukaCoin Reward:', e);
+                }
+              }
+            }
+          });
+        });
+      } catch (err) {
+        console.warn('Firebase VukaCoins listener failed to start (might be offline):', err);
+      }
+    };
+    
+    listenForRewards();
+    return () => unsubscribe();
+  }, [user]);
 
   const addTransaction = async (transaction: Omit<Database['public']['Tables']['transactions']['Insert'], 'user_id'> & { payment_method?: string }) => {
     if (!user) return;
@@ -1937,6 +2004,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
     security_answer?: string;
     recovery_email?: string;
     pin_code?: string;
+    vuka_coins?: number;
   }) => {
     if (!user) return;
     try {
@@ -1945,6 +2013,46 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
       await refreshData();
     } catch (error) {
       console.error('Error updating profile:', error);
+    }
+  };
+
+  const addVukaCoins = async (amount: number, reason: string) => {
+    if (!user || !profile) return;
+    try {
+      const currentCoins = profile.vuka_coins || 0;
+      await updateProfile({ vuka_coins: currentCoins + amount });
+      addNotification({
+        title: 'VukaCoins Recebidos! 🪙',
+        desc: `Ganhaste ${amount} VukaCoins por: ${reason}`,
+        type: 'success'
+      });
+    } catch (error) {
+      console.error('Error adding VukaCoins:', error);
+    }
+  };
+
+  const spendVukaCoins = async (amount: number, reason: string): Promise<boolean> => {
+    if (!user || !profile) return false;
+    try {
+      const currentCoins = profile.vuka_coins || 0;
+      if (currentCoins < amount) {
+        addNotification({
+          title: 'Saldo Insuficiente',
+          desc: `Não tens VukaCoins suficientes para ${reason}.`,
+          type: 'error'
+        });
+        return false;
+      }
+      await updateProfile({ vuka_coins: currentCoins - amount });
+      addNotification({
+        title: 'VukaCoins Gastos',
+        desc: `Usaste ${amount} VukaCoins em: ${reason}`,
+        type: 'info'
+      });
+      return true;
+    } catch (error) {
+      console.error('Error spending VukaCoins:', error);
+      return false;
     }
   };
 
@@ -2271,6 +2379,8 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
         refreshData,
         profile,
         updateProfile,
+        addVukaCoins,
+        spendVukaCoins,
         preferences,
         updatePreferences,
         isTransactionModalOpen,

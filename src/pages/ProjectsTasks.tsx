@@ -745,27 +745,51 @@ export default function ProjectsTasks() {
       {/* Header and Menu Selection */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-black text-gray-900 tracking-tight flex items-center gap-3">
-            <FolderKanban className="w-8 h-8 text-indigo-600" />
-            Tarefas & Projetos
-          </h1>
+          <h1 className="text-3xl font-semibold text-gray-900 tracking-tight">Tarefas & Projetos</h1>
           <p className="text-gray-500 mt-1">Gerencie iniciativas executivas e execute o dia-a-dia de forma interligada.</p>
         </div>
 
-        <div className="flex bg-white/80 backdrop-blur border border-gray-150 p-1.5 rounded-2xl shadow-sm self-start">
-          {(['projects', 'kanban', 'finance'] as TabType[]).map((tab) => (
+        <div className="flex items-center gap-3">
+          {activeTab === 'projects' && (
             <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={cn(
-                "px-5 py-2 rounded-xl text-xs font-bold transition-all capitalize",
-                activeTab === tab ? "bg-gray-900 text-white shadow-md" : "text-gray-500 hover:text-gray-900"
-              )}
+              onClick={() => { setEditingProject(null); clearProjectForm(); setIsProjectModalOpen(true); }}
+              className="px-4 py-2.5 bg-indigo-600 text-white rounded-xl font-medium flex items-center hover:bg-indigo-700 transition-colors shadow-sm cursor-pointer"
             >
-              {tab === 'projects' ? 'Iniciativas (Projetos)' : tab === 'kanban' ? 'Quadro de Tarefas' : 'Vínculo Financeiro'}
+              <Plus className="w-4 h-4 mr-2" /> Nova Iniciativa
             </button>
-          ))}
+          )}
+          {activeTab === 'kanban' && (
+            <button
+              onClick={() => {
+                setEditingTask(null);
+                clearTaskForm();
+                setTaskProjectId(selectedProjectId);
+                setIsTaskModalOpen(true);
+              }}
+              className="px-4 py-2.5 bg-indigo-600 text-white rounded-xl font-medium flex items-center hover:bg-indigo-700 transition-colors shadow-sm cursor-pointer"
+            >
+              <Plus className="w-4 h-4 mr-2" /> Nova Tarefa
+            </button>
+          )}
         </div>
+      </div>
+
+      {/* Tab Selector */}
+      <div className="flex border-b border-gray-200">
+        {(['projects', 'kanban', 'finance'] as TabType[]).map((tab) => (
+          <button
+            key={tab}
+            onClick={() => setActiveTab(tab)}
+            className={cn(
+              "py-3 px-6 text-sm font-semibold border-b-2 transition-all cursor-pointer",
+              activeTab === tab
+                ? "border-indigo-600 text-indigo-600"
+                : "border-transparent text-gray-500 hover:text-gray-700"
+            )}
+          >
+            {tab === 'projects' ? 'Iniciativas (Projetos)' : tab === 'kanban' ? 'Quadro de Tarefas' : 'Vínculo Financeiro'}
+          </button>
+        ))}
       </div>
 
       {/* -------------------- TAB 1: PROJECTS (EXECUTIVE) -------------------- */}
@@ -776,12 +800,6 @@ export default function ProjectsTasks() {
               <Briefcase className="w-5 h-5 text-gray-600" />
               Grandes Iniciativas ({projects.length})
             </h3>
-            <button
-              onClick={() => { setEditingProject(null); clearProjectForm(); setIsProjectModalOpen(true); }}
-              className="px-4 py-2.5 bg-indigo-600 text-white rounded-xl text-xs font-bold hover:bg-indigo-700 transition-all flex items-center gap-2"
-            >
-              <Plus className="w-4 h-4" /> Nova Iniciativa
-            </button>
           </div>
 
           {projects.length === 0 ? (
@@ -799,43 +817,31 @@ export default function ProjectsTasks() {
                 const percentage = projTasks.length > 0 ? Math.round((completedCount / projTasks.length) * 100) : 0;
 
                 return (
-                  <div key={proj.id} className="bg-white rounded-3xl border border-gray-150 shadow-[0_4px_20px_rgba(0,0,0,0.015)] p-6 flex flex-col justify-between group hover:border-indigo-100 transition-all duration-300 relative overflow-hidden">
-                    {/* Alerta de Atraso visual */}
+                  <div key={proj.id} className="bg-white rounded-3xl border border-gray-100/50 shadow-[0_2px_20px_rgba(0,0,0,0.02)] p-6 relative overflow-hidden group hover:shadow-[0_8px_30px_rgba(0,0,0,0.04)] transition-all duration-300 flex flex-col justify-between">
+                    {/* Overdue Warning Badge */}
                     {isOverdue && (
                       <div className="absolute top-0 right-0 bg-red-500 text-white px-3 py-1 text-[10px] font-bold rounded-bl-xl flex items-center gap-1">
                         <Clock className="w-3 h-3" /> Atrasado
                       </div>
                     )}
 
-                    <div>
-                      {/* Top Header Card */}
-                      <div className="flex items-start justify-between gap-4 mb-4">
-                        <div>
-                          <span className={cn(
-                            "px-2 py-0.5 rounded-lg text-[9px] font-bold uppercase tracking-wider",
-                            proj.status === 'Ativo' ? "bg-emerald-50 text-emerald-700 border border-emerald-100" :
-                            proj.status === 'Suspenso' ? "bg-amber-50 text-amber-700 border border-amber-100" :
-                            proj.status === 'Concluído' ? "bg-blue-50 text-blue-700 border border-blue-100" :
-                            "bg-gray-100 text-gray-600"
-                          )}>
-                            {proj.status}
-                          </span>
-                          <h4 className="text-base font-bold text-gray-900 mt-2 group-hover:text-indigo-600 transition-colors">
-                            {proj.name}
-                          </h4>
+                    <div className="space-y-4">
+                      {/* Top Row: Icon Container and Actions */}
+                      <div className="flex items-start justify-between">
+                        <div className="w-12 h-12 rounded-2xl bg-indigo-50 flex items-center justify-center text-indigo-600 shadow-sm">
+                          <Briefcase className="w-6 h-6" />
                         </div>
-
                         <div className="flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
                           <button
                             onClick={() => handleEditProject(proj)}
-                            className="p-1 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+                            className="p-1 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors cursor-pointer"
                             title="Editar"
                           >
                             <Edit3 className="w-4 h-4" />
                           </button>
                           <button
                             onClick={() => handleDeleteProject(proj.id)}
-                            className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                            className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
                             title="Excluir"
                           >
                             <Trash2 className="w-4 h-4" />
@@ -843,18 +849,33 @@ export default function ProjectsTasks() {
                         </div>
                       </div>
 
-                      <p className="text-xs text-gray-500 line-clamp-2 leading-relaxed mb-5">
-                        {proj.description || 'Nenhuma descrição fornecida.'}
-                      </p>
-
-                      {/* Progresso visual */}
-                      <div className="space-y-1.5 mb-5">
-                        <div className="flex justify-between text-[11px] font-semibold text-gray-500">
-                          <span>Progresso de Metas</span>
-                          <span className="font-mono text-gray-700">{percentage}%</span>
+                      {/* Title & Status */}
+                      <div>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <h3 className="text-lg font-bold text-gray-950 group-hover:text-indigo-600 transition-colors">{proj.name}</h3>
+                          <span className={cn(
+                            "px-2 py-0.5 rounded-lg text-[9px] font-bold uppercase tracking-wider",
+                            proj.status === 'Ativo' ? "bg-emerald-50 text-emerald-700 border border-emerald-100" :
+                            proj.status === 'Suspenso' ? "bg-amber-50 text-amber-700 border border-amber-100" :
+                            proj.status === 'Concluído' ? "bg-blue-50 text-blue-700 border border-blue-100" :
+                            "bg-gray-100 text-gray-600 border border-gray-200"
+                          )}>
+                            {proj.status}
+                          </span>
                         </div>
-                        <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
-                          <div 
+                        <p className="text-xs text-gray-500 mt-1 line-clamp-2 leading-relaxed">
+                          {proj.description || 'Nenhuma descrição fornecida.'}
+                        </p>
+                      </div>
+
+                      {/* Progress bar and tasks count */}
+                      <div className="space-y-2">
+                        <div className="flex justify-between text-xs font-semibold">
+                          <span className="text-gray-400">Progresso de Metas</span>
+                          <span className="text-gray-900 font-mono">{percentage}%</span>
+                        </div>
+                        <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                          <div
                             className={cn(
                               "h-full rounded-full transition-all duration-500",
                               percentage === 100 ? "bg-emerald-500" : "bg-indigo-600"
@@ -862,28 +883,27 @@ export default function ProjectsTasks() {
                             style={{ width: `${percentage}%` }}
                           />
                         </div>
-                        <div className="text-[10px] text-gray-400 flex items-center gap-1.5">
-                          <CheckSquare className="w-3.5 h-3.5 text-gray-400" />
+                        <p className="text-[10px] text-gray-400 flex items-center gap-1.5">
+                          <CheckSquare className="w-3.5 h-3.5 text-indigo-500" />
                           <span>{completedCount} de {projTasks.length} tarefas concluídas</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Footer Info details */}
-                    <div className="pt-4 border-t border-gray-100 space-y-3">
-                      <div className="flex justify-between text-[11px] font-semibold text-gray-500">
-                        <span className="flex items-center gap-1.5"><Calendar className="w-3.5 h-3.5 text-gray-400" /> Prazo Final</span>
-                        <span className={cn("font-mono", isOverdue ? "text-red-600 font-bold" : "text-gray-700")}>
-                          {proj.dueDate ? formatDate(proj.dueDate) : 'Sem prazo'}
-                        </span>
+                        </p>
                       </div>
 
-                      {proj.budgetLimit && (
-                        <div className="flex justify-between text-[11px] font-semibold text-gray-500">
-                          <span className="flex items-center gap-1.5"><DollarSign className="w-3.5 h-3.5 text-gray-400" /> Orçamento Limite</span>
-                          <span className="font-mono text-gray-800">{formatCurrency(proj.budgetLimit)}</span>
+                      {/* Divider and financial indicators */}
+                      <div className="pt-4 border-t border-gray-100/60 grid grid-cols-2 gap-4">
+                        <div>
+                          <span className="block text-[9px] uppercase tracking-wider text-gray-400 font-bold mb-1">Prazo Final</span>
+                          <span className={cn("text-xs font-semibold", isOverdue ? "text-red-600 font-bold" : "text-gray-750")}>
+                            {proj.dueDate ? formatDate(proj.dueDate) : 'Sem prazo'}
+                          </span>
                         </div>
-                      )}
+                        <div>
+                          <span className="block text-[9px] uppercase tracking-wider text-gray-400 font-bold mb-1">Orçamento Limite</span>
+                          <span className="text-xs font-bold text-gray-900 font-mono">
+                            {proj.budgetLimit ? formatCurrency(proj.budgetLimit) : 'Sem teto'}
+                          </span>
+                        </div>
+                      </div>
 
                       {proj.notes && (
                         <div className="mt-2 p-3 bg-gray-50/50 rounded-xl border border-gray-100/50 text-[10px] text-gray-500 leading-normal flex items-start gap-2">
@@ -897,7 +917,7 @@ export default function ProjectsTasks() {
                           setSelectedProjectId(proj.id);
                           setActiveTab('kanban');
                         }}
-                        className="w-full mt-2 py-2 bg-gray-50 hover:bg-indigo-50 hover:text-indigo-600 rounded-xl text-[11px] font-bold text-gray-600 transition-colors flex items-center justify-center gap-1"
+                        className="w-full mt-2 py-2 bg-gray-50 hover:bg-indigo-50 hover:text-indigo-600 rounded-xl text-[11px] font-bold text-gray-650 transition-colors flex items-center justify-center gap-1 cursor-pointer"
                       >
                         Abrir Quadro Kanban <ChevronRight className="w-3.5 h-3.5" />
                       </button>
@@ -918,8 +938,8 @@ export default function ProjectsTasks() {
             "lg:col-span-12 space-y-6 transition-all duration-300",
             activeDetailTaskId && "lg:col-span-8"
           )}>
-            {/* Filter and task creation */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white/70 p-4 rounded-3xl border border-gray-150">
+            {/* Filter bar */}
+            <div className="flex flex-col sm:flex-row sm:items-center gap-4 bg-white/70 p-4 rounded-3xl border border-gray-100/50 shadow-sm">
               <div className="flex items-center gap-3">
                 <span className="text-xs font-bold text-gray-500 uppercase tracking-widest">Iniciativa:</span>
                 <select
@@ -933,18 +953,6 @@ export default function ProjectsTasks() {
                   ))}
                 </select>
               </div>
-
-              <button
-                onClick={() => {
-                  setEditingTask(null);
-                  clearTaskForm();
-                  setTaskProjectId(selectedProjectId);
-                  setIsTaskModalOpen(true);
-                }}
-                className="px-4 py-2.5 bg-indigo-600 text-white rounded-xl text-xs font-bold hover:bg-indigo-700 transition-all flex items-center gap-2 self-start sm:self-auto"
-              >
-                <Plus className="w-4 h-4" /> Nova Tarefa
-              </button>
             </div>
 
             {/* Kanban Columns Grid */}
@@ -956,7 +964,7 @@ export default function ProjectsTasks() {
                 const colColor = colStatus === 'todo' ? 'bg-indigo-600' : colStatus === 'doing' ? 'bg-amber-500' : 'bg-emerald-500';
 
                 return (
-                  <div key={colStatus} className="bg-gray-100/70 border border-gray-150 rounded-3xl p-5 min-h-[500px] flex flex-col">
+                  <div key={colStatus} className="bg-gray-50/50 border border-gray-100 rounded-3xl p-5 min-h-[500px] flex flex-col">
                     {/* Column Header */}
                     <div className="flex items-center justify-between mb-4">
                       <div className="flex items-center gap-2">
@@ -984,8 +992,8 @@ export default function ProjectsTasks() {
                               key={task.id}
                               onClick={() => setActiveDetailTaskId(task.id)}
                               className={cn(
-                                "bg-white p-5 rounded-2xl border border-gray-150 hover:border-indigo-400 hover:shadow-lg hover:shadow-indigo-500/5 transition-all duration-200 cursor-pointer relative group",
-                                activeDetailTaskId === task.id && "border-indigo-600 ring-2 ring-indigo-100"
+                                "bg-white p-5 rounded-2xl border border-gray-100/55 hover:border-indigo-300 hover:shadow-md hover:shadow-indigo-500/5 transition-all duration-200 cursor-pointer relative group",
+                                activeDetailTaskId === task.id && "border-indigo-500 ring-2 ring-indigo-100/40"
                               )}
                             >
                               {/* Top priority banner */}
@@ -1030,7 +1038,7 @@ export default function ProjectsTasks() {
                               {(totalSub > 0 || task.tags.length > 0 || task.estimatedRevenue) && (
                                 <div className="flex flex-wrap items-center gap-3 mt-4 pt-3 border-t border-gray-100 text-[10px] text-gray-400 font-semibold">
                                   {totalSub > 0 && (
-                                    <span className="flex items-center gap-1 bg-gray-50 px-2 py-0.5 rounded-lg border border-gray-150">
+                                    <span className="flex items-center gap-1 bg-gray-50 px-2 py-0.5 rounded-lg border border-gray-100">
                                       <CheckSquare className="w-3 h-3 text-indigo-500" />
                                       {doneSub}/{totalSub} Subtarefas
                                     </span>
@@ -1089,7 +1097,7 @@ export default function ProjectsTasks() {
 
           {/* Right Detail Sidebar Overlay Panel (Cols 4) */}
           {activeDetailTask && (
-            <div className="lg:col-span-4 bg-white border border-gray-150 rounded-3xl p-6 shadow-xl animate-in slide-in-from-right-4 duration-300 relative sticky top-20">
+            <div className="lg:col-span-4 bg-white border border-gray-100/80 rounded-3xl p-6 shadow-xl animate-in slide-in-from-right-4 duration-300 relative sticky top-20">
               <button
                 onClick={() => setActiveDetailTaskId(null)}
                 className="absolute top-5 right-5 p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
@@ -1251,7 +1259,7 @@ export default function ProjectsTasks() {
       {activeTab === 'finance' && (
         <div className="space-y-8">
           {/* Top selection project summary */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white/70 p-4 rounded-3xl border border-gray-150">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white/70 p-4 rounded-3xl border border-gray-100/50 shadow-sm">
             <div className="flex items-center gap-3">
               <span className="text-xs font-bold text-gray-500 uppercase tracking-widest">Iniciativa para Análise:</span>
               <select
@@ -1275,7 +1283,7 @@ export default function ProjectsTasks() {
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
               {/* Financial Dashboard (Grid 1-7) */}
               <div className="lg:col-span-7 space-y-6">
-                <div className="bg-white rounded-3xl border border-gray-150 p-8 shadow-sm space-y-6">
+                <div className="bg-white rounded-3xl border border-gray-100/50 p-8 shadow-sm space-y-6">
                   <h4 className="text-base font-bold text-gray-900 flex items-center gap-2">
                     <DollarSign className="w-5 h-5 text-indigo-600" />
                     Orçamento do Projeto vs Custo Operacional Real
@@ -1361,7 +1369,7 @@ export default function ProjectsTasks() {
 
               {/* Subscriptions allocation panel (Grid 8-12) */}
               <div className="lg:col-span-5 space-y-6">
-                <div className="bg-white rounded-3xl border border-gray-150 p-6 shadow-sm">
+                <div className="bg-white rounded-3xl border border-gray-100/50 p-6 shadow-sm">
                   <h4 className="text-base font-bold text-gray-900 flex items-center gap-2 mb-4">
                     <Cpu className="w-5 h-5 text-indigo-600" />
                     Associações de Softwares / Assinaturas
@@ -1386,7 +1394,7 @@ export default function ProjectsTasks() {
                               "flex items-center justify-between p-4 rounded-2xl border transition-all cursor-pointer select-none",
                               isAllocated 
                                 ? "bg-indigo-50/50 border-indigo-200 hover:border-indigo-300" 
-                                : "bg-gray-50 border-gray-150 hover:bg-gray-100/50"
+                                : "bg-gray-50 border-gray-100 hover:bg-gray-100/50"
                             )}
                           >
                             <div>

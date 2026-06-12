@@ -1,6 +1,8 @@
 import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
 import {
-  getFirestore,
+  initializeFirestore,
+  persistentLocalCache,
+  persistentMultipleTabManager,
   Firestore,
   connectFirestoreEmulator,
 } from 'firebase/firestore';
@@ -24,8 +26,10 @@ if (getApps().length === 0) {
   app = getApp();
 }
 
-// ─── Instância do Firestore ──────────────────────────────────────────────────
-const db: Firestore = getFirestore(app);
+// ─── Instância do Firestore com Suporte Offline ─────────────────────────────────
+const db: Firestore = initializeFirestore(app, {
+  localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() })
+});
 
 // ─── Emulador local (apenas em desenvolvimento) ──────────────────────────────
 // Para usar o emulador local do Firestore durante desenvolvimento:

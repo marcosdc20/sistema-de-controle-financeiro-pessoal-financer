@@ -1,4 +1,5 @@
 import React, { useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useFinance } from '@/context/FinanceContext';
 import { CURRENCIES, CATEGORIES, cn } from '@/lib/utils';
 import {
@@ -39,6 +40,7 @@ import AIAdvisor from '@/components/AIAdvisor';
 import PageTransition from '@/components/PageTransition';
 
 export default function Dashboard() {
+  const navigate = useNavigate();
   const {
     transactions,
     accounts,
@@ -52,7 +54,8 @@ export default function Dashboard() {
     formatCurrency,
     formatDate,
     preferences,
-    loading
+    loading,
+    profile
   } = useFinance();
 
   const [isFinHealthOpen, setIsFinHealthOpen] = React.useState(false);
@@ -249,6 +252,70 @@ export default function Dashboard() {
       .sort((a, b) => b.pct - a.pct);
   }, [budgets, transactions, getRate]);
 
+  // 10. Net Worth Trend (Contas + Investimentos - Dívidas ativas nos últimos 6 meses)
+  const netWorthData = useMemo(() => {
+    const currentNetWorth = totalBalanceInBaseCurrency +
+      investments.reduce((sum, i) => sum + i.currentValue * getRate(i.currency), 0) -
+      loans.filter(l => l.status === 'active' && l.type === 'received').reduce((sum, l) => sum + l.currentBalance * getRate(l.currency), 0);
+
+    // Reconstruct historical net worth backward
+    const history = [...cashFlowData].reverse(); // from current month back to 5 months ago
+    let runningNetWorth = currentNetWorth;
+    
+    const result = history.map((item) => {
+      const currentVal = runningNetWorth;
+      const netChange = item.income - item.expense;
+      runningNetWorth -= netChange;
+      return {
+        name: item.name,
+        patrimonio: currentVal
+      };
+    });
+    
+    return result.reverse(); // back to chronological order
+  }, [cashFlowData, totalBalanceInBaseCurrency, investments, loans, getRate]);
+
+  // 11. Asset Allocation (Banco vs Investimentos vs Poupanças/Metas)
+  const assetAllocationData = useMemo(() => {
+    let bankVal = 0;
+    let physicalVal = 0;
+    let investmentVal = 0;
+    let goalsVal = 0;
+
+    accounts.forEach(acc => {
+      const valInBase = acc.balance * getRate(acc.currency);
+      if (acc.category === 'bank' || acc.category === 'digital') {
+        bankVal += valInBase;
+      } else if (acc.category === 'physical') {
+        physicalVal += valInBase;
+      } else if (acc.category === 'investment') {
+        investmentVal += valInBase;
+      }
+    });
+
+    investments.forEach(inv => {
+      investmentVal += inv.currentValue * getRate(inv.currency);
+    });
+
+    goals.forEach(g => {
+      goalsVal += g.currentAmount * getRate(g.currency);
+    });
+
+    const data = [
+      { name: 'Contas Bancárias', value: bankVal },
+      { name: 'Dinheiro Vivo', value: physicalVal },
+      { name: 'Investimentos', value: investmentVal },
+      { name: 'Metas / Poupança', value: goalsVal }
+    ].filter(item => item.value > 0);
+
+    return data.length > 0 ? data : [
+      { name: 'Contas Bancárias', value: 10000 },
+      { name: 'Dinheiro Vivo', value: 2000 },
+      { name: 'Investimentos', value: 5000 },
+      { name: 'Metas / Poupança', value: 3000 }
+    ];
+  }, [accounts, investments, goals, getRate]);
+
   // --- Render constants (safe after hooks) ---
   const COLORS = ['#4F46E5', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899'];
   const cardClass = "bg-white p-6 rounded-3xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow duration-300";
@@ -286,6 +353,8 @@ export default function Dashboard() {
               </button>
             </div>
           </div>
+
+
 
           {/* Summary Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -584,6 +653,84 @@ export default function Dashboard() {
             </div>
           </div>
 
+          {/* New Row: Net Worth Trend + Asset Allocation */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Net Worth Trend Chart */}
+            <div className={cn(cardClass, "lg:col-span-2")}>
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <h3 className="text-lg font-bold text-gray-900">Evolução do Patrimônio Líquido</h3>
+                  <p className="text-xs text-gray-400">Total consolidado nos últimos 6 meses</p>
+                </div>
+                <span className="text-xs font-semibold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-lg">
+                  Patrimônio Líquido
+                </span>
+              </div>
+              <div className="h-[300px] w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={netWorthData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                    <defs>
+                      <linearGradient id="colorNetWorth" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#10B981" stopOpacity={0.2} />
+                        <stop offset="95%" stopColor="#3B82F6" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F3F4F6" />
+                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#9CA3AF', fontSize: 12 }} dy={10} />
+                    <YAxis axisLine={false} tickLine={false} tick={{ fill: '#9CA3AF', fontSize: 12 }} tickFormatter={(value) => `${(value / 1000).toFixed(0)}k`} />
+                    <Tooltip
+                      contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 25px -5px rgb(0 0 0 / 0.1)', padding: '12px' }}
+                      itemStyle={{ fontSize: '14px', fontWeight: 500 }}
+                      formatter={(value: number) => formatCurrency(value)}
+                    />
+                    <Area type="monotone" dataKey="patrimonio" stroke="#10B981" strokeWidth={3} fillOpacity={1} fill="url(#colorNetWorth)" name="Patrimônio" />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
+            {/* Asset Allocation Chart */}
+            <div className={cardClass}>
+              <div>
+                <h3 className="text-lg font-bold text-gray-900 mb-1">Distribuição de Ativos</h3>
+                <p className="text-xs text-gray-400 mb-6">Alocação por categoria de ativo</p>
+              </div>
+              <div className="h-[250px] w-full relative">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={assetAllocationData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={60}
+                      outerRadius={80}
+                      paddingAngle={5}
+                      dataKey="value"
+                    >
+                      {assetAllocationData.map((entry, index) => (
+                        <Cell key={`cell-asset-${index}`} fill={COLORS[index % COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip
+                      formatter={(value: number) => formatCurrency(value)}
+                      contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
+                    />
+                    <Legend verticalAlign="bottom" height={36} iconType="circle" />
+                  </PieChart>
+                </ResponsiveContainer>
+                {/* Center Text */}
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none pb-8">
+                  <div className="text-center">
+                    <p className="text-xs text-gray-500 font-medium">Patrimônio</p>
+                    <p className="text-base font-bold text-gray-950">
+                      {formatCurrency(assetAllocationData.reduce((sum, item) => sum + item.value, 0))}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
           {/* Secondary Section: Goals & Investments */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             {/* Goals Progress */}
@@ -600,7 +747,10 @@ export default function Dashboard() {
                   <div key={index}>
                     <div className="flex justify-between text-sm mb-2">
                       <span className="font-medium text-gray-700">{goal.name}</span>
-                      <span className="font-semibold text-gray-900">{goal.progress.toFixed(0)}%</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold text-amber-500 bg-amber-50 px-1.5 py-0.5 rounded-md flex items-center gap-1" title="Recompensa VukaCoin ao concluir">+50 🪙</span>
+                        <span className="font-semibold text-gray-900">{goal.progress.toFixed(0)}%</span>
+                      </div>
                     </div>
                     <div className="h-2.5 bg-gray-100 rounded-full overflow-hidden">
                       <div

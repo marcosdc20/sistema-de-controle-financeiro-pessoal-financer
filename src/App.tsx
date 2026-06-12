@@ -21,6 +21,11 @@ import Settings from '@/pages/Settings';
 import ProjectsTasks from '@/pages/ProjectsTasks';
 import Community from '@/pages/Community';
 import Login from '@/pages/Login';
+import Contacts from '@/pages/Contacts';
+import Candonga from '@/pages/Candonga';
+import MesadaFamiliar from '@/pages/MesadaFamiliar';
+import Marketplace from '@/pages/Marketplace';
+import VukaStore from '@/pages/VukaStore';
 import { useAuth } from '@/context/AuthContext';
 import AppSecurityGuard from '@/components/AppSecurityGuard';
 
@@ -66,6 +71,11 @@ export default function App() {
       <Route path="/reports" element={isAuthenticated ? <ProtectedLayout><Reports /></ProtectedLayout> : <Navigate to="/login" replace />} />
       <Route path="/settings" element={isAuthenticated ? <ProtectedLayout><Settings /></ProtectedLayout> : <Navigate to="/login" replace />} />
       <Route path="/community" element={isAuthenticated ? <ProtectedLayout><Community /></ProtectedLayout> : <Navigate to="/login" replace />} />
+      <Route path="/contacts" element={isAuthenticated ? <ProtectedLayout><Contacts /></ProtectedLayout> : <Navigate to="/login" replace />} />
+      <Route path="/candonga" element={isAuthenticated ? <ProtectedLayout><Candonga /></ProtectedLayout> : <Navigate to="/login" replace />} />
+      <Route path="/mesada-familiar" element={isAuthenticated ? <ProtectedLayout><MesadaFamiliar /></ProtectedLayout> : <Navigate to="/login" replace />} />
+      <Route path="/marketplace" element={isAuthenticated ? <ProtectedLayout><Marketplace /></ProtectedLayout> : <Navigate to="/login" replace />} />
+      <Route path="/vuka-store" element={isAuthenticated ? <ProtectedLayout><VukaStore /></ProtectedLayout> : <Navigate to="/login" replace />} />
 
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

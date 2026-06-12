@@ -1,17 +1,397 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import PageTransition from '@/components/PageTransition';
+import { 
+  collection, 
+  addDoc, 
+  doc, 
+  onSnapshot, 
+  query, 
+  orderBy, 
+  arrayUnion, 
+  arrayRemove, 
+  increment,
+  getDoc,
+  setDoc,
+  getDocs,
+  updateDoc,
+  limit
+} from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+import { useAuth } from '@/context/AuthContext';
+import { X, Send, Plus, MessageSquare, Heart, Sparkles, CheckCircle2 } from 'lucide-react';
+import { cn } from '@/lib/utils';
+
+interface Post {
+  id: string;
+  title: string;
+  content: string;
+  category: string;
+  authorId: string;
+  authorName: string;
+  authorAvatar: string;
+  createdAt: number;
+  likes: string[];
+  likesCount: number;
+  commentsCount: number;
+}
+
+interface Comment {
+  id: string;
+  content: string;
+  authorId: string;
+  authorName: string;
+  authorAvatar: string;
+  createdAt: number;
+}
+
+interface CommunityUser {
+  id: string;
+  name: string;
+  xp: number;
+  badge: string;
+  avatar: string;
+}
+
+interface Challenge {
+  title: string;
+  participants: string[];
+  participantCount: number;
+}
 
 export default function Feed() {
+  const { user } = useAuth();
+  
+  // States
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [loadingPosts, setLoadingPosts] = useState(true);
+  const [topUsers, setTopUsers] = useState<CommunityUser[]>([]);
+  const [activeChallenge, setActiveChallenge] = useState<Challenge | null>(null);
+  
+  // Modais
+  const [selectedPost, setSelectedPost] = useState<Post | null>(null);
+  const [comments, setComments] = useState<Comment[]>([]);
+  const [newCommentText, setNewCommentText] = useState('');
+  
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [newPostTitle, setNewPostTitle] = useState('');
+  const [newPostCategory, setNewPostCategory] = useState('Investimentos');
+  const [newPostContent, setNewPostContent] = useState('');
+  const [activeFilter, setActiveFilter] = useState<'all' | 'Investimentos' | 'Sucesso' | 'Dicas' | 'Kixiquila'>('all');
+  const [sortBy, setSortBy] = useState<'recent' | 'popular'>('recent');
+
+  // Identificação do utilizador atual
+  const activeUserId = user?.id || 'local-user';
+  const activeUserName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Utilizador VukaPay';
+  const activeUserAvatar = user?.user_metadata?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(activeUserName)}&background=random`;
+
+  // 1. Escutar posts em tempo real + Seeding se vazio
+  useEffect(() => {
+    const postsCol = collection(db, 'community_posts');
+    const q = query(postsCol, orderBy('createdAt', 'desc'));
+
+    const unsubscribe = onSnapshot(q, async (snapshot) => {
+      if (snapshot.empty) {
+        // Se a base de dados estiver vazia, semeamos posts mock iniciais
+        await seedInitialPosts();
+      } else {
+        const fetchedPosts: Post[] = snapshot.docs.map(d => ({
+          id: d.id,
+          ...d.data()
+        } as Post));
+        setPosts(fetchedPosts);
+        setLoadingPosts(false);
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  // 2. Registar utilizador ativo e buscar top utilizadores
+  useEffect(() => {
+    if (!user) return;
+    const userRef = doc(db, 'community_users', activeUserId);
+    getDoc(userRef).then(snap => {
+      if (!snap.exists()) {
+        setDoc(userRef, {
+          name: activeUserName,
+          xp: 100,
+          badge: '🎯 Guardião',
+          avatar: activeUserAvatar
+        });
+      }
+    });
+  }, [user, activeUserId]);
+
+  // Escutar utilizadores por XP
+  useEffect(() => {
+    const usersCol = collection(db, 'community_users');
+    const q = query(usersCol, orderBy('xp', 'desc'), limit(5));
+    
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const users: CommunityUser[] = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      } as CommunityUser));
+      setTopUsers(users);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  // 3. Escutar desafio ativo ("superfluos") + Seeding
+  useEffect(() => {
+    const challengeRef = doc(db, 'community_challenges', 'superfluos');
+    const unsubscribe = onSnapshot(challengeRef, (snap) => {
+      if (snap.exists()) {
+        setActiveChallenge(snap.data() as Challenge);
+      } else {
+        setDoc(challengeRef, {
+          title: "30 Dias Sem Gastos Supérfluos",
+          participants: ['seed-user-1', 'seed-user-2'],
+          participantCount: 1240
+        });
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  // 4. Escutar comentários do post selecionado
+  useEffect(() => {
+    if (!selectedPost) {
+      setComments([]);
+      return;
+    }
+
+    const commentsCol = collection(db, `community_posts/${selectedPost.id}/comments`);
+    const q = query(commentsCol, orderBy('createdAt', 'asc'));
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const fetchedComments: Comment[] = snapshot.docs.map(d => ({
+        id: d.id,
+        ...d.data()
+      } as Comment));
+      setComments(fetchedComments);
+    });
+
+    return () => unsubscribe();
+  }, [selectedPost]);
+
+  // Função de Seeding de posts
+  const seedInitialPosts = async () => {
+    try {
+      const seedData = [
+        {
+          title: "Estratégias de Dividendos para 2026: O que esperar?",
+          content: "Com a recente mudança na taxa Selic/BNA, muitos investidores estão migrando para fundos imobiliários e ações focadas em renda passiva. Aqui está minha análise dos setores mais promissores para o próximo semestre na BODIVA...",
+          category: "Investimentos",
+          authorId: "seed-ricardo",
+          authorName: "Ricardo Invest",
+          authorAvatar: "https://ui-avatars.com/api/?name=Ricardo+Invest&background=c7d2fe&color=3730a3",
+          createdAt: Date.now() - 2 * 60 * 60 * 1000,
+          likes: [],
+          likesCount: 124,
+          commentsCount: 2
+        },
+        {
+          title: "Como quitei meu financiamento imobiliário em 5 anos",
+          content: "A estratégia foi simples: amortização constante e uso inteligente de fundos de rendimento. Vou detalhar a planilha que usei para priorizar os pagamentos mensais sem comprometer a qualidade de vida familiar em Luanda.",
+          category: "Sucesso",
+          authorId: "seed-ana",
+          authorName: "Ana Poupança",
+          authorAvatar: "https://ui-avatars.com/api/?name=Ana+Poupança&background=bbf7d0&color=166534",
+          createdAt: Date.now() - 5 * 60 * 60 * 1000,
+          likes: [],
+          likesCount: 382,
+          commentsCount: 1
+        }
+      ];
+
+      for (const post of seedData) {
+        const postRef = await addDoc(collection(db, 'community_posts'), post);
+        if (post.authorId === 'seed-ricardo') {
+          await addDoc(collection(db, `community_posts/${postRef.id}/comments`), {
+            content: "Ótima análise, Ricardo! Acredito que o setor financeiro e de energia serão os mais resilientes.",
+            authorId: "user-carlos",
+            authorName: "Dr. Carlos Invest",
+            authorAvatar: "https://ui-avatars.com/api/?name=Dr.+Carlos&background=random",
+            createdAt: Date.now() - 1.5 * 60 * 60 * 1000
+          });
+          await addDoc(collection(db, `community_posts/${postRef.id}/comments`), {
+            content: "Também estou de olho nos REITs angolanos em desenvolvimento.",
+            authorId: "user-mariana",
+            authorName: "Mariana Finanças",
+            authorAvatar: "https://ui-avatars.com/api/?name=Mariana+Finanças&background=random",
+            createdAt: Date.now() - 1 * 60 * 60 * 1000
+          });
+        } else {
+          await addDoc(collection(db, `community_posts/${postRef.id}/comments`), {
+            content: "Parabéns, Ana! Esse depoimento me inspira muito a focar na amortização também.",
+            authorId: "user-carlos",
+            authorName: "Dr. Carlos Invest",
+            authorAvatar: "https://ui-avatars.com/api/?name=Dr.+Carlos&background=random",
+            createdAt: Date.now() - 4 * 60 * 60 * 1000
+          });
+        }
+      }
+    } catch (e) {
+      console.error('Falha ao semear posts iniciais no Firestore:', e);
+    }
+  };
+
+  // Enviar novo post
+  const handleCreatePost = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newPostTitle.trim() || !newPostContent.trim()) return;
+
+    try {
+      const newPost = {
+        title: newPostTitle.trim(),
+        content: newPostContent.trim(),
+        category: newPostCategory,
+        authorId: activeUserId,
+        authorName: activeUserName,
+        authorAvatar: activeUserAvatar,
+        createdAt: Date.now(),
+        likes: [],
+        likesCount: 0,
+        commentsCount: 0
+      };
+
+      await addDoc(collection(db, 'community_posts'), newPost);
+      
+      // Incrementar 50 XP ao utilizador por participar nas discussões
+      const userRef = doc(db, 'community_users', activeUserId);
+      await updateDoc(userRef, {
+        xp: increment(50)
+      }).catch(() => {});
+
+      // Limpar campos e fechar
+      setNewPostTitle('');
+      setNewPostContent('');
+      setIsCreateModalOpen(false);
+    } catch (error) {
+      console.error('Erro ao adicionar post:', error);
+    }
+  };
+
+  // Toggling Like
+  const handleToggleLike = async (post: Post, e: React.MouseEvent) => {
+    e.stopPropagation(); // Evitar abrir modal de leitura
+    
+    const postRef = doc(db, 'community_posts', post.id);
+    const hasLiked = post.likes?.includes(activeUserId);
+
+    try {
+      if (hasLiked) {
+        await updateDoc(postRef, {
+          likes: arrayRemove(activeUserId),
+          likesCount: increment(-1)
+        });
+      } else {
+        await updateDoc(postRef, {
+          likes: arrayUnion(activeUserId),
+          likesCount: increment(1)
+        });
+      }
+    } catch (error) {
+      console.error('Erro ao curtir post:', error);
+    }
+  };
+
+  // Enviar comentário
+  const handleAddComment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newCommentText.trim() || !selectedPost) return;
+
+    try {
+      const commentsCol = collection(db, `community_posts/${selectedPost.id}/comments`);
+      await addDoc(commentsCol, {
+        content: newCommentText.trim(),
+        authorId: activeUserId,
+        authorName: activeUserName,
+        authorAvatar: activeUserAvatar,
+        createdAt: Date.now()
+      });
+
+      // Incrementar o contador de comentários do Post
+      const postRef = doc(db, 'community_posts', selectedPost.id);
+      await updateDoc(postRef, {
+        commentsCount: increment(1)
+      });
+
+      // Incrementar 10 XP ao utilizador
+      const userRef = doc(db, 'community_users', activeUserId);
+      await updateDoc(userRef, {
+        xp: increment(10)
+      }).catch(() => {});
+
+      setNewCommentText('');
+    } catch (error) {
+      console.error('Erro ao adicionar comentário:', error);
+    }
+  };
+
+  // Participar no Desafio Ativo
+  const handleJoinActiveChallenge = async () => {
+    if (!activeChallenge) return;
+    const challengeRef = doc(db, 'community_challenges', 'superfluos');
+    const isJoined = activeChallenge.participants?.includes(activeUserId);
+
+    try {
+      if (isJoined) {
+        await updateDoc(challengeRef, {
+          participants: arrayRemove(activeUserId),
+          participantCount: increment(-1)
+        });
+      } else {
+        await updateDoc(challengeRef, {
+          participants: arrayUnion(activeUserId),
+          participantCount: increment(1)
+        });
+        
+        // Ganhar 150 XP pela adesão ao desafio
+        const userRef = doc(db, 'community_users', activeUserId);
+        await updateDoc(userRef, {
+          xp: increment(150),
+          badge: '🎯 Guardião Pro'
+        }).catch(() => {});
+      }
+    } catch (e) {
+      console.error('Erro ao participar no desafio:', e);
+    }
+  };
+
+  // Filtros de Categoria e Ordenação
+  const filteredPosts = posts
+    .filter(post => activeFilter === 'all' || post.category === activeFilter)
+    .sort((a, b) => {
+      if (sortBy === 'popular') {
+        return (b.likesCount + b.commentsCount) - (a.likesCount + a.commentsCount);
+      }
+      return b.createdAt - a.createdAt;
+    });
+
   return (
     <PageTransition className="p-4 lg:p-8 w-full max-w-7xl mx-auto">
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        
         {/* Main Feed Section (Col 1-8) */}
         <div className="lg:col-span-8 space-y-8">
           {/* Welcome Hero / Banner */}
-          <section className="relative overflow-hidden rounded-3xl bg-indigo-600 p-8 text-indigo-50 shadow-sm">
-            <div className="relative z-10">
-              <h1 className="font-display text-3xl font-bold mb-3 text-white">Bem-vindo à Comunidade VukaPay</h1>
-              <p className="font-body-md opacity-90 max-w-xl text-indigo-100">Onde o conhecimento financeiro encontra a colaboração. Compartilhe estratégias, aprenda com especialistas e cresça seu patrimônio com segurança.</p>
+          <section className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-indigo-600 to-indigo-700 p-8 text-indigo-50 shadow-sm border border-indigo-500/10">
+            <div className="relative z-10 max-w-xl text-left">
+              <h1 className="font-display text-3xl font-black mb-3 text-white tracking-tight">Bem-vindo à Comunidade VukaPay</h1>
+              <p className="font-body-md opacity-90 text-indigo-100 mb-6 leading-relaxed">
+                Onde o conhecimento financeiro encontra a colaboração. Compartilhe estratégias, aprenda com especialistas e cresça seu patrimônio com segurança.
+              </p>
+              <button 
+                onClick={() => setIsCreateModalOpen(true)}
+                className="px-5 py-3 bg-white text-indigo-600 hover:bg-indigo-50 active:scale-95 transition-all font-black text-sm rounded-xl flex items-center gap-2 shadow-sm cursor-pointer"
+              >
+                <Plus className="w-4 h-4" />
+                Criar Nova Discussão
+              </button>
             </div>
             <div className="absolute right-0 top-0 h-full w-1/3 opacity-20 pointer-events-none">
               <span className="material-symbols-outlined text-[160px] translate-x-12 translate-y-8" style={{ fontVariationSettings: "'FILL' 1" }}>insights</span>
@@ -20,141 +400,207 @@ export default function Feed() {
 
           {/* Discussion Feed */}
           <div className="space-y-6">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="font-display text-2xl font-bold text-gray-900 dark:text-white">Discussões Recentes</h2>
-              <div className="flex gap-2">
-                <button className="px-4 py-1.5 bg-gray-200 dark:bg-slate-800 rounded-full text-xs font-bold text-gray-800 dark:text-gray-200">Populares</button>
-                <button className="px-4 py-1.5 text-gray-500 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-full text-xs font-medium transition-colors">Novas</button>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+              <h2 className="font-display text-2xl font-black text-gray-900 dark:text-white tracking-tight text-left">Discussões Recentes</h2>
+              <div className="flex flex-wrap gap-2">
+                <button 
+                  onClick={() => setSortBy('popular')}
+                  className={cn(
+                    "px-4 py-1.5 rounded-full text-xs font-bold transition-colors cursor-pointer",
+                    sortBy === 'popular'
+                      ? "bg-indigo-600 text-white shadow-sm"
+                      : "bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200"
+                  )}
+                >
+                  Populares
+                </button>
+                <button 
+                  onClick={() => setSortBy('recent')}
+                  className={cn(
+                    "px-4 py-1.5 rounded-full text-xs font-bold transition-colors cursor-pointer",
+                    sortBy === 'recent'
+                      ? "bg-indigo-600 text-white shadow-sm"
+                      : "bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200"
+                  )}
+                >
+                  Novas
+                </button>
               </div>
             </div>
 
-            {/* Card 1 */}
-            <article className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-2xl p-6 hover:border-indigo-500 transition-colors cursor-pointer shadow-sm group">
-              <div className="flex items-start gap-3 mb-4">
-                <img alt="User" className="w-10 h-10 rounded-full object-cover" src="https://ui-avatars.com/api/?name=Ricardo+Invest&background=c7d2fe&color=3730a3" />
-                <div>
-                  <h3 className="font-display text-lg font-semibold text-gray-900 dark:text-white group-hover:text-indigo-600 transition-colors">Estratégias de Dividendos para 2026: O que esperar?</h3>
-                  <div className="flex items-center gap-2 mt-1">
-                    <span className="bg-indigo-50 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-widest">Investimentos</span>
-                    <span className="text-gray-500 dark:text-gray-400 text-xs">Postado por <span className="font-bold">@RicardInvesth</span> • 2h atrás</span>
-                  </div>
-                </div>
-              </div>
-              <p className="text-gray-600 dark:text-gray-400 text-sm line-clamp-2 mb-6 leading-relaxed">
-                Com a recente mudança na taxa Selic/BNA, muitos investidores estão migrando para fundos imobiliários e ações focadas em renda passiva. Aqui está minha análise dos setores mais promissores para o próximo semestre...
-              </p>
-              <div className="pt-4 border-t border-gray-100 dark:border-slate-800 flex items-center justify-between">
-                <div className="flex items-center gap-6">
-                  <div className="flex items-center gap-2 text-gray-500 hover:text-indigo-600 transition-colors">
-                    <span className="material-symbols-outlined text-[20px]">thumb_up</span>
-                    <span className="text-sm font-medium">124</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-gray-500 hover:text-indigo-600 transition-colors">
-                    <span className="material-symbols-outlined text-[20px]">forum</span>
-                    <span className="text-sm font-medium">42 comentários</span>
-                  </div>
-                </div>
-                <button className="text-indigo-600 font-bold text-sm flex items-center gap-1 hover:underline">
-                  Ler mais <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
+            {/* Categorias Pill Filters */}
+            <div className="flex flex-wrap gap-2 mb-2 pb-2 border-b border-gray-150 dark:border-slate-800">
+              {(['all', 'Investimentos', 'Sucesso', 'Dicas', 'Kixiquila'] as const).map((cat) => (
+                <button
+                  key={cat}
+                  onClick={() => setActiveFilter(cat)}
+                  className={cn(
+                    "px-3.5 py-1.5 rounded-xl text-xs font-bold cursor-pointer transition-all",
+                    activeFilter === cat
+                      ? "bg-gray-900 dark:bg-slate-200 text-white dark:text-gray-900"
+                      : "bg-transparent text-gray-500 hover:text-gray-900 dark:hover:text-white"
+                  )}
+                >
+                  {cat === 'all' ? 'Tudo' : cat}
                 </button>
-              </div>
-            </article>
+              ))}
+            </div>
 
-            {/* Card 2 */}
-            <article className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-2xl p-6 hover:border-indigo-500 transition-colors cursor-pointer shadow-sm group">
-              <div className="flex items-start gap-3 mb-4">
-                <img alt="User" className="w-10 h-10 rounded-full object-cover" src="https://ui-avatars.com/api/?name=Ana+Poupança&background=bbf7d0&color=166534" />
-                <div>
-                  <h3 className="font-display text-lg font-semibold text-gray-900 dark:text-white group-hover:text-indigo-600 transition-colors">Como quitei meu financiamento imobiliário em 5 anos</h3>
-                  <div className="flex items-center gap-2 mt-1">
-                    <span className="bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-widest">Sucesso</span>
-                    <span className="text-gray-500 dark:text-gray-400 text-xs">Postado por <span className="font-bold">@AnaPoupança</span> • 5h atrás</span>
-                  </div>
-                </div>
+            {loadingPosts ? (
+              <div className="py-20 text-center text-gray-400">
+                <span className="animate-pulse">Carregando discussões em tempo real...</span>
               </div>
-              <p className="text-gray-600 dark:text-gray-400 text-sm line-clamp-2 mb-6 leading-relaxed">
-                A estratégia foi simples: amortização constante e uso inteligente de fundos de rendimento. Vou detalhar a planilha que usei para priorizar os pagamentos mensais sem comprometer a qualidade de vida.
-              </p>
-              <div className="pt-4 border-t border-gray-100 dark:border-slate-800 flex items-center justify-between">
-                <div className="flex items-center gap-6">
-                  <div className="flex items-center gap-2 text-gray-500 hover:text-indigo-600 transition-colors">
-                    <span className="material-symbols-outlined text-[20px]">thumb_up</span>
-                    <span className="text-sm font-medium">382</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-gray-500 hover:text-indigo-600 transition-colors">
-                    <span className="material-symbols-outlined text-[20px]">forum</span>
-                    <span className="text-sm font-medium">156 comentários</span>
-                  </div>
-                </div>
-                <button className="text-indigo-600 font-bold text-sm flex items-center gap-1 hover:underline">
-                  Ler mais <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
-                </button>
+            ) : filteredPosts.length === 0 ? (
+              <div className="py-20 text-center bg-gray-50 dark:bg-slate-900/30 rounded-3xl border border-gray-200 dark:border-slate-800 p-8">
+                <MessageSquare className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                <p className="text-gray-500 dark:text-gray-400 font-bold">Nenhuma discussão encontrada nesta categoria.</p>
+                <p className="text-xs text-gray-400 mt-1">Seja o primeiro a criar um tópico!</p>
               </div>
-            </article>
+            ) : (
+              <div className="space-y-4">
+                {filteredPosts.map((post) => {
+                  const hasLiked = post.likes?.includes(activeUserId);
+                  return (
+                    <article 
+                      key={post.id}
+                      onClick={() => setSelectedPost(post)}
+                      className="bg-white dark:bg-slate-900 border border-gray-150 dark:border-slate-800 rounded-3xl p-6 hover:border-indigo-500 dark:hover:border-indigo-500 transition-all cursor-pointer shadow-sm group text-left relative overflow-hidden"
+                    >
+                      <div className="flex items-start gap-3 mb-4">
+                        <img 
+                          alt={post.authorName} 
+                          className="w-10 h-10 rounded-full object-cover border border-gray-100 dark:border-slate-800" 
+                          src={post.authorAvatar} 
+                          referrerPolicy="no-referrer"
+                        />
+                        <div>
+                          <h3 className="font-display text-lg font-black text-gray-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors leading-tight mb-1">
+                            {post.title}
+                          </h3>
+                          <div className="flex flex-wrap items-center gap-2 mt-1">
+                            <span className={cn(
+                              "px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest",
+                              post.category === 'Investimentos' && "bg-indigo-50 text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-400",
+                              post.category === 'Sucesso' && "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400",
+                              post.category === 'Dicas' && "bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400",
+                              post.category === 'Kixiquila' && "bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-400",
+                            )}>
+                              {post.category}
+                            </span>
+                            <span className="text-gray-400 dark:text-gray-500 text-xs">
+                              Postado por <span className="font-bold text-gray-600 dark:text-gray-300">@{post.authorName}</span> • {new Date(post.createdAt).toLocaleDateString()}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                      <p className="text-gray-600 dark:text-gray-300 text-sm line-clamp-2 mb-6 leading-relaxed">
+                        {post.content}
+                      </p>
+                      <div className="pt-4 border-t border-gray-100 dark:border-slate-800 flex items-center justify-between">
+                        <div className="flex items-center gap-6">
+                          <button 
+                            onClick={(e) => handleToggleLike(post, e)}
+                            className={cn(
+                              "flex items-center gap-2 transition-colors cursor-pointer group/like",
+                              hasLiked 
+                                ? "text-rose-500" 
+                                : "text-gray-500 hover:text-rose-500"
+                            )}
+                          >
+                            <Heart className={cn("w-5 h-5", hasLiked && "fill-current")} />
+                            <span className="text-sm font-bold">{post.likesCount || 0}</span>
+                          </button>
+                          <div className="flex items-center gap-2 text-gray-500 group-hover:text-indigo-600 transition-colors">
+                            <MessageSquare className="w-5 h-5" />
+                            <span className="text-sm font-bold">{post.commentsCount || 0} comentários</span>
+                          </div>
+                        </div>
+                        <span className="text-indigo-600 dark:text-indigo-400 font-black text-sm flex items-center gap-1 group-hover:translate-x-1 transition-transform">
+                          Ler mais <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
+                        </span>
+                      </div>
+                    </article>
+                  );
+                })}
+              </div>
+            )}
           </div>
         </div>
 
         {/* Sidebar Widgets (Col 9-12) */}
-        <aside className="lg:col-span-4 space-y-8">
+        <aside className="lg:col-span-4 space-y-8 text-left">
           {/* Trending Tips Widget */}
-          <section className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-sm">
+          <section className="bg-white dark:bg-slate-900 border border-gray-150 dark:border-slate-800 rounded-3xl overflow-hidden shadow-sm">
             <div className="p-4 border-b border-gray-100 dark:border-slate-800 bg-gray-50 dark:bg-slate-800/50">
-              <h3 className="font-display text-sm font-bold flex items-center gap-2 text-gray-900 dark:text-white">
+              <h3 className="font-display text-sm font-black flex items-center gap-2 text-gray-900 dark:text-white uppercase tracking-wider">
                 <span className="material-symbols-outlined text-amber-500" style={{ fontVariationSettings: "'FILL' 1" }}>bolt</span>
                 Dicas Financeiras do Dia
               </h3>
             </div>
             <div className="p-5 space-y-4">
-              <div className="flex gap-3 p-3 bg-emerald-50 dark:bg-emerald-900/10 border-l-4 border-emerald-500 rounded-lg">
+              <div className="flex gap-3 p-4 bg-emerald-50/50 dark:bg-emerald-950/10 border-l-4 border-emerald-500 rounded-xl">
                 <div className="flex-1">
-                  <h4 className="font-bold text-sm text-emerald-900 dark:text-emerald-400 mb-1">Regra dos 50/30/20</h4>
-                  <p className="text-xs text-emerald-800/80 dark:text-emerald-500/80">Ideal para quem está começando a organizar o orçamento mensal.</p>
+                  <h4 className="font-black text-sm text-emerald-900 dark:text-emerald-400 mb-1">Regra dos 50/30/20</h4>
+                  <p className="text-xs text-emerald-800/80 dark:text-emerald-500/80 leading-relaxed">Ideal para começar a organizar as economias locais mensalmente em Angola.</p>
                 </div>
               </div>
-              <div className="flex gap-3 p-3 bg-indigo-50 dark:bg-indigo-900/10 border-l-4 border-indigo-500 rounded-lg">
+              <div className="flex gap-3 p-4 bg-indigo-50/50 dark:bg-indigo-955/10 border-l-4 border-indigo-500 rounded-xl">
                 <div className="flex-1">
-                  <h4 className="font-bold text-sm text-indigo-900 dark:text-indigo-400 mb-1">Reserva de Emergência</h4>
-                  <p className="text-xs text-indigo-800/80 dark:text-indigo-500/80">Garanta pelo menos 6 meses de custo fixo em liquidez diária.</p>
+                  <h4 className="font-black text-sm text-indigo-900 dark:text-indigo-400 mb-1">Reserva de Emergência</h4>
+                  <p className="text-xs text-indigo-800/80 dark:text-indigo-500/80 leading-relaxed">Garanta pelo menos 6 meses de custo fixo com liquidez diária imediata.</p>
                 </div>
               </div>
             </div>
           </section>
 
           {/* Top Members Widget */}
-          <section className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm">
-            <h3 className="font-display text-sm font-bold mb-5 text-gray-900 dark:text-white">Membros em Destaque</h3>
+          <section className="bg-white dark:bg-slate-900 border border-gray-150 dark:border-slate-800 rounded-3xl p-5 shadow-sm">
+            <h3 className="font-display text-sm font-black mb-5 text-gray-900 dark:text-white uppercase tracking-wider">Membros em Destaque</h3>
             <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <img alt="Member" className="w-8 h-8 rounded-full object-cover" src="https://ui-avatars.com/api/?name=Dr.+Carlos&background=random" />
-                  <div>
-                    <p className="text-sm font-bold text-gray-900 dark:text-white">Dr. Carlos Invest</p>
-                    <span className="bg-indigo-50 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400 px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider">Expert Verificado</span>
+              {topUsers.length === 0 ? (
+                <p className="text-xs text-gray-400">Nenhum perfil registado.</p>
+              ) : (
+                topUsers.map((item) => (
+                  <div key={item.id} className="flex items-center justify-between p-2 rounded-xl hover:bg-gray-50 dark:hover:bg-slate-800/40 transition-colors">
+                    <div className="flex items-center gap-3">
+                      <img alt={item.name} className="w-8 h-8 rounded-full object-cover border border-gray-100 dark:border-slate-800" src={item.avatar} />
+                      <div className="text-left">
+                        <p className="text-sm font-black text-gray-900 dark:text-white leading-tight">@{item.name}</p>
+                        <span className="bg-indigo-50 text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-400 px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wider mt-0.5 inline-block">
+                          {item.badge}
+                        </span>
+                      </div>
+                    </div>
+                    <span className="text-xs font-black text-emerald-600 dark:text-emerald-400">{item.xp} XP</span>
                   </div>
-                </div>
-                <button className="text-indigo-600 dark:text-indigo-400 text-xs font-bold hover:underline">Seguir</button>
-              </div>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <img alt="Member" className="w-8 h-8 rounded-full object-cover" src="https://ui-avatars.com/api/?name=Mariana+Finanças&background=random" />
-                  <div>
-                    <p className="text-sm font-bold text-gray-900 dark:text-white">Mariana Finanças</p>
-                    <span className="bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider">Power Saver</span>
-                  </div>
-                </div>
-                <button className="text-indigo-600 dark:text-indigo-400 text-xs font-bold hover:underline">Seguir</button>
-              </div>
+                ))
+              )}
             </div>
           </section>
 
           {/* Community Challenge Card */}
-          <section className="bg-gray-900 text-white rounded-2xl p-6 relative overflow-hidden shadow-sm">
+          <section className="bg-gray-900 text-white rounded-3xl p-6 relative overflow-hidden shadow-lg border border-slate-800">
             <div className="relative z-10">
-              <span className="text-[10px] font-bold bg-indigo-600 text-white px-2.5 py-1 rounded-full uppercase tracking-wider mb-4 inline-block">Desafio Ativo</span>
-              <h3 className="font-display text-xl font-bold mb-2">30 Dias Sem Gastos Supérfluos</h3>
-              <p className="text-sm text-gray-300 mb-6">1.240 membros participando atualmente.</p>
-              <button className="w-full py-3 bg-white text-gray-900 font-bold rounded-xl hover:bg-gray-100 active:scale-95 transition-all shadow-sm">
-                Participar Agora
+              <span className="text-[10px] font-black bg-indigo-600 text-white px-3 py-1 rounded-full uppercase tracking-wider mb-4 inline-block">Desafio Ativo</span>
+              <h3 className="font-display text-xl font-black mb-2 leading-tight">30 Dias Sem Gastos Supérfluos</h3>
+              <p className="text-sm text-gray-300 mb-6 font-medium">
+                {activeChallenge ? activeChallenge.participantCount : '1.240'} membros participando.
+              </p>
+              <button 
+                onClick={handleJoinActiveChallenge}
+                className={cn(
+                  "w-full py-3 font-black rounded-xl active:scale-95 transition-all shadow-sm cursor-pointer text-sm",
+                  activeChallenge?.participants?.includes(activeUserId)
+                    ? "bg-slate-800 border border-slate-700 text-emerald-400 flex items-center justify-center gap-2"
+                    : "bg-white text-gray-900 hover:bg-gray-100"
+                )}
+              >
+                {activeChallenge?.participants?.includes(activeUserId) ? (
+                  <>
+                    <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                    Inscrito no Desafio
+                  </>
+                ) : 'Participar Agora'}
               </button>
             </div>
             <div className="absolute -right-4 -bottom-4 opacity-10">
@@ -163,6 +609,153 @@ export default function Feed() {
           </section>
         </aside>
       </div>
+
+      {/* ─── MODAL: CRIAR DISCUSSÃO ─── */}
+      {isCreateModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="bg-white dark:bg-slate-900 border border-gray-150 dark:border-slate-800 rounded-[2rem] p-6 lg:p-8 w-full max-w-lg shadow-2xl relative animate-in fade-in zoom-in-95 duration-200">
+            <button 
+              onClick={() => setIsCreateModalOpen(false)}
+              className="absolute top-6 right-6 text-gray-400 hover:text-gray-600 dark:hover:text-white p-1 rounded-full hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            <h2 className="text-2xl font-black text-gray-900 dark:text-white mb-6 text-left tracking-tight">Criar Nova Discussão</h2>
+            <form onSubmit={handleCreatePost} className="space-y-4 text-left">
+              <div>
+                <label className="block text-xs font-black text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">Categoria</label>
+                <select 
+                  value={newPostCategory}
+                  onChange={(e) => setNewPostCategory(e.target.value)}
+                  className="w-full bg-gray-50 dark:bg-slate-950 border border-gray-150 dark:border-slate-800 p-3 rounded-xl text-sm font-bold text-gray-700 dark:text-gray-300 focus:outline-none focus:border-indigo-500"
+                >
+                  <option value="Investimentos">Investimentos</option>
+                  <option value="Sucesso">Sucesso</option>
+                  <option value="Dicas">Dicas</option>
+                  <option value="Kixiquila">Kixiquila</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-black text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">Título</label>
+                <input 
+                  type="text" 
+                  value={newPostTitle}
+                  onChange={(e) => setNewPostTitle(e.target.value)}
+                  placeholder="Ex: Como diversificar carteira na BODIVA"
+                  className="w-full bg-gray-50 dark:bg-slate-950 border border-gray-150 dark:border-slate-800 p-3 rounded-xl text-sm font-bold text-gray-700 dark:text-gray-300 placeholder:text-gray-400 focus:outline-none focus:border-indigo-500"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-black text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">Conteúdo</label>
+                <textarea 
+                  rows={5}
+                  value={newPostContent}
+                  onChange={(e) => setNewPostContent(e.target.value)}
+                  placeholder="Escreva a sua dúvida, partilha ou análise..."
+                  className="w-full bg-gray-50 dark:bg-slate-950 border border-gray-150 dark:border-slate-800 p-3 rounded-xl text-sm font-bold text-gray-700 dark:text-gray-300 placeholder:text-gray-400 focus:outline-none focus:border-indigo-500 resize-none leading-relaxed"
+                  required
+                />
+              </div>
+              <div className="pt-4 flex gap-3 justify-end">
+                <button 
+                  type="button" 
+                  onClick={() => setIsCreateModalOpen(false)}
+                  className="px-5 py-3 bg-gray-100 hover:bg-gray-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-300 font-black text-sm rounded-xl cursor-pointer transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button 
+                  type="submit" 
+                  className="px-5 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-black text-sm rounded-xl shadow-sm cursor-pointer transition-all active:scale-95 flex items-center gap-2"
+                >
+                  <Sparkles className="w-4 h-4" />
+                  Publicar Discussão
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ─── MODAL: DETALHES DO POST E COMENTÁRIOS ─── */}
+      {selectedPost && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="bg-white dark:bg-slate-900 border border-gray-150 dark:border-slate-800 rounded-[2.5rem] p-6 lg:p-8 w-full max-w-2xl shadow-2xl relative animate-in fade-in zoom-in-95 duration-200 flex flex-col max-h-[85vh]">
+            
+            <button 
+              onClick={() => setSelectedPost(null)}
+              className="absolute top-6 right-6 text-gray-400 hover:text-gray-600 dark:hover:text-white p-1 rounded-full hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            {/* Cabeçalho do Post */}
+            <div className="text-left mb-4 shrink-0 pr-8">
+              <span className="px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest bg-indigo-50 text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-400 mb-2 inline-block">
+                {selectedPost.category}
+              </span>
+              <h2 className="text-2xl font-black text-gray-900 dark:text-white leading-tight tracking-tight mb-2">
+                {selectedPost.title}
+              </h2>
+              <div className="flex items-center gap-3">
+                <img className="w-8 h-8 rounded-full border border-gray-100 dark:border-slate-800" src={selectedPost.authorAvatar} alt="" />
+                <span className="text-xs text-gray-500 dark:text-gray-400 font-bold">
+                  Postado por @{selectedPost.authorName} • {new Date(selectedPost.createdAt).toLocaleDateString()}
+                </span>
+              </div>
+            </div>
+
+            {/* Conteúdo do Post (Scrollable) */}
+            <div className="overflow-y-auto flex-1 space-y-6 pr-2 mb-4 scrollbar-thin text-left border-y border-gray-100 dark:border-slate-850 py-4">
+              <p className="text-gray-700 dark:text-gray-300 text-sm leading-relaxed whitespace-pre-wrap">
+                {selectedPost.content}
+              </p>
+
+              {/* Seção de comentários */}
+              <div>
+                <h4 className="text-xs font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-4">Comentários</h4>
+                {comments.length === 0 ? (
+                  <p className="text-xs text-gray-400 italic">Nenhum comentário ainda. Escreva o primeiro!</p>
+                ) : (
+                  <div className="space-y-4">
+                    {comments.map((comment) => (
+                      <div key={comment.id} className="p-3 bg-gray-50 dark:bg-slate-950 border border-gray-150 dark:border-slate-850 rounded-2xl flex items-start gap-3">
+                        <img className="w-7 h-7 rounded-full border border-gray-100 dark:border-slate-800 shrink-0" src={comment.authorAvatar} alt="" />
+                        <div className="flex-1">
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-xs font-black text-gray-800 dark:text-gray-200">@{comment.authorName}</span>
+                            <span className="text-[10px] text-gray-400">{new Date(comment.createdAt).toLocaleDateString()}</span>
+                          </div>
+                          <p className="text-gray-600 dark:text-gray-300 text-xs leading-relaxed">{comment.content}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Input para Comentar (Shrink-0) */}
+            <form onSubmit={handleAddComment} className="shrink-0 pt-2 flex gap-3 text-left">
+              <input 
+                type="text" 
+                value={newCommentText}
+                onChange={(e) => setNewCommentText(e.target.value)}
+                placeholder="Escreva um comentário construtivo..."
+                className="flex-1 bg-gray-50 dark:bg-slate-950 border border-gray-150 dark:border-slate-850 p-3 rounded-xl text-sm font-bold text-gray-700 dark:text-gray-300 focus:outline-none focus:border-indigo-500"
+                required
+              />
+              <button 
+                type="submit" 
+                className="px-4 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-black text-sm rounded-xl cursor-pointer active:scale-95 flex items-center justify-center transition-all shrink-0"
+              >
+                <Send className="w-4 h-4" />
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
     </PageTransition>
   );
 }

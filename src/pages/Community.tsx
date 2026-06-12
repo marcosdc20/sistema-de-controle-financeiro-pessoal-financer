@@ -3,11 +3,13 @@ import { MessageSquare } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import PageTransition from '@/components/PageTransition';
 import Feed from './Community/Feed';
+import ChatsManager from './Community/ChatsManager';
 import InvestmentGroups from './Community/InvestmentGroups';
 import Challenges from './Community/Challenges';
 import SuccessStories from './Community/SuccessStories';
+import DownloadsArea from './Community/DownloadsArea';
 
-type TabType = 'feed' | 'groups' | 'challenges' | 'stories';
+type TabType = 'feed' | 'chats' | 'groups' | 'challenges' | 'stories' | 'downloads';
 
 export default function Community() {
   const [activeTab, setActiveTab] = useState<TabType>('feed');
@@ -21,24 +23,26 @@ export default function Community() {
             <MessageSquare className="w-8 h-8 text-indigo-600" />
             Comunidade VukaPay
           </h1>
-          <p className="text-gray-500 dark:text-gray-400 mt-1">Conecte-se, aprenda e cresça junto com outros investidores angolanos.</p>
+          <p className="text-gray-555 dark:text-gray-400 mt-1">Conecte-se, aprenda e cresça junto com outros investidores angolanos.</p>
         </div>
 
-        <div className="flex bg-white/80 dark:bg-slate-900/80 backdrop-blur border border-gray-150 dark:border-slate-800 p-1.5 rounded-2xl shadow-sm self-start overflow-x-auto w-full xl:w-auto">
-          {(['feed', 'groups', 'challenges', 'stories'] as TabType[]).map((tab) => (
+        <div className="flex bg-white/85 dark:bg-slate-900/80 backdrop-blur border border-gray-150 dark:border-slate-800 p-1.5 rounded-2xl shadow-sm self-start overflow-x-auto w-full xl:w-auto">
+          {(['feed', 'chats', 'groups', 'challenges', 'stories', 'downloads'] as TabType[]).map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
               className={cn(
-                "px-5 py-2.5 rounded-xl text-xs font-bold transition-all capitalize whitespace-nowrap",
+                "px-5 py-2.5 rounded-xl text-xs font-bold transition-all capitalize whitespace-nowrap cursor-pointer",
                 activeTab === tab 
                   ? "bg-gray-900 dark:bg-indigo-600 text-white shadow-md" 
-                  : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-slate-800"
+                  : "text-gray-500 dark:text-gray-400 hover:text-gray-950 dark:hover:text-white hover:bg-gray-100/50 dark:hover:bg-slate-800"
               )}
             >
-              {tab === 'feed' ? 'Fórum & Feed' : 
+              {tab === 'feed' ? 'Fórum Geral' : 
+               tab === 'chats' ? 'Conversas & Círculos' :
                tab === 'groups' ? 'Grupos de Investimento' : 
-               tab === 'challenges' ? 'Desafios' : 'Histórias de Sucesso'}
+               tab === 'challenges' ? 'Desafios' : 
+               tab === 'stories' ? 'Histórias de Sucesso' : 'Downloads / Executáveis'}
             </button>
           ))}
         </div>
@@ -47,9 +51,11 @@ export default function Community() {
       {/* Render Active Tab */}
       <div className="mt-8">
         {activeTab === 'feed' && <Feed />}
+        {activeTab === 'chats' && <ChatsManager />}
         {activeTab === 'groups' && <InvestmentGroups />}
         {activeTab === 'challenges' && <Challenges />}
         {activeTab === 'stories' && <SuccessStories />}
+        {activeTab === 'downloads' && <DownloadsArea />}
       </div>
     </PageTransition>
   );

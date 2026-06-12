@@ -37,6 +37,7 @@ import {
   Zap,
 } from 'lucide-react';
 import { useLicense } from '@/context/LicenseContext';
+import PurchaseLicenseModal from './PurchaseLicenseModal';
 
 // ─── Constante ───────────────────────────────────────────────────────────────
 
@@ -88,7 +89,7 @@ function LoadingScreen() {
         </div>
         <div className="flex flex-col items-center gap-3">
           <Loader2 className="w-6 h-6 text-indigo-400 animate-spin" />
-          <p className="text-sm text-gray-400 animate-pulse">Verificando licença...</p>
+          <p className="text-sm text-gray-400 animate-pulse">A inicializar VukaPay...</p>
         </div>
       </div>
     </div>
@@ -103,6 +104,7 @@ function BlockedScreen({ phase }: { phase: 'trial_expired' | 'expired' | 'revoke
   const [isActivating, setIsActivating] = useState(false);
   const [activationError, setActivationError] = useState<string | null>(null);
   const [activationSuccess, setActivationSuccess] = useState(false);
+  const [showPurchaseModal, setShowPurchaseModal] = useState(false);
 
   useEffect(() => {
     if ('Notification' in window && Notification.permission === 'default') {
@@ -235,16 +237,20 @@ function BlockedScreen({ phase }: { phase: 'trial_expired' | 'expired' | 'revoke
           ) : phase !== 'revoked' && phase !== 'activating' ? (
             <>
               {/* Botão de compra */}
-              <a
-                href={PURCHASE_URL}
-                target="_blank"
-                rel="noopener noreferrer"
+              <button
+                onClick={() => setShowPurchaseModal(true)}
                 className="w-full flex items-center justify-center gap-2 py-3.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold rounded-2xl text-sm transition-all shadow-lg shadow-indigo-600/25 active:scale-[0.98] mb-4"
               >
                 <Zap className="w-4 h-4" />
                 Adquirir Licença VukaPay
-                <ExternalLink className="w-3.5 h-3.5 opacity-70" />
-              </a>
+              </button>
+              
+              {showPurchaseModal && (
+                <PurchaseLicenseModal 
+                  onClose={() => setShowPurchaseModal(false)} 
+                  userEmail={licenseState.clientEmail} 
+                />
+              )}
 
               {/* Separador */}
               <div className="flex items-center gap-3 mb-4">
@@ -442,12 +448,12 @@ export default function LicenseGuard({ children }: LicenseGuardProps) {
   const { licenseState, isLoading } = useLicense();
   const [bannerDismissed, setBannerDismissed] = useState(false);
   const [isVideoFinished, setIsVideoFinished] = useState(() => {
-    return sessionStorage.getItem('vukapay_intro_played') === 'true';
+    return localStorage.getItem('vukapay_intro_played') === 'true';
   });
 
   const handleVideoEnded = () => {
+    localStorage.setItem('vukapay_intro_played', 'true');
     setIsVideoFinished(true);
-    sessionStorage.setItem('vukapay_intro_played', 'true');
   };
 
   if (!isVideoFinished) {
@@ -468,7 +474,7 @@ export default function LicenseGuard({ children }: LicenseGuardProps) {
         </button>
       </div>
     );
-  }
+ }
 
   // Fase de carregamento inicial (se o video acabar e ainda não estiver pronto)
   if (isLoading || licenseState.phase === 'loading') {

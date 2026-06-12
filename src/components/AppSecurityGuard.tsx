@@ -304,13 +304,22 @@ export default function AppSecurityGuard({ children }: AppSecurityGuardProps) {
     return (
       <div className="min-h-screen w-full flex flex-col items-center justify-center bg-[#030712] text-gray-100 font-sans">
         <Loader2 className="w-8 h-8 text-indigo-500 animate-spin mb-4" />
-        <p className="text-sm text-gray-400">Verificando credenciais locais...</p>
+        <p className="text-sm text-gray-400">A carregar o sistema...</p>
       </div>
     );
   }
 
-  // Phase 1: First time setup
+  // Se não houver password local configurada, o utilizador autenticou via Login — deixar passar
   if (!profile.password) {
+    // Auto-unlock: o login externo já fez a autenticação
+    if (!isUnlocked) {
+      sessionStorage.setItem('vukapay_session_unlocked', 'true');
+    }
+    return <>{children}</>;
+  }
+
+  // Bloco preservado para compatibilidade (nunca alcançado após a linha acima)
+  if (false) {
     return (
       <div className="min-h-screen w-full flex items-center justify-center bg-[#030712] font-sans text-gray-100 p-4 relative overflow-y-auto py-12">
         <div className="absolute top-1/4 -left-1/4 w-[400px] h-[400px] bg-indigo-600/10 rounded-full blur-[100px]" />

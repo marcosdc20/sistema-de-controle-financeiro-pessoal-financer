@@ -7,9 +7,11 @@ import {
   X, ChevronRight, Check, ShieldCheck, PieChart
 } from 'lucide-react';
 import PageTransition from '@/components/PageTransition';
-import { cn, CURRENCIES } from '@/lib/utils';
+import { cn } from '@/lib/utils';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { FUNDAMENTALS, COURSES, Fundamental, Course, Lesson } from '@/data/education';
+import { db } from '@/lib/firebase';
+import { collection, onSnapshot, doc, setDoc } from 'firebase/firestore';
 
 type Tab = 'overview' | 'fundamentals' | 'courses' | 'simulators';
 
@@ -17,13 +19,81 @@ export default function Education() {
   const { accounts, transactions, investments, loans, budgets, goals, getRate } = useFinance();
   const [activeTab, setActiveTab] = useState<Tab>('overview');
 
+  // Firestore Synchronized States
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [fundamentals, setFundamentals] = useState<Fundamental[]>([]);
+  const [loadingContent, setLoadingContent] = useState(true);
+
   // Content Viewing State
   const [selectedFundamental, setSelectedFundamental] = useState<Fundamental | null>(null);
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
+  const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null);
+
   const [completedLessons, setCompletedLessons] = useState<string[]>(() => {
     const saved = localStorage.getItem('completedLessons');
     return saved ? JSON.parse(saved) : [];
   });
+
+  // 1. Sync Content with Firestore and Auto-Seed
+  useEffect(() => {
+    let unsubscribeCourses: () => void;
+    let unsubscribeFundamentals: () => void;
+
+    const setupListeners = async () => {
+      // Seed validation only once to avoid loops with onSnapshot
+      try {
+        const { getDocs } = await import('firebase/firestore');
+        const coursesSnap = await getDocs(collection(db, 'education_courses'));
+        if (coursesSnap.empty) {
+          for (const course of COURSES) {
+            await setDoc(doc(db, 'education_courses', course.id), course);
+          }
+        }
+        
+        const fundSnap = await getDocs(collection(db, 'education_fundamentals'));
+        if (fundSnap.empty) {
+          for (const item of FUNDAMENTALS) {
+            await setDoc(doc(db, 'education_fundamentals', item.id), item);
+          }
+        }
+      } catch (err) {
+        console.error("Error seeding education data:", err);
+      }
+
+      unsubscribeCourses = onSnapshot(collection(db, 'education_courses'), (snapshot) => {
+        const list: Course[] = [];
+        snapshot.forEach(doc => {
+          list.push({ id: doc.id, ...doc.data() } as Course);
+        });
+        setCourses(list);
+      });
+
+      unsubscribeFundamentals = onSnapshot(collection(db, 'education_fundamentals'), (snapshot) => {
+        const list: Fundamental[] = [];
+        snapshot.forEach(doc => {
+          list.push({ id: doc.id, ...doc.data() } as Fundamental);
+        });
+        setFundamentals(list);
+        setLoadingContent(false);
+      });
+    };
+
+    setupListeners();
+
+    return () => {
+      if (unsubscribeCourses) unsubscribeCourses();
+      if (unsubscribeFundamentals) unsubscribeFundamentals();
+    };
+  }, []);
+
+  // Update selectedLesson when selectedCourse changes
+  useEffect(() => {
+    if (selectedCourse && selectedCourse.modules && selectedCourse.modules.length > 0) {
+      setSelectedLesson(selectedCourse.modules[0]);
+    } else {
+      setSelectedLesson(null);
+    }
+  }, [selectedCourse]);
 
   useEffect(() => {
     localStorage.setItem('completedLessons', JSON.stringify(completedLessons));
@@ -46,7 +116,7 @@ export default function Education() {
     const totalInvested = investments.filter(i => i.status === 'active')
       .reduce((acc, i) => acc + i.currentValue * getRate(i.currency), 0);
 
-    // Monthly stats (approximate for demo)
+    // Monthly stats
     const currentMonth = new Date().getMonth();
     const monthlyExpenses = transactions
       .filter(t => t.type === 'expense' && new Date(t.date).getMonth() === currentMonth)
@@ -116,12 +186,38 @@ export default function Education() {
     return { score, level, tips, totalDebt, totalInvested };
   }, [accounts, transactions, investments, loans, budgets, goals, completedLessons]);
 
+  // Video helpers
+  const getEmbedUrl = (url: string) => {
+    if (!url) return '';
+    if (url.includes('youtube.com') || url.includes('youtu.be')) {
+      let videoId = '';
+      const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+      const match = url.match(regExp);
+      if (match && match[2].length === 11) {
+        videoId = match[2];
+      }
+      return videoId ? `https://www.youtube.com/embed/${videoId}` : url;
+    }
+    if (url.includes('vimeo.com')) {
+      const regExp = /vimeo\.com\/(?:channels\/(?:\w+\/)?|groups\/(?:[^\/]*)\/videos\/|album\/(?:\d+)\/video\/|video\/|)(\d+)(?:$|\/|\?)/;
+      const match = url.match(regExp);
+      if (match && match[1]) {
+        return `https://player.vimeo.com/video/${match[1]}`;
+      }
+    }
+    return url;
+  };
+
+  const isIframeVideo = (url: string) => {
+    return url && (url.includes('youtube.com') || url.includes('youtu.be') || url.includes('vimeo.com'));
+  };
+
   // --- Components ---
 
   const ProgressBar = ({ value, max = 100 }: { value: number, max?: number }) => (
-    <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+    <div className="h-2 bg-white/10 rounded-full overflow-hidden">
       <div
-        className="h-full bg-black rounded-full transition-all duration-500"
+        className="h-full bg-white rounded-full transition-all duration-500"
         style={{ width: `${Math.min((value / max) * 100, 100)}%` }}
       />
     </div>
@@ -131,7 +227,7 @@ export default function Education() {
     const [initial, setInitial] = useState(100000);
     const [monthly, setMonthly] = useState(20000);
     const [years, setYears] = useState(10);
-    const [rate, setRate] = useState(12); // 12% annual return (optimistic/nominal)
+    const [rate, setRate] = useState(12);
 
     const data = useMemo(() => {
       const result = [];
@@ -145,7 +241,7 @@ export default function Education() {
 
     return (
       <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm">
-        <h3 className="text-lg font-semibold mb-6 flex items-center gap-2">
+        <h3 className="text-lg font-semibold mb-6 flex items-center gap-2 text-gray-900">
           <TrendingUp className="w-5 h-5 text-emerald-600" />
           Simulador de Juros Compostos
         </h3>
@@ -157,7 +253,7 @@ export default function Education() {
                 type="number"
                 value={initial}
                 onChange={e => setInitial(Number(e.target.value))}
-                className="w-full p-2 bg-gray-50 rounded-lg border border-gray-200"
+                className="w-full p-3 bg-gray-50 text-gray-900 rounded-xl border border-gray-200"
               />
             </div>
             <div>
@@ -166,7 +262,7 @@ export default function Education() {
                 type="number"
                 value={monthly}
                 onChange={e => setMonthly(Number(e.target.value))}
-                className="w-full p-2 bg-gray-50 rounded-lg border border-gray-200"
+                className="w-full p-3 bg-gray-50 text-gray-900 rounded-xl border border-gray-200"
               />
             </div>
             <div>
@@ -177,9 +273,9 @@ export default function Education() {
                 max="30"
                 value={years}
                 onChange={e => setYears(Number(e.target.value))}
-                className="w-full accent-black"
+                className="w-full accent-black cursor-pointer"
               />
-              <div className="text-right text-sm font-medium">{years} anos</div>
+              <div className="text-right text-sm font-semibold text-gray-900">{years} anos</div>
             </div>
             <div>
               <label className="text-sm text-gray-500 mb-1 block">Taxa Anual (%)</label>
@@ -189,9 +285,9 @@ export default function Education() {
                 max="20"
                 value={rate}
                 onChange={e => setRate(Number(e.target.value))}
-                className="w-full accent-black"
+                className="w-full accent-black cursor-pointer"
               />
-              <div className="text-right text-sm font-medium">{rate}% a.a.</div>
+              <div className="text-right text-sm font-semibold text-gray-900">{rate}% a.a.</div>
             </div>
           </div>
           <div className="h-64">
@@ -204,11 +300,11 @@ export default function Education() {
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F3F4F6" />
-                <XAxis dataKey="year" axisLine={false} tickLine={false} tick={{ fontSize: 12 }} />
+                <XAxis dataKey="year" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#6B7280' }} />
                 <YAxis
                   axisLine={false}
                   tickLine={false}
-                  tick={{ fontSize: 12 }}
+                  tick={{ fontSize: 12, fill: '#6B7280' }}
                   tickFormatter={(val) => new Intl.NumberFormat('pt-AO', { notation: 'compact' }).format(val)}
                 />
                 <Tooltip
@@ -233,7 +329,7 @@ export default function Education() {
 
   const DebtAmortizationSimulator = () => {
     const [loanAmount, setLoanAmount] = useState(500000);
-    const [interestRate, setInterestRate] = useState(15); // Annual
+    const [interestRate, setInterestRate] = useState(15);
     const [monthlyPayment, setMonthlyPayment] = useState(20000);
 
     const calculation = useMemo(() => {
@@ -242,13 +338,12 @@ export default function Education() {
       let totalInterest = 0;
       const monthlyRate = interestRate / 100 / 12;
 
-      // Safety break to prevent infinite loops
       while (balance > 0 && months < 360) {
         const interest = balance * monthlyRate;
         totalInterest += interest;
         const principal = monthlyPayment - interest;
 
-        if (principal <= 0) break; // Payment too low to cover interest
+        if (principal <= 0) break;
 
         balance -= principal;
         months++;
@@ -259,7 +354,7 @@ export default function Education() {
 
     return (
       <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm">
-        <h3 className="text-lg font-semibold mb-6 flex items-center gap-2">
+        <h3 className="text-lg font-semibold mb-6 flex items-center gap-2 text-gray-900">
           <Calculator className="w-5 h-5 text-blue-600" />
           Simulador de Amortização de Dívidas
         </h3>
@@ -271,7 +366,7 @@ export default function Education() {
                 type="number"
                 value={loanAmount}
                 onChange={e => setLoanAmount(Number(e.target.value))}
-                className="w-full p-2 bg-gray-50 rounded-lg border border-gray-200"
+                className="w-full p-3 bg-gray-50 text-gray-900 rounded-xl border border-gray-200"
               />
             </div>
             <div>
@@ -280,7 +375,7 @@ export default function Education() {
                 type="number"
                 value={interestRate}
                 onChange={e => setInterestRate(Number(e.target.value))}
-                className="w-full p-2 bg-gray-50 rounded-lg border border-gray-200"
+                className="w-full p-3 bg-gray-50 text-gray-900 rounded-xl border border-gray-200"
               />
             </div>
             <div>
@@ -289,7 +384,7 @@ export default function Education() {
                 type="number"
                 value={monthlyPayment}
                 onChange={e => setMonthlyPayment(Number(e.target.value))}
-                className="w-full p-2 bg-gray-50 rounded-lg border border-gray-200"
+                className="w-full p-3 bg-gray-50 text-gray-900 rounded-xl border border-gray-200"
               />
             </div>
           </div>
@@ -324,13 +419,13 @@ export default function Education() {
 
   const FinancialIndependenceSimulator = () => {
     const [monthlyExpenses, setMonthlyExpenses] = useState(150000);
-    const [safeWithdrawalRate, setSafeWithdrawalRate] = useState(4); // 4% rule
+    const [safeWithdrawalRate, setSafeWithdrawalRate] = useState(4);
 
     const targetAmount = monthlyExpenses * 12 / (safeWithdrawalRate / 100);
 
     return (
       <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm">
-        <h3 className="text-lg font-semibold mb-6 flex items-center gap-2">
+        <h3 className="text-lg font-semibold mb-6 flex items-center gap-2 text-gray-900">
           <Coins className="w-5 h-5 text-yellow-600" />
           Calculadora de Independência Financeira
         </h3>
@@ -345,7 +440,7 @@ export default function Education() {
                 type="number"
                 value={monthlyExpenses}
                 onChange={e => setMonthlyExpenses(Number(e.target.value))}
-                className="w-full p-2 bg-gray-50 rounded-lg border border-gray-200"
+                className="w-full p-3 bg-gray-50 text-gray-900 rounded-xl border border-gray-200"
               />
             </div>
             <div>
@@ -357,9 +452,9 @@ export default function Education() {
                 step="0.1"
                 value={safeWithdrawalRate}
                 onChange={e => setSafeWithdrawalRate(Number(e.target.value))}
-                className="w-full accent-black"
+                className="w-full accent-black cursor-pointer"
               />
-              <div className="text-right text-sm font-medium">{safeWithdrawalRate}%</div>
+              <div className="text-right text-sm font-semibold text-gray-900">{safeWithdrawalRate}%</div>
             </div>
           </div>
           <div className="bg-gray-900 text-white rounded-2xl p-6 flex flex-col justify-center items-center text-center relative overflow-hidden">
@@ -368,7 +463,7 @@ export default function Education() {
               <p className="text-3xl md:text-4xl font-bold text-emerald-400">
                 {new Intl.NumberFormat('pt-AO', { style: 'currency', currency: 'AOA', notation: 'compact' }).format(targetAmount)}
               </p>
-              <p className="text-xs text-gray-500 mt-4">
+              <p className="text-xs text-gray-400 mt-4 max-w-xs leading-relaxed">
                 Com esse valor investido, você poderia sacar {new Intl.NumberFormat('pt-AO', { style: 'currency', currency: 'AOA' }).format(monthlyExpenses)} por mês vitaliciamente (ajustado pela inflação).
               </p>
             </div>
@@ -388,10 +483,9 @@ export default function Education() {
     return (
       <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
         <div className="bg-white rounded-3xl w-full max-w-2xl max-h-[80vh] overflow-y-auto shadow-2xl animate-in fade-in zoom-in duration-200">
-          <div className={`p-6 bg-${selectedFundamental.color}-50 border-b border-${selectedFundamental.color}-100 flex justify-between items-start sticky top-0 z-10`}>
+          <div className="p-6 bg-gray-50 border-b border-gray-100 flex justify-between items-start sticky top-0 z-10">
             <div className="flex items-center gap-4">
-              <div className={`w-12 h-12 rounded-2xl bg-white flex items-center justify-center text-${selectedFundamental.color}-600 shadow-sm`}>
-                {/* @ts-ignore */}
+              <div className="w-12 h-12 rounded-2xl bg-white flex items-center justify-center text-black shadow-sm">
                 <BookOpen className="w-6 h-6" />
               </div>
               <div>
@@ -399,17 +493,17 @@ export default function Education() {
                 <p className="text-sm text-gray-500">{selectedFundamental.description}</p>
               </div>
             </div>
-            <button onClick={() => setSelectedFundamental(null)} className="p-2 hover:bg-white/50 rounded-full transition-colors">
+            <button onClick={() => setSelectedFundamental(null)} className="p-2 hover:bg-gray-200 rounded-xl transition-colors">
               <X className="w-5 h-5 text-gray-500" />
             </button>
           </div>
-          <div className="p-8 prose prose-gray max-w-none">
-            <div dangerouslySetInnerHTML={{ __html: selectedFundamental.content.replace(/\n/g, '<br/>') }} />
+          <div className="p-8 prose prose-gray max-w-none text-gray-700 text-sm leading-relaxed whitespace-pre-line">
+            {selectedFundamental.content}
           </div>
           <div className="p-6 border-t border-gray-100 bg-gray-50 flex justify-end">
             <button
               onClick={() => setSelectedFundamental(null)}
-              className="px-6 py-2 bg-black text-white rounded-xl font-medium hover:bg-gray-800 transition-colors"
+              className="px-6 py-2.5 bg-black text-white text-xs font-bold rounded-xl hover:bg-gray-800 transition-colors shadow-sm"
             >
               Entendi
             </button>
@@ -425,19 +519,21 @@ export default function Education() {
     const total = selectedCourse.modules.length;
     const percent = Math.round((progress / total) * 100);
 
+    const isLessonCompleted = selectedLesson ? completedLessons.includes(selectedLesson.id) : false;
+
     return (
-      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-        <div className="bg-white rounded-3xl w-full max-w-4xl max-h-[90vh] overflow-hidden shadow-2xl flex flex-col md:flex-row animate-in fade-in zoom-in duration-200">
+      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
+        <div className="bg-white rounded-3xl w-full max-w-5xl h-[85vh] overflow-hidden shadow-2xl flex flex-col md:flex-row animate-in zoom-in-95 duration-200">
           {/* Sidebar */}
-          <div className="w-full md:w-1/3 bg-gray-50 border-r border-gray-100 flex flex-col">
-            <div className="p-6 border-b border-gray-100">
-              <h3 className="text-xl font-bold text-gray-900 mb-2">{selectedCourse.title}</h3>
-              <div className="flex items-center gap-2 text-sm text-gray-500 mb-4">
-                <span className="px-2 py-0.5 bg-white border rounded text-xs">{selectedCourse.level}</span>
+          <div className="w-full md:w-80 bg-gray-50 border-r border-gray-100 flex flex-col h-1/3 md:h-full">
+            <div className="p-6 border-b border-gray-100 flex-shrink-0">
+              <h3 className="text-base font-bold text-gray-900 mb-1 truncate">{selectedCourse.title}</h3>
+              <div className="flex items-center gap-2 text-xs text-gray-500 mb-4">
+                <span className="px-2 py-0.5 bg-white border rounded text-[10px] font-semibold">{selectedCourse.level}</span>
                 <span>{selectedCourse.duration}</span>
               </div>
-              <div className="space-y-2">
-                <div className="flex justify-between text-xs font-medium text-gray-500">
+              <div className="space-y-1.5">
+                <div className="flex justify-between text-xs font-semibold text-gray-500">
                   <span>Progresso</span>
                   <span>{percent}%</span>
                 </div>
@@ -449,26 +545,31 @@ export default function Education() {
             <div className="flex-1 overflow-y-auto p-4 space-y-2">
               {selectedCourse.modules.map((lesson, idx) => {
                 const isCompleted = completedLessons.includes(lesson.id);
+                const isSelected = selectedLesson?.id === lesson.id;
                 return (
                   <div
                     key={lesson.id}
-                    onClick={() => toggleLessonCompletion(lesson.id)}
+                    onClick={() => setSelectedLesson(lesson)}
                     className={cn(
-                      "p-3 rounded-xl border cursor-pointer transition-all flex items-start gap-3 group",
-                      isCompleted ? "bg-emerald-50 border-emerald-100" : "bg-white border-gray-100 hover:border-gray-200"
+                      "p-3 rounded-2xl border cursor-pointer transition-all flex items-start gap-3 group",
+                      isSelected ? "border-black bg-black text-white shadow-sm" :
+                      isCompleted ? "bg-emerald-50/50 border-emerald-100 text-gray-800" :
+                      "bg-white border-gray-100 hover:border-gray-200 text-gray-800"
                     )}
                   >
                     <div className={cn(
-                      "w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 transition-colors",
-                      isCompleted ? "bg-emerald-500 text-white" : "bg-gray-100 text-gray-400 group-hover:bg-gray-200"
+                      "w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 transition-colors text-xs font-semibold",
+                      isSelected ? "bg-white text-black" :
+                      isCompleted ? "bg-emerald-500 text-white" :
+                      "bg-gray-100 text-gray-400 group-hover:bg-gray-200"
                     )}>
-                      {isCompleted ? <Check className="w-3 h-3" /> : <span className="text-xs">{idx + 1}</span>}
+                      {isCompleted ? <Check className="w-3.5 h-3.5" /> : idx + 1}
                     </div>
-                    <div>
-                      <h4 className={cn("text-sm font-medium", isCompleted ? "text-emerald-900" : "text-gray-900")}>
+                    <div className="flex-1 min-w-0">
+                      <h4 className={cn("text-xs font-bold truncate", isSelected ? "text-white" : isCompleted ? "text-emerald-950" : "text-gray-950")}>
                         {lesson.title}
                       </h4>
-                      <p className="text-xs text-gray-500 mt-0.5">{lesson.duration}</p>
+                      <p className={cn("text-[10px] mt-0.5", isSelected ? "text-gray-300" : "text-gray-500")}>{lesson.duration}</p>
                     </div>
                   </div>
                 );
@@ -477,25 +578,83 @@ export default function Education() {
           </div>
 
           {/* Content */}
-          <div className="flex-1 flex flex-col h-[50vh] md:h-auto">
-            <div className="p-4 border-b border-gray-100 flex justify-end">
-              <button onClick={() => setSelectedCourse(null)} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
+          <div className="flex-1 flex flex-col h-2/3 md:h-full bg-white overflow-hidden">
+            <div className="p-4 border-b border-gray-100 flex justify-between items-center flex-shrink-0 bg-gray-50/30">
+              <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Visualizador de Aula</span>
+              <button onClick={() => setSelectedCourse(null)} className="p-2 hover:bg-gray-100 rounded-xl transition-colors">
                 <X className="w-5 h-5 text-gray-500" />
               </button>
             </div>
-            <div className="flex-1 p-8 overflow-y-auto flex flex-col items-center justify-center text-center">
-              <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center text-4xl mb-6">
-                {selectedCourse.image}
+            
+            {selectedLesson ? (
+              <div className="flex-1 overflow-y-auto p-6 md:p-8 space-y-6">
+                <div>
+                  <h2 className="text-xl md:text-2xl font-black text-gray-950">{selectedLesson.title}</h2>
+                  <p className="text-xs text-gray-400 mt-1">Duração estimada: {selectedLesson.duration}</p>
+                </div>
+
+                {/* Video Player Section */}
+                {selectedLesson.videoUrl && (
+                  <div className="w-full relative overflow-hidden rounded-2xl shadow-md border border-gray-100 bg-black aspect-video max-h-[380px]">
+                    {isIframeVideo(selectedLesson.videoUrl) ? (
+                      <iframe
+                        src={getEmbedUrl(selectedLesson.videoUrl)}
+                        className="absolute inset-0 w-full h-full border-0"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                      />
+                    ) : (
+                      <video
+                        src={selectedLesson.videoUrl}
+                        controls
+                        className="absolute inset-0 w-full h-full"
+                      />
+                    )}
+                  </div>
+                )}
+
+                {/* Text Content */}
+                <div className="prose prose-gray max-w-none text-gray-600 text-sm leading-relaxed whitespace-pre-line border-t border-gray-100 pt-6">
+                  {selectedLesson.content}
+                </div>
+
+                {/* Completion Control */}
+                <div className="border-t border-gray-100 pt-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+                  <div className="flex items-center gap-2 text-xs text-gray-500">
+                    <ShieldCheck className="w-4 h-4 text-emerald-500" />
+                    <span>Concluir aulas acumula pontos de XP e ajuda a evoluir seu nível FinHealth.</span>
+                  </div>
+                  <button
+                    onClick={() => toggleLessonCompletion(selectedLesson.id)}
+                    className={cn(
+                      "w-full sm:w-auto px-6 py-2.5 rounded-xl font-bold text-xs shadow-sm transition-all hover:scale-105 active:scale-95 flex items-center justify-center gap-2",
+                      isLessonCompleted 
+                        ? "bg-emerald-50 border border-emerald-100 text-emerald-700 hover:bg-emerald-100" 
+                        : "bg-black text-white hover:bg-gray-800"
+                    )}
+                  >
+                    {isLessonCompleted ? (
+                      <>
+                        <Check className="w-4 h-4" />
+                        <span>Aula Concluída</span>
+                      </>
+                    ) : (
+                      <span>Marcar como Concluída</span>
+                    )}
+                  </button>
+                </div>
               </div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">Bem-vindo ao curso</h2>
-              <p className="text-gray-500 max-w-md mb-8">
-                Selecione uma aula ao lado para marcar como concluída. O conteúdo detalhado de cada aula seria exibido aqui em vídeo ou texto.
-              </p>
-              <div className="p-4 bg-blue-50 text-blue-700 rounded-xl text-sm max-w-md">
-                <p className="font-medium mb-1">Dica:</p>
-                Clique nos círculos ao lado das aulas para marcar seu progresso e ganhar pontos de experiência!
+            ) : (
+              <div className="flex-1 p-8 overflow-y-auto flex flex-col items-center justify-center text-center">
+                <div className="w-20 h-20 bg-gray-100 rounded-3xl flex items-center justify-center text-4xl mb-6">
+                  {selectedCourse.image}
+                </div>
+                <h2 className="text-xl font-extrabold text-gray-900 mb-3">Selecione uma Aula</h2>
+                <p className="text-gray-500 max-w-sm text-sm">
+                  Escolha um dos módulos na barra lateral para começar a aprender, assistir aos vídeos do curso e marcar o progresso.
+                </p>
               </div>
-            </div>
+            )}
           </div>
         </div>
       </div>
@@ -539,7 +698,7 @@ export default function Education() {
       {/* Navigation Tabs */}
       <div className="flex overflow-x-auto pb-2 gap-2 scrollbar-hide">
         {[
-          { id: 'overview', label: 'Visão Geral', icon: LayoutDashboard },
+          { id: 'overview', label: 'Visão Geral', icon: BarChart3 },
           { id: 'fundamentals', label: 'Fundamentos', icon: BookOpen },
           { id: 'courses', label: 'Cursos', icon: GraduationCap },
           { id: 'simulators', label: 'Simuladores', icon: Calculator },
@@ -548,13 +707,12 @@ export default function Education() {
             key={tab.id}
             onClick={() => setActiveTab(tab.id as Tab)}
             className={cn(
-              "px-4 py-2.5 rounded-xl text-sm font-medium transition-all flex items-center whitespace-nowrap",
+              "px-4 py-2.5 rounded-xl text-sm font-semibold transition-all flex items-center whitespace-nowrap cursor-pointer",
               activeTab === tab.id
                 ? "bg-black text-white shadow-md"
                 : "bg-white text-gray-600 hover:bg-gray-50 border border-gray-100"
             )}
           >
-            {/* @ts-ignore */}
             <tab.icon className="w-4 h-4 mr-2" />
             {tab.label}
           </button>
@@ -563,181 +721,189 @@ export default function Education() {
 
       {/* Content Area */}
       <div className="min-h-[400px]">
-        {activeTab === 'overview' && (
-          <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            {/* Smart Tips */}
-            {analysis.tips.length > 0 && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {analysis.tips.map((tip, idx) => (
-                  <div key={idx} className={cn(
-                    "p-5 rounded-2xl border flex items-start gap-4",
-                    tip.type === 'warning' ? "bg-orange-50 border-orange-100" :
-                      tip.type === 'alert' ? "bg-yellow-50 border-yellow-100" :
-                        tip.type === 'danger' ? "bg-red-50 border-red-100" :
-                          "bg-blue-50 border-blue-100"
-                  )}>
-                    <div className={cn(
-                      "p-2 rounded-xl",
-                      tip.type === 'warning' ? "bg-orange-100 text-orange-600" :
-                        tip.type === 'alert' ? "bg-yellow-100 text-yellow-600" :
-                          tip.type === 'danger' ? "bg-red-100 text-red-600" :
-                            "bg-blue-100 text-blue-600"
-                    )}>
-                      <Lightbulb className="w-5 h-5" />
-                    </div>
-                    <div>
-                      <h3 className={cn(
-                        "font-semibold mb-1",
-                        tip.type === 'warning' ? "text-orange-900" :
-                          tip.type === 'alert' ? "text-yellow-900" :
-                            tip.type === 'danger' ? "text-red-900" :
-                              "text-blue-900"
-                      )}>{tip.title}</h3>
-                      <p className={cn(
-                        "text-sm mb-3",
-                        tip.type === 'warning' ? "text-orange-700" :
-                          tip.type === 'alert' ? "text-yellow-700" :
-                            tip.type === 'danger' ? "text-red-700" :
-                              "text-blue-700"
-                      )}>{tip.message}</p>
-                      <button
-                        onClick={() => setActiveTab(tip.targetTab as Tab)}
-                        className="text-xs font-semibold underline opacity-80 hover:opacity-100"
+        {loadingContent ? (
+          <div className="h-[200px] flex items-center justify-center">
+            <div className="w-6 h-6 border-2 border-black border-t-transparent rounded-full animate-spin"></div>
+          </div>
+        ) : (
+          <>
+            {activeTab === 'overview' && (
+              <div className="space-y-8 animate-in fade-in duration-300">
+                {/* Smart Tips */}
+                {analysis.tips.length > 0 && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {analysis.tips.map((tip, idx) => (
+                      <div key={idx} className={cn(
+                        "p-5 rounded-2xl border flex items-start gap-4",
+                        tip.type === 'warning' ? "bg-orange-50 border-orange-100" :
+                          tip.type === 'alert' ? "bg-yellow-50 border-yellow-100" :
+                            tip.type === 'danger' ? "bg-red-50 border-red-100" :
+                              "bg-blue-50 border-blue-100"
+                      )}>
+                        <div className={cn(
+                          "p-2 rounded-xl",
+                          tip.type === 'warning' ? "bg-orange-100 text-orange-600" :
+                            tip.type === 'alert' ? "bg-yellow-100 text-yellow-600" :
+                              tip.type === 'danger' ? "bg-red-100 text-red-600" :
+                                "bg-blue-100 text-blue-600"
+                        )}>
+                          <Lightbulb className="w-5 h-5" />
+                        </div>
+                        <div>
+                          <h3 className={cn(
+                            "font-bold text-sm mb-1",
+                            tip.type === 'warning' ? "text-orange-900" :
+                              tip.type === 'alert' ? "text-yellow-900" :
+                                tip.type === 'danger' ? "text-red-900" :
+                                  "text-blue-900"
+                          )}>{tip.title}</h3>
+                          <p className={cn(
+                            "text-xs mb-3 leading-relaxed",
+                            tip.type === 'warning' ? "text-orange-700" :
+                              tip.type === 'alert' ? "text-yellow-700" :
+                                tip.type === 'danger' ? "text-red-700" :
+                                  "text-blue-700"
+                          )}>{tip.message}</p>
+                          <button
+                            onClick={() => setActiveTab(tip.targetTab as Tab)}
+                            className="text-[10px] font-bold underline opacity-80 hover:opacity-100 cursor-pointer"
+                          >
+                            {tip.action}
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Featured Section */}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                  <div className="lg:col-span-2 space-y-6">
+                    <h2 className="text-base font-bold text-gray-950">Continuar Aprendendo</h2>
+                    {courses.length > 0 && (
+                      <div
+                        onClick={() => {
+                          const course = courses.find(c => c.id === 'invest-angola') || courses[0];
+                          if (course) {
+                            setSelectedCourse(course);
+                          }
+                        }}
+                        className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm flex flex-col sm:flex-row gap-6 items-center group cursor-pointer hover:shadow-md transition-all"
                       >
-                        {tip.action}
-                      </button>
+                        <div className="w-20 h-20 bg-emerald-100 rounded-2xl flex items-center justify-center text-4xl group-hover:scale-105 transition-transform">
+                          {courses.find(c => c.id === 'invest-angola')?.image || courses[0].image}
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex justify-between items-start mb-2">
+                            <h3 className="font-bold text-gray-950 text-base">{courses.find(c => c.id === 'invest-angola')?.title || courses[0].title}</h3>
+                            <span className="text-[10px] font-bold bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-lg border border-emerald-100">Recomendado</span>
+                          </div>
+                          <p className="text-gray-500 text-xs mb-4 leading-relaxed">
+                            {courses.find(c => c.id === 'invest-angola')?.description || courses[0].description}
+                          </p>
+                          <div className="w-full bg-gray-100 h-1.5 rounded-full overflow-hidden">
+                            <div className="bg-emerald-500 h-full w-1/3" />
+                          </div>
+                          <p className="text-[10px] font-bold text-gray-400 mt-2">30% concluído</p>
+                        </div>
+                        <button className="p-3 bg-gray-950 text-white rounded-full hover:bg-gray-800 transition-colors shadow-sm cursor-pointer">
+                          <Play className="w-4 h-4 ml-0.5" />
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="space-y-6">
+                    <h2 className="text-base font-bold text-gray-950">Conquistas</h2>
+                    <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm space-y-4">
+                      <div className={`flex items-center gap-4 ${completedLessons.length >= 3 ? '' : 'opacity-50'}`}>
+                        <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${completedLessons.length >= 3 ? 'bg-emerald-100' : 'bg-gray-100'}`}>
+                          <Target className={`w-5 h-5 ${completedLessons.length >= 3 ? 'text-emerald-600' : 'text-gray-400'}`} />
+                        </div>
+                        <div>
+                          <h4 className="text-xs font-bold text-gray-900">Estudante Dedicado</h4>
+                          <p className="text-[10px] text-gray-500 mt-0.5">Complete 3 aulas</p>
+                        </div>
+                      </div>
+                      <div className={`flex items-center gap-4 ${budgets.length > 0 ? '' : 'opacity-50'}`}>
+                        <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${budgets.length > 0 ? 'bg-yellow-100' : 'bg-gray-100'}`}>
+                          <Award className={`w-5 h-5 ${budgets.length > 0 ? 'text-yellow-600' : 'text-gray-400'}`} />
+                        </div>
+                        <div>
+                          <h4 className="text-xs font-bold text-gray-900">Primeiro Passo</h4>
+                          <p className="text-[10px] text-gray-500 mt-0.5">Criou o primeiro orçamento</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {activeTab === 'fundamentals' && (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-in fade-in duration-300">
+                {fundamentals.map((item) => {
+                  const Icon = {
+                    Wallet, TrendingUp, AlertTriangle, Coins, BarChart3, Brain, ShieldCheck, PieChart
+                  }[item.icon] || BookOpen;
+
+                  return (
+                    <div
+                      key={item.id}
+                      onClick={() => setSelectedFundamental(item)}
+                      className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm hover:shadow-md transition-all cursor-pointer group"
+                    >
+                      <div className="w-12 h-12 rounded-2xl flex items-center justify-center mb-4 bg-gray-50 text-black border border-gray-100 group-hover:scale-105 transition-transform">
+                        <Icon className="w-5 h-5" />
+                      </div>
+                      <h3 className="font-bold text-gray-950 text-sm mb-2">{item.title}</h3>
+                      <p className="text-gray-500 text-xs leading-relaxed">{item.description}</p>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {activeTab === 'courses' && (
+              <div className="space-y-6 animate-in fade-in duration-300">
+                {courses.map((course) => (
+                  <div
+                    key={course.id}
+                    onClick={() => setSelectedCourse(course)}
+                    className="bg-white p-4 rounded-3xl border border-gray-100 shadow-sm flex flex-col sm:flex-row gap-6 hover:shadow-md transition-all cursor-pointer group"
+                  >
+                    <div className="w-full sm:w-44 h-28 bg-gray-50 rounded-2xl flex items-center justify-center text-4xl group-hover:scale-102 transition-transform">
+                      {course.image}
+                    </div>
+                    <div className="flex-1 py-1 flex flex-col justify-between">
+                      <div>
+                        <div className="flex justify-between items-start">
+                          <h3 className="font-bold text-sm text-gray-900">{course.title}</h3>
+                          <span className="px-2 py-0.5 bg-gray-100 rounded-lg text-[10px] font-semibold text-gray-600">{course.level}</span>
+                        </div>
+                        <p className="text-xs text-gray-500 mt-1 mb-2 leading-relaxed">{course.description}</p>
+                        <div className="flex items-center gap-4 text-[10px] text-gray-400 font-semibold">
+                          <span className="flex items-center"><BookOpen className="w-3.5 h-3.5 mr-1" /> {course.modules.length} Aulas</span>
+                          <span className="flex items-center">⏱️ {course.duration}</span>
+                        </div>
+                      </div>
+                      <div className="mt-4 sm:mt-0 flex items-center gap-1 text-emerald-600 font-bold text-xs">
+                        Começar Curso <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+                      </div>
                     </div>
                   </div>
                 ))}
               </div>
             )}
 
-            {/* Featured Section */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <div className="lg:col-span-2 space-y-6">
-                <h2 className="text-xl font-semibold text-gray-900">Continuar Aprendendo</h2>
-                <div
-                  onClick={() => {
-                    const course = COURSES.find(c => c.id === 'invest-angola');
-                    if (course) {
-                      setSelectedCourse(course);
-                      setActiveTab('courses');
-                    }
-                  }}
-                  className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm flex flex-col sm:flex-row gap-6 items-center group cursor-pointer hover:shadow-md transition-all"
-                >
-                  <div className="w-24 h-24 bg-emerald-100 rounded-2xl flex items-center justify-center text-4xl group-hover:scale-110 transition-transform">
-                    🇦🇴
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex justify-between items-start mb-2">
-                      <h3 className="font-semibold text-lg">Investir em Angola</h3>
-                      <span className="text-xs font-semibold bg-emerald-50 text-emerald-700 px-2 py-1 rounded-lg">Novo</span>
-                    </div>
-                    <p className="text-gray-500 text-sm mb-4">
-                      Entenda como funciona a BODIVA, os títulos do tesouro e como proteger seu patrimônio da inflação local.
-                    </p>
-                    <div className="w-full bg-gray-100 h-1.5 rounded-full overflow-hidden">
-                      <div className="bg-emerald-500 h-full w-1/3" />
-                    </div>
-                    <p className="text-xs text-gray-400 mt-2">30% concluído</p>
-                  </div>
-                  <button className="p-3 bg-gray-900 text-white rounded-full hover:bg-gray-800 transition-colors">
-                    <Play className="w-5 h-5 ml-0.5" />
-                  </button>
-                </div>
+            {activeTab === 'simulators' && (
+              <div className="space-y-8 animate-in fade-in duration-300">
+                <CompoundInterestSimulator />
+                <DebtAmortizationSimulator />
+                <FinancialIndependenceSimulator />
               </div>
-
-              <div className="space-y-6">
-                <h2 className="text-xl font-semibold text-gray-900">Conquistas</h2>
-                <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm space-y-4">
-                  <div className={`flex items-center gap-4 ${completedLessons.length >= 3 ? '' : 'opacity-50'}`}>
-                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${completedLessons.length >= 3 ? 'bg-emerald-100' : 'bg-gray-100'}`}>
-                      <Target className={`w-6 h-6 ${completedLessons.length >= 3 ? 'text-emerald-600' : 'text-gray-400'}`} />
-                    </div>
-                    <div>
-                      <h4 className="font-medium text-gray-900">Estudante Dedicado</h4>
-                      <p className="text-xs text-gray-500">Complete 3 aulas</p>
-                    </div>
-                  </div>
-                  <div className={`flex items-center gap-4 ${budgets.length > 0 ? '' : 'opacity-50'}`}>
-                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${budgets.length > 0 ? 'bg-yellow-100' : 'bg-gray-100'}`}>
-                      <Award className={`w-6 h-6 ${budgets.length > 0 ? 'text-yellow-600' : 'text-gray-400'}`} />
-                    </div>
-                    <div>
-                      <h4 className="font-medium text-gray-900">Primeiro Passo</h4>
-                      <p className="text-xs text-gray-500">Criou o primeiro orçamento</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {activeTab === 'fundamentals' && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            {FUNDAMENTALS.map((item) => {
-              // Dynamic icon mapping
-              const Icon = {
-                Wallet, TrendingUp, AlertTriangle, Coins, BarChart3, Brain, ShieldCheck, PieChart
-              }[item.icon] || BookOpen;
-
-              return (
-                <div
-                  key={item.id}
-                  onClick={() => setSelectedFundamental(item)}
-                  className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm hover:shadow-md transition-all cursor-pointer group"
-                >
-                  <div className={`w-12 h-12 rounded-2xl flex items-center justify-center mb-4 bg-${item.color}-50 text-${item.color}-600 group-hover:scale-110 transition-transform`}>
-                    <Icon className="w-6 h-6" />
-                  </div>
-                  <h3 className="font-semibold text-lg mb-2">{item.title}</h3>
-                  <p className="text-gray-500 text-sm">{item.description}</p>
-                </div>
-              );
-            })}
-          </div>
-        )}
-
-        {activeTab === 'courses' && (
-          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            {COURSES.map((course) => (
-              <div
-                key={course.id}
-                onClick={() => setSelectedCourse(course)}
-                className="bg-white p-4 rounded-3xl border border-gray-100 shadow-sm flex flex-col sm:flex-row gap-6 hover:shadow-md transition-all cursor-pointer group"
-              >
-                <div className="w-full sm:w-48 h-32 bg-gray-50 rounded-2xl flex items-center justify-center text-4xl group-hover:scale-105 transition-transform">
-                  {course.image}
-                </div>
-                <div className="flex-1 py-2 flex flex-col justify-between">
-                  <div>
-                    <div className="flex justify-between items-start">
-                      <h3 className="font-semibold text-xl text-gray-900">{course.title}</h3>
-                      <span className="px-3 py-1 bg-gray-100 rounded-full text-xs font-medium text-gray-600">{course.level}</span>
-                    </div>
-                    <p className="text-sm text-gray-500 mt-1 mb-2">{course.description}</p>
-                    <div className="flex items-center gap-4 text-sm text-gray-500">
-                      <span className="flex items-center"><BookOpen className="w-4 h-4 mr-1" /> {course.modules.length} Módulos</span>
-                      <span className="flex items-center"><Clock className="w-4 h-4 mr-1" /> {course.duration}</span>
-                    </div>
-                  </div>
-                  <div className="mt-4 sm:mt-0 flex items-center gap-2 text-emerald-600 font-medium text-sm">
-                    Começar Curso <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {activeTab === 'simulators' && (
-          <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <CompoundInterestSimulator />
-            <DebtAmortizationSimulator />
-            <FinancialIndependenceSimulator />
-          </div>
+            )}
+          </>
         )}
       </div>
 
@@ -748,8 +914,3 @@ export default function Education() {
     </PageTransition>
   );
 }
-
-// Helper icon component for the courses tab
-function LayoutDashboard(props: any) { return <BarChart3 {...props} /> }
-function Clock(props: any) { return <div {...props}><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg></div> }
-

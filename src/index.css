@@ -16,6 +16,8 @@
   --color-brand-800: #166534;
   --color-brand-900: #14532d;
   --color-brand-950: #052e16;
+  --color-gray-55:   #f4f6f8;
+  --color-gray-150:  #eceef2;
 }
 
 @layer base {
@@ -106,6 +108,7 @@ html.dark {
   --color-slate-700: #cbd5e1;
   --color-slate-800: #e2e8f0;
   --color-slate-900: #f1f5f9;
+  --color-gray-55:   #1e293b;
 }
 
 /* ── Background overrides ────────────────────────────────────────────────── */

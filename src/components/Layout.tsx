@@ -31,7 +31,12 @@ import {
   Briefcase,
   MessageSquare,
   Globe,
-  ExternalLink
+  ExternalLink,
+  Heart,
+  ArrowUpDown,
+  ShoppingBag,
+  Store,
+  Download
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/context/AuthContext';
@@ -122,10 +127,15 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     { icon: Sparkles, label: 'Assistente IA', path: '/ai-assistant' },
     { icon: GraduationCap, label: 'Educação', path: '/education' },
     { icon: PieChart, label: 'Relatórios', path: '/reports' },
+    { icon: ArrowUpDown, label: 'Candonga', path: '/candonga' },
+    { icon: Heart, label: 'Mesada Familiar', path: '/mesada-familiar' },
   ];
 
   const communityNavItems = [
+    { icon: Users, label: 'Contatos', path: '/contacts' },
     { icon: MessageSquare, label: 'Comunidade', path: '/community' },
+    { icon: ShoppingBag, label: 'Marketplace', path: '/marketplace' },
+    { icon: Store, label: 'VukaStore', path: '/vuka-store' },
   ];
 
   const bottomNavItems = [
@@ -400,6 +410,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               </div>
             )}
           </button>
+
+
 
           <button
             onClick={handleLogout}

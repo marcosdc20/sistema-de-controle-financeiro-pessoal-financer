@@ -6,66 +6,81 @@ service cloud.firestore {
     // ─── Função auxiliar: verifica se o utilizador autenticado é o Admin ───
     function isAdmin() {
       return request.auth != null && request.auth.uid == 'nCSaiyU9GJbQvH3maeblHbccMXz2';
-
     }
 
     // ─── Coleção: licenses ───────────────────────────────────────────────────
-    // Cada documento é nomeado com a própria chave de licença
-    // Ex: VUKA-XXXX-XXXX-XXXX-XXXX
     match /licenses/{licenseKey} {
-
-      // Admin tem permissão total (criar, ler, atualizar, excluir)
       allow read, write: if isAdmin();
-
-      // Cliente pode obter (GET) um documento se souber a chave exata
-      // Bloqueado: list (listar toda a coleção) → nunca permitido para cliente
       allow get: if request.auth == null || !isAdmin();
-
-      // Cliente pode atualizar APENAS o campo hardware_id
-      // Condições:
-      //   1. O hardware_id atual no banco deve ser null ou string vazia (não ativado ainda)
-      //   2. A atualização deve conter SOMENTE o campo hardware_id (nada mais)
-      //   3. O status deve ser 'active' (não pode ativar licença revogada/expirada)
       allow update: if
-        // Verifica que o documento atual tem hardware_id vazio ou nulo
         (resource.data.hardware_id == null || resource.data.hardware_id == '') &&
-        // Verifica que o status corrente é 'active'
         resource.data.status == 'active' &&
-        // Verifica que o update SÓ toca no campo hardware_id
         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['hardware_id']) &&
-        // Verifica que o novo hardware_id não está vazio
         request.resource.data.hardware_id is string &&
         request.resource.data.hardware_id.size() > 0;
     }
 
     // ─── Coleção: trials ─────────────────────────────────────────────────────
-    // Regista qual Hardware ID já usou o período de teste
-    // O documento é nomeado com o hardware_id (hash SHA-256)
     match /trials/{hardwareId} {
-
-      // Admin tem permissão total
       allow read, write: if isAdmin();
-
-      // Cliente pode verificar se o seu hardware_id já tem um trial registado
       allow get: if true;
-
-      // Cliente pode CRIAR um trial para o seu hardware_id
-      // (apenas criação, não pode modificar um trial já existente)
       allow create: if
         request.resource.data.keys().hasAll(['hardware_id', 'started_at', 'expires_at']) &&
         request.resource.data.hardware_id is string &&
         request.resource.data.hardware_id.size() > 0;
-
-      // Ninguém (exceto admin) pode modificar ou apagar um trial já criado
       allow update, delete: if isAdmin();
     }
 
     // ─── Coleção: payment_proofs ─────────────────────────────────────────────
     match /payment_proofs/{proofId} {
-      // Qualquer cliente pode enviar um comprovativo de pagamento
       allow create: if true;
-      // Apenas o Admin pode ler, atualizar ou excluir comprovativos
       allow read, update, delete: if isAdmin();
+    }
+
+    // ─── Coleções da Comunidade VukaPay ──────────────────────────────────────
+    match /community_posts/{postId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null;
+      allow update, delete: if isAdmin() || (request.auth != null && request.auth.uid == resource.data.authorId);
+      
+      match /comments/{commentId} {
+        allow read, create: if request.auth != null;
+        allow update, delete: if isAdmin() || (request.auth != null && request.auth.uid == resource.data.authorId);
+      }
+    }
+    match /community_stories/{storyId} {
+      allow read, create: if request.auth != null;
+      allow update, delete: if isAdmin() || (request.auth != null && request.auth.uid == resource.data.authorId);
+    }
+    match /community_groups/{groupId} {
+      allow read, create: if request.auth != null;
+      allow update, delete: if isAdmin() || (request.auth != null && request.auth.uid == resource.data.creatorId);
+    }
+    match /community_challenges/{challengeId} {
+      allow read: if request.auth != null;
+      allow write: if isAdmin();
+    }
+    match /community_users/{userId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null && request.auth.uid == userId;
+      allow update, delete: if isAdmin() || (request.auth != null && request.auth.uid == userId);
+    }
+    match /community_chats/{chatId} {
+      allow read, create: if request.auth != null;
+      allow update, delete: if isAdmin() || (request.auth != null && request.auth.uid == resource.data.senderId);
+      
+      match /messages/{messageId} {
+        allow read, create: if request.auth != null;
+        allow update, delete: if isAdmin() || (request.auth != null && request.auth.uid == resource.data.senderId);
+      }
+    }
+    match /education_courses/{courseId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    match /education_fundamentals/{fundamentalId} {
+      allow read: if true;
+      allow write: if isAdmin();
     }
 
     // ─── Todas as outras coleções: bloqueadas para não-admins ────────────────

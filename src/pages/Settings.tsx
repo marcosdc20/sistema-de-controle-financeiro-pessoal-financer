@@ -1,16 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useLicense } from '@/context/LicenseContext';
-import { 
-  getAllLicenses,
-  getAllTrials,
-  createLicenseRecord,
-  updateLicenseStatusInFirestore,
-  resetLicenseHardwareInFirestore,
-  deleteLicenseInFirestore,
-  deleteTrialInFirestore
-} from '@/services/licenseService';
 import { uploadBackupToDrive, downloadBackupFromDrive } from '@/services/googleDrive';
-import type { FirestoreLicense, FirestoreTrial, PlanType, LicenseStatus } from '@/types/license';
+import PurchaseLicenseModal from '@/components/PurchaseLicenseModal';
 
 import { 
   User, 
@@ -45,6 +36,7 @@ import {
   Calendar,
   Search,
   Zap,
+  ArrowUpRight,
 } from 'lucide-react';
 
 
@@ -55,7 +47,7 @@ import { CURRENCIES, cn } from '@/lib/utils';
 import { check } from '@tauri-apps/plugin-updater';
 import { relaunch } from '@tauri-apps/plugin-process';
 
-type SettingsTab = 'general' | 'categories' | 'notifications' | 'security' | 'data' | 'license' | 'admin';
+type SettingsTab = 'general' | 'categories' | 'notifications' | 'security' | 'data' | 'license';
 
 // ─── Sub-componente: Aba de Licença ─────────────────────────────────────────
 function LicenseSettingsTab({ showToast }: { showToast: (msg: string, type?: 'success' | 'error') => void }) {
@@ -233,14 +225,18 @@ function LicenseSettingsTab({ showToast }: { showToast: (msg: string, type?: 'su
                   Dias restantes de avaliação: <strong>{licenseState.trialDaysRemaining}</strong>
                 </span>
               </div>
-              <a
-                href={import.meta.env.VITE_LICENSE_PURCHASE_URL || 'https://vukapay.com/adquirir'}
-                target="_blank"
-                rel="noopener noreferrer"
+              <button
+                onClick={() => setShowPurchaseModal(true)}
                 className="text-xs font-bold text-amber-700 underline hover:text-amber-900"
               >
                 Adquirir Licença →
-              </a>
+              </button>
+              {showPurchaseModal && (
+                <PurchaseLicenseModal 
+                  onClose={() => setShowPurchaseModal(false)} 
+                  userEmail={licenseState.clientEmail} 
+                />
+              )}
             </div>
           )}
         </div>
@@ -409,167 +405,7 @@ export default function Settings() {
     }
   };
 
-  // ─── Painel Admin de Licenciamento ─────────────────────────────────────────
-  const [licenses, setLicenses] = useState<FirestoreLicense[]>([]);
-  const [trials, setTrials] = useState<FirestoreTrial[]>([]);
-  const [isLoadingAdminData, setIsLoadingAdminData] = useState(false);
-  const [adminError, setAdminError] = useState<string | null>(null);
 
-  // Admin form state
-  const [newLicenseEmail, setNewLicenseEmail] = useState('');
-  const [newLicensePlan, setNewLicensePlan] = useState<PlanType>('lifetime');
-  const [newLicenseDuration, setNewLicenseDuration] = useState('lifetime'); // '30', '365', 'lifetime'
-  const [isGeneratingLicense, setIsGeneratingLicense] = useState(false);
-  const [generatedKey, setGeneratedKey] = useState<string | null>(null);
-
-  // Admin filter states
-  const [adminSearchQuery, setAdminSearchQuery] = useState('');
-  const [adminStatusFilter, setAdminStatusFilter] = useState<LicenseStatus | 'all'>('all');
-  const [adminPlanFilter, setAdminPlanFilter] = useState<PlanType | 'all'>('all');
-
-  const loadAdminData = async () => {
-    setIsLoadingAdminData(true);
-    setAdminError(null);
-    try {
-      const [licensesList, trialsList] = await Promise.all([
-        getAllLicenses(),
-        getAllTrials()
-      ]);
-      setLicenses(licensesList);
-      setTrials(trialsList);
-    } catch (err: any) {
-      console.error(err);
-      setAdminError('Erro ao carregar dados do Firestore. Verifique suas regras de segurança ou permissões.');
-    } finally {
-      setIsLoadingAdminData(false);
-    }
-  };
-
-  useEffect(() => {
-    if (activeTab === 'admin') {
-      loadAdminData();
-    }
-  }, [activeTab]);
-
-  const adminStats = useMemo(() => {
-    const stats = {
-      total: licenses.length,
-      active: licenses.filter(l => l.status === 'active').length,
-      expired: licenses.filter(l => l.status === 'expired').length,
-      revoked: licenses.filter(l => l.status === 'revoked').length,
-      trials: trials.length,
-      monthly: licenses.filter(l => l.plan_type === 'monthly').length,
-      annual: licenses.filter(l => l.plan_type === 'annual').length,
-      lifetime: licenses.filter(l => l.plan_type === 'lifetime').length,
-    };
-    return stats;
-  }, [licenses, trials]);
-
-  const filteredLicenses = useMemo(() => {
-    return licenses.filter(lic => {
-      const emailMatch = lic.client_email.toLowerCase().includes(adminSearchQuery.toLowerCase());
-      const keyMatch = lic.id.toLowerCase().includes(adminSearchQuery.toLowerCase());
-      const statusMatch = adminStatusFilter === 'all' || lic.status === adminStatusFilter;
-      const planMatch = adminPlanFilter === 'all' || lic.plan_type === adminPlanFilter;
-      return (emailMatch || keyMatch) && statusMatch && planMatch;
-    });
-  }, [licenses, adminSearchQuery, adminStatusFilter, adminPlanFilter]);
-
-  const handleGenerateLicense = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newLicenseEmail.trim()) {
-      showToast('Por favor, insira o e-mail do cliente.', 'error');
-      return;
-    }
-    setIsGeneratingLicense(true);
-    setGeneratedKey(null);
-    try {
-      let expiresAt: number | null = null;
-      if (newLicenseDuration !== 'lifetime') {
-        const days = parseInt(newLicenseDuration, 10);
-        expiresAt = Date.now() + days * 24 * 60 * 60 * 1000;
-      }
-      const record = await createLicenseRecord(newLicenseEmail.trim(), newLicensePlan, expiresAt);
-      setGeneratedKey(record.id);
-      showToast('Nova chave de licença criada no Firestore!');
-      loadAdminData(); // Reload list
-      
-      // Confetti burst for futuristic admin feel!
-      try {
-        const { default: confetti } = await import('canvas-confetti');
-        confetti({
-          particleCount: 100,
-          spread: 70,
-          origin: { y: 0.6 }
-        });
-      } catch (err) {
-        console.warn('Canvas confetti não pôde ser carregado:', err);
-      }
-    } catch (err) {
-      console.error(err);
-      showToast('Erro ao criar chave de licença.', 'error');
-    } finally {
-      setIsGeneratingLicense(false);
-    }
-  };
-
-  const handleUpdateStatus = async (key: string, currentStatus: LicenseStatus) => {
-    const nextStatus: LicenseStatus = currentStatus === 'active' ? 'revoked' : 'active';
-    const actionText = nextStatus === 'revoked' ? 'revogar' : 'reativar';
-    if (!window.confirm(`Deseja realmente ${actionText} esta licença?`)) {
-      return;
-    }
-    try {
-      await updateLicenseStatusInFirestore(key, nextStatus);
-      showToast(`Licença ${nextStatus === 'revoked' ? 'revogada' : 'reativada'} com sucesso!`);
-      loadAdminData();
-    } catch (err) {
-      console.error(err);
-      showToast('Erro ao atualizar status da licença.', 'error');
-    }
-  };
-
-  const handleResetDevice = async (key: string) => {
-    if (!window.confirm('Deseja realmente desvincular o dispositivo desta licença? Isso permitirá que ela seja ativada em outro computador.')) {
-      return;
-    }
-    try {
-      await resetLicenseHardwareInFirestore(key);
-      showToast('Dispositivo desvinculado com sucesso!');
-      loadAdminData();
-    } catch (err) {
-      console.error(err);
-      showToast('Erro ao desvincular dispositivo.', 'error');
-    }
-  };
-
-  const handleDeleteLicense = async (key: string) => {
-    if (!window.confirm('ATENÇÃO: Deseja realmente excluir permanentemente esta chave de licença do Firestore?')) {
-      return;
-    }
-    try {
-      await deleteLicenseInFirestore(key);
-      showToast('Chave de licença excluída permanentemente.');
-      loadAdminData();
-    } catch (err) {
-      console.error(err);
-      showToast('Erro ao deletar licença.', 'error');
-    }
-  };
-
-  const handleDeleteTrial = async (hwId: string) => {
-    if (!window.confirm('Deseja realmente apagar o registro de trial deste dispositivo? Isso permitirá que ele inicie um novo período de testes de 7 dias.')) {
-      return;
-    }
-    try {
-      await deleteTrialInFirestore(hwId);
-      showToast('Registro de avaliação apagado com sucesso!');
-      loadAdminData();
-    } catch (err) {
-      console.error(err);
-      showToast('Erro ao apagar trial.', 'error');
-    }
-  };
 
   // local toast notification
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
@@ -630,6 +466,8 @@ export default function Settings() {
   }, []);
 
   const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
+  const [showPurchaseModal, setShowPurchaseModal] = useState(false);
   const [tempProfile, setTempProfile] = useState({
     name: dbProfile?.full_name || '',
     email: user?.email || '',
@@ -1319,10 +1157,39 @@ export default function Settings() {
     }
   };
 
-  const isAdminUser = user?.email === (import.meta.env.VITE_ADMIN_EMAIL || 'narcisomarcos826@gmail.com');
-  
+  const handleDeleteAccount = async () => {
+    if (confirm('ATENÇÃO: Deseja realmente EXCLUIR permanentemente a sua conta? Todos os seus dados no servidor serão marcados como excluídos e você será deslogado.')) {
+      try {
+        if (user && user.id !== 'local-user') {
+          const { db: firestoreDb } = await import('@/lib/firebase');
+          const { doc, updateDoc } = await import('firebase/firestore');
+          const userRef = doc(firestoreDb, 'community_users', user.id);
+          await updateDoc(userRef, {
+            is_deleted: true,
+            deleted: true
+          });
+        }
+        
+        // Limpar dados locais
+        const { getDatabase } = await import('@/database/db');
+        const db = await getDatabase();
+        await db.execute('DELETE FROM profiles WHERE id = $1', [user?.id]);
+        
+        sessionStorage.removeItem('vukapay_session_unlocked');
+        await signOut();
+        showToast('A sua conta foi excluída com sucesso.');
+        setTimeout(() => {
+          window.location.href = '/login';
+        }, 1500);
+      } catch (e) {
+        console.error('Erro ao excluir conta:', e);
+        showToast('Falha ao excluir a conta no servidor.', 'error');
+      }
+    }
+  };
+
   const tabs = useMemo(() => {
-    const baseTabs = [
+    return [
       { id: 'general',       label: 'Geral',       icon: User },
       { id: 'categories',    label: 'Categorias',  icon: List },
       { id: 'notifications', label: 'Notificação', icon: Bell },
@@ -1330,11 +1197,7 @@ export default function Settings() {
       { id: 'data',          label: 'Dados',        icon: Save },
       { id: 'license',       label: 'Licença',      icon: BadgeCheck },
     ];
-    if (isAdminUser) {
-      baseTabs.push({ id: 'admin', label: 'Painel Admin', icon: FolderLock });
-    }
-    return baseTabs;
-  }, [isAdminUser]);
+  }, []);
 
 
   return (
@@ -1439,14 +1302,15 @@ export default function Settings() {
           {/* -------------------- TAB 1: GENERAL -------------------- */}
           {activeTab === 'general' && (
             <>
-              {/* Profile Section */}
-              <div className={sectionClass}>
-                <div className="flex items-center justify-between mb-8">
-                  <h2 className="text-lg font-semibold text-gray-900 flex items-center">
-                    <div className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center mr-3 border border-gray-100/50">
-                      <User className="w-4 h-4 text-gray-600" />
+              {/* Profile Section (Premium Redesign) */}
+              <div className="bg-gradient-to-br from-gray-900 to-black rounded-3xl border border-gray-800 shadow-2xl p-8 relative overflow-hidden text-white">
+                <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/10 blur-[80px] rounded-full pointer-events-none" />
+                <div className="flex items-center justify-between mb-8 relative z-10">
+                  <h2 className="text-lg font-semibold flex items-center">
+                    <div className="w-8 h-8 rounded-xl bg-white/10 backdrop-blur-md flex items-center justify-center mr-3 border border-white/10">
+                      <User className="w-4 h-4 text-white" />
                     </div>
-                    Perfil
+                    O Teu Perfil
                   </h2>
                   {!isEditingProfile ? (
                     <button
@@ -1459,7 +1323,7 @@ export default function Settings() {
                         });
                         setIsEditingProfile(true);
                       }}
-                      className="px-4 py-2 bg-gray-50 text-gray-700 rounded-xl text-sm font-medium hover:bg-gray-100 transition-colors border border-gray-100/50"
+                      className="px-4 py-2 bg-white/10 text-white rounded-xl text-sm font-medium hover:bg-white/20 transition-all border border-white/10 backdrop-blur-md"
                     >
                       Editar Perfil
                     </button>
@@ -1467,13 +1331,13 @@ export default function Settings() {
                     <div className="flex gap-2">
                       <button
                         onClick={() => setIsEditingProfile(false)}
-                        className="px-4 py-2 bg-gray-50 text-gray-700 rounded-xl text-sm font-medium hover:bg-gray-100 transition-colors border border-gray-100/50"
+                        className="px-4 py-2 bg-white/10 text-white rounded-xl text-sm font-medium hover:bg-white/20 transition-all border border-white/10"
                       >
                         Cancelar
                       </button>
                       <button
                         onClick={handleSaveProfile}
-                        className="px-4 py-2 bg-black text-white rounded-xl text-sm font-medium hover:bg-gray-800 transition-colors flex items-center gap-2"
+                        className="px-4 py-2 bg-gradient-to-r from-indigo-500 to-indigo-600 text-white rounded-xl text-sm font-bold hover:from-indigo-400 hover:to-indigo-500 transition-all shadow-[0_0_15px_rgba(99,102,241,0.3)] flex items-center gap-2"
                       >
                         <Save className="w-4 h-4" /> Salvar
                       </button>
@@ -1481,9 +1345,9 @@ export default function Settings() {
                   )}
                 </div>
 
-                <div className="flex items-center gap-6">
+                <div className="flex items-center gap-6 relative z-10">
                   <div className="relative group">
-                    <div className="w-20 h-20 rounded-2xl bg-gray-900 flex items-center justify-center text-white text-2xl font-semibold shadow-sm overflow-hidden border border-gray-100">
+                    <div className="w-24 h-24 rounded-3xl bg-gradient-to-tr from-gray-800 to-gray-700 flex items-center justify-center text-white text-3xl font-bold shadow-lg overflow-hidden border border-gray-600">
                       {tempProfile.avatarUrl ? (
                         <img src={tempProfile.avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
                       ) : (
@@ -1491,8 +1355,8 @@ export default function Settings() {
                       )}
                     </div>
                     {isEditingProfile && (
-                      <label className="absolute inset-0 bg-black/50 rounded-2xl flex items-center justify-center text-white text-xs font-medium cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity">
-                        <span>Alterar</span>
+                      <label className="absolute inset-0 bg-black/60 rounded-3xl flex items-center justify-center text-white text-xs font-medium cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity backdrop-blur-sm">
+                        <span>Alterar Avatar</span>
                         <input type="file" accept="image/*" className="hidden" onChange={handleImageChange} />
                       </label>
                     )}
@@ -1504,23 +1368,94 @@ export default function Settings() {
                           type="text"
                           value={tempProfile.name}
                           onChange={(e) => setTempProfile({ ...tempProfile, name: e.target.value })}
-                          className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-gray-200"
+                          className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-sm text-white focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
                           placeholder="Nome"
                         />
                         <input
                           type="email"
                           disabled
                           value={tempProfile.email}
-                          className="w-full px-4 py-2 bg-gray-100 border border-gray-200 rounded-xl text-sm text-gray-400 cursor-not-allowed"
+                          className="w-full px-4 py-3 bg-black/30 border border-white/5 rounded-xl text-sm text-gray-500 cursor-not-allowed"
                           placeholder="Email"
                         />
                       </div>
                     ) : (
                       <>
-                        <h3 className="text-xl font-semibold text-gray-900">{dbProfile?.full_name || 'Usuário'}</h3>
-                        <p className="text-gray-500 mt-1">{user?.email}</p>
+                        <h3 className="text-2xl font-black text-white">{dbProfile?.full_name || 'Usuário'}</h3>
+                        <p className="text-gray-400 mt-1 font-medium">{user?.email}</p>
+                        <div className="flex flex-wrap gap-2 mt-3">
+                          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-bold">
+                            <Check className="w-3 h-3" /> Conta Verificada
+                          </div>
+                          {user?.id !== 'local-user' && (
+                            <button
+                              onClick={handleDeleteAccount}
+                              className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-bold hover:bg-red-500/20 hover:border-red-500/35 transition-all cursor-pointer border-none"
+                            >
+                              Excluir Conta
+                            </button>
+                          )}
+                        </div>
                       </>
                     )}
+                  </div>
+                </div>
+              </div>
+
+              {/* VukaCoin Management Section */}
+              <div className="bg-gradient-to-r from-amber-500/5 to-orange-600/5 rounded-3xl border border-amber-500/20 shadow-[0_4px_30px_rgba(245,158,11,0.03)] p-8 relative overflow-hidden">
+                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-amber-400 to-orange-500" />
+                <div className="flex items-center justify-between mb-8">
+                  <div className="flex items-center gap-4">
+                    <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center shadow-lg shadow-orange-500/30">
+                      <span className="text-2xl">🪙</span>
+                    </div>
+                    <div>
+                      <h2 className="text-xl font-black text-gray-900 tracking-tight">Gestão de VukaCoin</h2>
+                      <p className="text-sm text-gray-500 font-medium">A tua economia interna no VukaPay</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Saldo Actual */}
+                  <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm flex flex-col justify-center items-center text-center">
+                    <div className="text-gray-400 text-sm font-bold uppercase tracking-widest mb-2">Saldo Atual</div>
+                    <div className="text-5xl font-black text-gray-900 mb-2">
+                      {dbProfile?.vuka_coins || 0} <span className="text-amber-500 text-2xl">VC</span>
+                    </div>
+                    <p className="text-xs text-gray-500 max-w-[200px]">Utiliza as tuas VukaCoins na VukaStore para adquirir produtos premium.</p>
+                  </div>
+
+                  {/* Acções Rápidas */}
+                  <div className="flex flex-col justify-center gap-4">
+                    <button 
+                      onClick={() => {
+                        const evt = new CustomEvent('vuka_toast', { detail: { message: 'Funcionalidade de compra a dinheiro real será lançada em breve!', type: 'info' } });
+                        window.dispatchEvent(evt);
+                      }}
+                      className="w-full flex items-center justify-between px-6 py-4 bg-gradient-to-r from-gray-900 to-black hover:from-black hover:to-gray-900 text-white rounded-2xl transition-all shadow-lg active:scale-95 group"
+                    >
+                      <div className="flex items-center gap-3">
+                        <Zap className="w-5 h-5 text-amber-500" />
+                        <span className="font-bold">Comprar Mais VukaCoins</span>
+                      </div>
+                      <ArrowUpRight className="w-4 h-4 text-gray-400 group-hover:text-white transition-colors" />
+                    </button>
+
+                    <button 
+                      onClick={() => {
+                        const evt = new CustomEvent('vuka_toast', { detail: { message: 'A aceder ao histórico...', type: 'success' } });
+                        window.dispatchEvent(evt);
+                      }}
+                      className="w-full flex items-center justify-between px-6 py-4 bg-white hover:bg-gray-50 border border-gray-200 text-gray-800 rounded-2xl transition-all shadow-sm active:scale-95 group"
+                    >
+                      <div className="flex items-center gap-3">
+                        <List className="w-5 h-5 text-indigo-500" />
+                        <span className="font-bold">Histórico de Recompensas</span>
+                      </div>
+                      <ArrowUpRight className="w-4 h-4 text-gray-400 group-hover:text-indigo-500 transition-colors" />
+                    </button>
                   </div>
                 </div>
               </div>
@@ -2770,374 +2705,7 @@ export default function Settings() {
           {/* ─── Tab: Licença VukaPay ─────────────────────────────────────────── */}
           {activeTab === 'license' && <LicenseSettingsTab showToast={showToast} />}
 
-          {/* ─── Tab: Painel Admin (Licenciamento e Trials) ────────────────────── */}
-          {activeTab === 'admin' && isAdminUser && (
-            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-              {/* Estatísticas */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-[0_4px_30px_rgba(0,0,0,0.015)] flex flex-col justify-between">
-                  <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Total Licenças</span>
-                  <div className="flex items-baseline gap-2 mt-4">
-                    <span className="text-3xl font-black text-gray-900">{adminStats.total}</span>
-                    <span className="text-xs text-gray-500 font-medium">chaves</span>
-                  </div>
-                </div>
 
-                <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-[0_4px_30px_rgba(0,0,0,0.015)] flex flex-col justify-between">
-                  <span className="text-xs font-semibold text-emerald-600 uppercase tracking-wider flex items-center gap-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" /> Ativas
-                  </span>
-                  <div className="flex items-baseline gap-2 mt-4">
-                    <span className="text-3xl font-black text-emerald-650">{adminStats.active}</span>
-                    <span className="text-xs text-emerald-600 font-medium">pagas</span>
-                  </div>
-                </div>
-
-                <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-[0_4px_30px_rgba(0,0,0,0.015)] flex flex-col justify-between">
-                  <span className="text-xs font-semibold text-red-600 uppercase tracking-wider">Revogadas / Susp</span>
-                  <div className="flex items-baseline gap-2 mt-4">
-                    <span className="text-3xl font-black text-red-600">{adminStats.revoked}</span>
-                    <span className="text-xs text-red-500 font-medium">chaves</span>
-                  </div>
-                </div>
-
-                <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-[0_4px_30px_rgba(0,0,0,0.015)] flex flex-col justify-between">
-                  <span className="text-xs font-semibold text-amber-600 uppercase tracking-wider">Períodos de Teste</span>
-                  <div className="flex items-baseline gap-2 mt-4">
-                    <span className="text-3xl font-black text-amber-650">{adminStats.trials}</span>
-                    <span className="text-xs text-amber-600 font-medium">dispositivos</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Gerador de Licenças */}
-              <div className="bg-white rounded-3xl border border-gray-100 shadow-[0_4px_30px_rgba(0,0,0,0.015)] p-8 relative overflow-hidden">
-                <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-indigo-500 to-purple-650" />
-                <h3 className="font-bold text-gray-900 text-base mb-2">Gerar Nova Chave de Licença</h3>
-                <p className="text-xs text-gray-500 mb-6">Emita chaves únicas criptografadas para novos clientes VukaPay.</p>
-
-                <form onSubmit={handleGenerateLicense} className="grid md:grid-cols-3 gap-6 items-end">
-                  <div className="space-y-2">
-                    <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider">E-mail do Cliente</label>
-                    <input
-                      type="email"
-                      required
-                      placeholder="cliente@email.com"
-                      value={newLicenseEmail}
-                      onChange={(e) => setNewLicenseEmail(e.target.value)}
-                      className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-900 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition-all"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider">Plano de Subscrição</label>
-                    <select
-                      value={newLicensePlan}
-                      onChange={(e) => {
-                        const val = e.target.value as PlanType;
-                        setNewLicensePlan(val);
-                        if (val === 'lifetime') {
-                          setNewLicenseDuration('lifetime');
-                        } else if (val === 'monthly') {
-                          setNewLicenseDuration('30');
-                        } else {
-                          setNewLicenseDuration('365');
-                        }
-                      }}
-                      className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-900 focus:outline-none focus:border-indigo-500 transition-all"
-                    >
-                      <option value="lifetime">Vitalício (Lifetime)</option>
-                      <option value="annual">Anual</option>
-                      <option value="monthly">Mensal</option>
-                    </select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider">Duração da Licença</label>
-                    <select
-                      value={newLicenseDuration}
-                      onChange={(e) => setNewLicenseDuration(e.target.value)}
-                      disabled={newLicensePlan === 'lifetime'}
-                      className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-900 focus:outline-none focus:border-indigo-500 transition-all disabled:opacity-50"
-                    >
-                      <option value="lifetime">Sem expiração (Vitalício)</option>
-                      <option value="30">30 Dias (Mensal)</option>
-                      <option value="90">90 Dias (Trimestral)</option>
-                      <option value="365">365 Dias (Anual)</option>
-                    </select>
-                  </div>
-
-                  <div className="md:col-span-3 flex justify-end">
-                    <button
-                      type="submit"
-                      disabled={isGeneratingLicense || !newLicenseEmail.trim()}
-                      className="flex items-center gap-2 py-3 px-6 bg-gray-900 hover:bg-gray-800 text-white rounded-xl text-xs font-bold transition-all disabled:opacity-50 active:scale-[0.98] shadow-md shadow-gray-900/10 cursor-pointer"
-                    >
-                      {isGeneratingLicense ? (
-                        <>
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                          <span>A Criar Chave...</span>
-                        </>
-                      ) : (
-                        <>
-                          <Zap className="w-4 h-4 text-amber-400" />
-                          <span>Gerar & Registrar Chave</span>
-                        </>
-                      )}
-                    </button>
-                  </div>
-                </form>
-
-                {generatedKey && (
-                  <div className="mt-6 p-4 bg-indigo-50/50 border border-indigo-100 rounded-2xl animate-in zoom-in-95 duration-200 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-indigo-100 flex items-center justify-center">
-                        <BadgeCheck className="w-5 h-5 text-indigo-650" />
-                      </div>
-                      <div>
-                        <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Chave Emitida com Sucesso!</p>
-                        <code className="text-sm font-mono text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-lg font-bold">{generatedKey}</code>
-                      </div>
-                    </div>
-                    <button
-                      onClick={() => {
-                        navigator.clipboard.writeText(generatedKey);
-                        showToast('Licença copiada!');
-                      }}
-                      className="flex items-center gap-1.5 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-all active:scale-[0.98] self-start md:self-auto cursor-pointer"
-                    >
-                      <Copy className="w-3.5 h-3.5" /> Copiar Licença
-                    </button>
-                  </div>
-                )}
-              </div>
-
-              {/* Tabela de Licenças Existentes */}
-              <div className="bg-white rounded-3xl border border-gray-100 shadow-[0_4px_30px_rgba(0,0,0,0.015)] p-8">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
-                  <div>
-                    <h3 className="font-bold text-gray-900 text-base">Registros de Licenciamento</h3>
-                    <p className="text-xs text-gray-500 mt-0.5">Pesquise, suspenda, reative e gerencie as licenças dos clientes.</p>
-                  </div>
-                  <button
-                    onClick={loadAdminData}
-                    disabled={isLoadingAdminData}
-                    className="p-2 hover:bg-gray-100 rounded-xl border border-gray-200 text-gray-500 hover:text-gray-900 transition-colors self-start cursor-pointer"
-                    title="Recarregar dados"
-                  >
-                    <RefreshCw className={`w-4 h-4 ${isLoadingAdminData ? 'animate-spin' : ''}`} />
-                  </button>
-                </div>
-
-                {/* Filtros */}
-                <div className="grid md:grid-cols-3 gap-4 mb-6">
-                  <div className="relative">
-                    <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                    <input
-                      type="text"
-                      placeholder="Pesquisar por email ou chave..."
-                      value={adminSearchQuery}
-                      onChange={(e) => setAdminSearchQuery(e.target.value)}
-                      className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:outline-none focus:border-indigo-400 transition-all text-gray-900"
-                    />
-                  </div>
-
-                  <select
-                    value={adminStatusFilter}
-                    onChange={(e) => setAdminStatusFilter(e.target.value as LicenseStatus | 'all')}
-                    className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs text-gray-800 focus:outline-none"
-                  >
-                    <option value="all">Filtrar por Status (Todos)</option>
-                    <option value="active">Apenas Ativas</option>
-                    <option value="revoked">Apenas Revogadas</option>
-                    <option value="expired">Apenas Expiradas</option>
-                  </select>
-
-                  <select
-                    value={adminPlanFilter}
-                    onChange={(e) => setAdminPlanFilter(e.target.value as PlanType | 'all')}
-                    className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs text-gray-800 focus:outline-none"
-                  >
-                    <option value="all">Filtrar por Plano (Todos)</option>
-                    <option value="monthly">Plano Mensal</option>
-                    <option value="annual">Plano Anual</option>
-                    <option value="lifetime">Plano Vitalício</option>
-                  </select>
-                </div>
-
-                {adminError && (
-                  <div className="p-4 bg-red-50 text-red-650 border border-red-100 rounded-2xl text-xs leading-relaxed">
-                    {adminError}
-                  </div>
-                )}
-
-                {/* Lista / Tabela */}
-                <div className="overflow-x-auto">
-                  {isLoadingAdminData ? (
-                    <div className="py-20 flex flex-col items-center justify-center text-gray-400 gap-3">
-                      <Loader2 className="w-8 h-8 text-indigo-500 animate-spin" />
-                      <p className="text-xs">Buscando registros no Firestore...</p>
-                    </div>
-                  ) : filteredLicenses.length === 0 ? (
-                    <div className="py-16 text-center text-gray-400 text-xs">
-                      Nenhuma licença encontrada para os filtros selecionados.
-                    </div>
-                  ) : (
-                    <table className="w-full text-left text-xs border-collapse">
-                      <thead>
-                        <tr className="border-b border-gray-100 text-gray-400 font-bold uppercase tracking-wider">
-                          <th className="py-3 px-2">Cliente / E-mail</th>
-                          <th className="py-3 px-2">Chave de Licença</th>
-                          <th className="py-3 px-2">Plano</th>
-                          <th className="py-3 px-2">Dispositivo Vinculado</th>
-                          <th className="py-3 px-2">Data Expiração</th>
-                          <th className="py-3 px-2">Status</th>
-                          <th className="py-3 px-2 text-right">Ações</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-gray-50 text-gray-700">
-                        {filteredLicenses.map((lic) => {
-                          const planLabels: Record<string, string> = {
-                            monthly: 'Mensal',
-                            annual: 'Anual',
-                            lifetime: 'Vitalício',
-                          };
-                          const statusColors: Record<string, string> = {
-                            active: 'text-emerald-700 bg-emerald-50 border-emerald-100',
-                            revoked: 'text-red-700 bg-red-50 border-red-100',
-                            expired: 'text-amber-700 bg-amber-50 border-amber-100',
-                          };
-
-                          return (
-                            <tr key={lic.id} className="hover:bg-gray-50/50 transition-colors">
-                              <td className="py-4 px-2 font-semibold text-gray-900">{lic.client_email}</td>
-                              <td className="py-4 px-2 font-mono text-gray-650 bg-gray-50/20 rounded px-1">{lic.id}</td>
-                              <td className="py-4 px-2 font-medium">{planLabels[lic.plan_type] || lic.plan_type}</td>
-                              <td className="py-4 px-2">
-                                {lic.hardware_id ? (
-                                  <div className="flex items-center gap-1.5 text-indigo-700">
-                                    <Smartphone className="w-3.5 h-3.5" />
-                                    <span className="font-mono text-[10px] select-all truncate max-w-[120px]">{lic.hardware_id.substring(0, 12)}...</span>
-                                  </div>
-                                ) : (
-                                  <span className="text-gray-400">Nenhum</span>
-                                )}
-                              </td>
-                              <td className="py-4 px-2 text-gray-500">
-                                {lic.expires_at ? new Date(lic.expires_at).toLocaleDateString('pt-AO') : 'Nunca'}
-                              </td>
-                              <td className="py-4 px-2">
-                                <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${statusColors[lic.status] || 'text-gray-600 bg-gray-50 border-gray-100'}`}>
-                                  {lic.status === 'active' ? 'Ativa' : lic.status === 'revoked' ? 'Revogada' : 'Expirada'}
-                                </span>
-                              </td>
-                              <td className="py-4 px-2 text-right">
-                                <div className="inline-flex items-center gap-1">
-                                  <button
-                                    onClick={() => handleUpdateStatus(lic.id, lic.status)}
-                                    className={`p-1.5 rounded-lg border transition-colors cursor-pointer ${
-                                      lic.status === 'active'
-                                        ? 'bg-red-50 border-red-105 text-red-600 hover:bg-red-100'
-                                        : 'bg-emerald-50 border-emerald-100 text-emerald-600 hover:bg-emerald-100'
-                                    }`}
-                                    title={lic.status === 'active' ? 'Revogar Chave' : 'Reativar Chave'}
-                                  >
-                                    {lic.status === 'active' ? <ShieldAlert className="w-3.5 h-3.5" /> : <Check className="w-3.5 h-3.5" />}
-                                  </button>
-
-                                  <button
-                                    onClick={() => handleResetDevice(lic.id)}
-                                    disabled={!lic.hardware_id}
-                                    className="p-1.5 rounded-lg border bg-blue-50 border-blue-105 text-blue-600 hover:bg-blue-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
-                                    title="Desvincular Hardware ID"
-                                  >
-                                    <Cpu className="w-3.5 h-3.5" />
-                                  </button>
-
-                                  <button
-                                    onClick={() => handleDeleteLicense(lic.id)}
-                                    className="p-1.5 rounded-lg border bg-gray-50 border-gray-250 text-gray-500 hover:bg-gray-100 transition-colors cursor-pointer"
-                                    title="Excluir Licença Permanente"
-                                  >
-                                    <Trash2 className="w-3.5 h-3.5" />
-                                  </button>
-                                </div>
-                              </td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                  )}
-                </div>
-              </div>
-
-              {/* Tabela de Dispositivos em Avaliação (Trials) */}
-              <div className="bg-white rounded-3xl border border-gray-100 shadow-[0_4px_30px_rgba(0,0,0,0.015)] p-8">
-                <h3 className="font-bold text-gray-900 text-base mb-2">Períodos de Teste (Trials)</h3>
-                <p className="text-xs text-gray-500 mb-6">Histórico de dispositivos que ativaram o período de testes gratuito de 7 dias.</p>
-
-                <div className="overflow-x-auto">
-                  {isLoadingAdminData ? (
-                    <div className="py-12 flex items-center justify-center text-gray-400 text-xs">
-                      Carregando trials...
-                    </div>
-                  ) : trials.length === 0 ? (
-                    <div className="py-12 text-center text-gray-400 text-xs">
-                      Nenhum dispositivo em período de teste registrado no Firestore.
-                    </div>
-                  ) : (
-                    <table className="w-full text-left text-xs border-collapse">
-                      <thead>
-                        <tr className="border-b border-gray-100 text-gray-400 font-bold uppercase tracking-wider">
-                          <th className="py-3 px-2">Hardware ID do Dispositivo</th>
-                          <th className="py-3 px-2">Data de Início</th>
-                          <th className="py-3 px-2">Data de Expiração</th>
-                          <th className="py-3 px-2">Tempo Restante</th>
-                          <th className="py-3 px-2 text-right">Ações</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-gray-50 text-gray-700">
-                        {trials.map((tr) => {
-                          const now = Date.now();
-                          const msLeft = tr.expires_at - now;
-                          const daysLeft = Math.max(0, Math.ceil(msLeft / (24 * 60 * 60 * 1000)));
-
-                          return (
-                            <tr key={tr.hardware_id} className="hover:bg-gray-50/50 transition-colors">
-                              <td className="py-3.5 px-2 font-mono text-gray-900 select-all truncate max-w-[200px]">{tr.hardware_id}</td>
-                              <td className="py-3.5 px-2 text-gray-500">{new Date(tr.started_at).toLocaleString('pt-AO')}</td>
-                              <td className="py-3.5 px-2 text-gray-500">{new Date(tr.expires_at).toLocaleString('pt-AO')}</td>
-                              <td className="py-3.5 px-2">
-                                {msLeft > 0 ? (
-                                  <span className="text-xs font-bold text-amber-600 bg-amber-50 border border-amber-100 px-2 py-0.5 rounded-full">
-                                    {daysLeft} dia{daysLeft !== 1 ? 's' : ''} restante{daysLeft !== 1 ? 's' : ''}
-                                  </span>
-                                ) : (
-                                  <span className="text-xs font-bold text-red-650 bg-red-50 border border-red-100 px-2 py-0.5 rounded-full">
-                                    Expirado
-                                  </span>
-                                )}
-                              </td>
-                              <td className="py-3.5 px-2 text-right">
-                                <button
-                                  onClick={() => handleDeleteTrial(tr.hardware_id)}
-                                  className="p-1.5 rounded-lg border bg-gray-50 border-gray-250 text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
-                                  title="Apagar Registro (Reiniciar Trial)"
-                                >
-                                  <Trash2 className="w-3.5 h-3.5" />
-                                </button>
-                              </td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                  )}
-                </div>
-              </div>
-            </div>
-          )}
 
         </div>
       </div>

@@ -296,7 +296,7 @@ export interface Notification {
   id: string;
   title: string;
   desc: string;
-  type: 'success' | 'warning' | 'info' | 'error';
+  type: 'success' | 'warning' | 'info' | 'error' | 'opportunity';
   date: string;
   read: boolean;
 }
@@ -454,6 +454,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
     security_answer?: string | null;
     recovery_email?: string | null;
     pin_code?: string | null;
+    vuka_coins?: number;
   } | null>(null);
   const [preferences, setPreferences] = useState<UserPreferences | null>(null);
   const [projects, setProjects] = useState<Project[]>([]);
@@ -1048,10 +1049,8 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
                   // 3. Notify the user
                   addNotification({
                     type: 'opportunity',
-                    title: 'Bónus Recebido!',
-                    message: `O Administrador enviou-te ${amount} VukaCoins! (${data.reason || 'Recompensa'})`,
-                    action: 'Ver Loja',
-                    targetTab: 'store'
+                    title: 'Bónus Recebido! 🪙',
+                    desc: `O Administrador enviou-te ${amount} VukaCoins! (${data.reason || 'Recompensa'})`,
                   });
                 } catch (e) {
                   console.error('Erro ao processar VukaCoin Reward:', e);

@@ -1,10 +1,10 @@
 {
   "version": "1.1.4",
-  "notes": "VukaPay v1.1.4 — Modais de licenciamento Premium, bloqueio centralizado de registos duplicados, opção para excluir conta e correções de segurança.",
-  "pub_date": "2026-06-12T16:23:00Z",
+  "notes": "VukaPay v1.1.4 — Vídeo de introdução robusto, menus Admin completos (Store, Educação, Logs, Definições melhoradas), correções TypeScript, assinatura digital para auto-updater e melhorias de segurança.",
+  "pub_date": "2026-06-12T22:40:00Z",
   "platforms": {
     "windows-x86_64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVTUEh6TVdRZXFBTXZ4aUkraitvVW9PYlZNRzdjbEdCMjA2cUREMUl1ODQxbmdidTRkY1pQTWxtVmp3N0N3TEZBM0dKWEhNR2Roc2JJOEZUcStySXU0aTg1UHBkN1dLRGd3PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgxMjgxMzk3CWZpbGU6VnVrYVBheV8xLjEuNF94NjQtc2V0dXAuZXhlCjNKcDhNUVFBeTF2L2s0dHJ4L0JQbGRpcDJLZ2hrWWdnL3BkMFBIZHhINExXd0lIZWVmYnI3YVJEQmNnZDRZN0VreUZWQXZNYndTZTlqcXNkVEp5N0J3PT0K",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUldTUEh6TVdRZXFBTXQzd09TalNTcVNURVFnTDcwUXVNcnRLUDFiTXU1eVRKT3NqU0tTMGpzeG9mV1ljbmR3djVDRkRpM0Iwd3FhWmhNY2dZaVlOcDFWK1Y0TkRJb1YrOEFRPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgxMzAzOTcwCWZpbGU6VnVrYVBheV8xLjEuNF94NjQtc2V0dXAuZXhlClpQZk40dDc0WmRDbmVDZVViVjdNeisrR3AvL0tUUXJoNFl2c3JZS25MNjRRWVdJYTkrZWQrTkl1bHRpaUZDN2YvVGJDKythSkpsbmtrL3V5K041ZEJBPT0K",
       "url": "https://github.com/marcosdc20/sistema-de-controle-financeiro-pessoal-financer/releases/download/v1.1.4/VukaPay_1.1.4_x64-setup.exe"
     },
     "android-aarch64": {

@@ -54,6 +54,7 @@ function LicenseSettingsTab({ showToast }: { showToast: (msg: string, type?: 'su
   const { licenseState, clearLicense, refreshLicense } = useLicense();
   const [isRefreshing, setIsRefreshing] = React.useState(false);
   const [showChangeKey, setShowChangeKey] = React.useState(false);
+  const [showPurchaseModal, setShowPurchaseModal] = React.useState(false);
   const { activateLicenseKey } = useLicense();
   const [newKey, setNewKey] = React.useState('');
   const [isActivating, setIsActivating] = React.useState(false);

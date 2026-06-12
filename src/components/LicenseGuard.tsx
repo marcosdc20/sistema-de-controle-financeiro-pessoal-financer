@@ -450,27 +450,49 @@ export default function LicenseGuard({ children }: LicenseGuardProps) {
   const [isVideoFinished, setIsVideoFinished] = useState(() => {
     return localStorage.getItem('vukapay_intro_played') === 'true';
   });
+  const [videoReady, setVideoReady] = useState(false);
 
   const handleVideoEnded = () => {
     localStorage.setItem('vukapay_intro_played', 'true');
     setIsVideoFinished(true);
   };
 
+  // Safety timeout — if video doesn't end/load within 20s, skip automatically
+  useEffect(() => {
+    if (isVideoFinished) return;
+    const timer = setTimeout(() => {
+      handleVideoEnded();
+    }, 20000);
+    return () => clearTimeout(timer);
+  }, [isVideoFinished]);
+
   if (!isVideoFinished) {
     return (
-      <div className="fixed inset-0 z-[9999] bg-[#030712]">
+      <div className="fixed inset-0 z-[9999] bg-[#030712] flex items-center justify-center">
         <video
           src="/videos/intro.mp4"
           autoPlay
           playsInline
-          className="w-full h-full object-cover pointer-events-none"
+          muted={false}
+          className="w-full h-full object-cover pointer-events-none absolute inset-0"
           onEnded={handleVideoEnded}
+          onError={handleVideoEnded}
+          onCanPlay={() => setVideoReady(true)}
         />
+        {/* Fallback loading while video loads */}
+        {!videoReady && (
+          <div className="relative z-10 flex flex-col items-center gap-4">
+            <div className="w-20 h-20 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-3xl flex items-center justify-center shadow-2xl shadow-indigo-500/30 animate-pulse">
+              <TrendingUp className="w-10 h-10 text-white" />
+            </div>
+            <p className="text-sm text-gray-400 animate-pulse">A carregar VukaPay...</p>
+          </div>
+        )}
         <button
           onClick={handleVideoEnded}
-          className="absolute bottom-8 right-8 px-4 py-2 bg-black/50 hover:bg-black/80 text-white/70 hover:text-white text-xs font-bold rounded-xl backdrop-blur-md transition-all border border-white/10"
+          className="absolute bottom-8 right-8 z-20 px-5 py-2.5 bg-black/60 hover:bg-black/80 text-white/80 hover:text-white text-xs font-bold rounded-xl backdrop-blur-md transition-all border border-white/10 shadow-lg"
         >
-          Pular Introdução
+          Pular Introdução →
         </button>
       </div>
     );

@@ -176,7 +176,7 @@ export default function SuccessStories() {
           {featuredStory && (
             <div 
               onClick={() => setSelectedStory(featuredStory)}
-              className="bg-white dark:bg-slate-900 border border-gray-150 dark:border-slate-800 rounded-[2rem] overflow-hidden flex flex-col lg:flex-row shadow-sm hover:border-indigo-400 dark:hover:border-indigo-550 transition-all text-left group cursor-pointer"
+              className="bg-white border border-gray-100 rounded-[2rem] overflow-hidden flex flex-col lg:flex-row shadow-sm hover:border-brand-200 transition-all text-left group cursor-pointer"
             >
               <div className="lg:w-1/2 relative min-h-[300px] overflow-hidden">
                 <img 
@@ -186,26 +186,26 @@ export default function SuccessStories() {
                   referrerPolicy="no-referrer"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent lg:hidden" />
-                <span className="absolute top-6 left-6 bg-indigo-600 text-white px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-widest shadow-lg">
+                <span className="absolute top-6 left-6 bg-brand-600 text-white px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-widest shadow-lg">
                   {featuredStory.category}
                 </span>
               </div>
               <div className="lg:w-1/2 p-8 lg:p-12 flex flex-col justify-center space-y-6">
-                <div className="flex items-center gap-2 text-indigo-600 dark:text-indigo-400">
+                <div className="flex items-center gap-2 text-brand-600">
                   <ShieldCheck className="w-5 h-5" />
                   <span className="text-xs font-black uppercase tracking-widest">História Verificada</span>
                 </div>
-                <h2 className="text-3xl lg:text-4xl font-black text-gray-900 dark:text-white leading-tight tracking-tight">
+                <h2 className="text-3xl lg:text-4xl font-black text-gray-900 leading-tight tracking-tight">
                   {featuredStory.title}
                 </h2>
-                <p className="text-base text-gray-600 dark:text-gray-300 leading-relaxed italic line-clamp-4">
+                <p className="text-base text-gray-600 leading-relaxed italic line-clamp-4">
                   "{featuredStory.excerpt}"
                 </p>
-                <div className="pt-6 border-t border-gray-100 dark:border-slate-800 flex items-center justify-between mt-auto">
-                  <span className="text-sm text-gray-500 dark:text-gray-400 font-bold">
+                <div className="pt-6 border-t border-gray-100 flex items-center justify-between mt-auto">
+                  <span className="text-sm text-gray-500 font-bold">
                     {featuredStory.authorName}, {featuredStory.authorLocation}
                   </span>
-                  <button className="text-xs font-black text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1 cursor-pointer">
+                  <button className="text-xs font-black text-brand-600 hover:underline flex items-center gap-1 cursor-pointer">
                     Ler Relato Completo
                   </button>
                 </div>
@@ -220,7 +220,7 @@ export default function SuccessStories() {
               <div 
                 key={story.id}
                 onClick={() => setSelectedStory(story)}
-                className="bg-white dark:bg-slate-900 border border-gray-150 dark:border-slate-800 rounded-3xl p-6 shadow-sm flex flex-col hover:border-indigo-400 dark:hover:border-indigo-550 transition-colors text-left group cursor-pointer"
+                className="bg-white border border-gray-100 rounded-3xl p-6 shadow-sm flex flex-col hover:border-brand-200 transition-colors text-left group cursor-pointer"
               >
                 <div className="h-48 rounded-2xl overflow-hidden mb-6 relative">
                   <img 
@@ -231,18 +231,18 @@ export default function SuccessStories() {
                   />
                 </div>
                 <div className="flex-1 flex flex-col">
-                  <span className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-widest mb-2 block">
+                  <span className="text-[10px] font-black text-emerald-600 uppercase tracking-widest mb-2 block">
                     {story.category}
                   </span>
-                  <h3 className="font-black text-xl text-gray-900 dark:text-white mb-3 group-hover:text-indigo-600 transition-colors">
+                  <h3 className="font-black text-xl text-gray-900 mb-3 group-hover:text-brand-600 transition-colors">
                     {story.title}
                   </h3>
-                  <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed mb-6 flex-1 line-clamp-3">
+                  <p className="text-sm text-gray-500 leading-relaxed mb-6 flex-1 line-clamp-3">
                     {story.excerpt}
                   </p>
-                  <div className="flex items-center justify-between mt-auto pt-4 border-t border-gray-50 dark:border-slate-800/40">
+                  <div className="flex items-center justify-between mt-auto pt-4 border-t border-gray-100">
                     <span className="text-xs text-gray-400 font-bold">{story.authorName}, {story.authorLocation}</span>
-                    <button className="text-sm font-bold text-indigo-600 dark:text-indigo-400 hover:underline text-left cursor-pointer">
+                    <button className="text-sm font-bold text-brand-600 hover:underline text-left cursor-pointer">
                       Ler história
                     </button>
                   </div>
@@ -253,16 +253,16 @@ export default function SuccessStories() {
             {/* Submit Story CTA (Matches Card Size) */}
             <div 
               onClick={() => setIsSubmitModalOpen(true)}
-              className="bg-indigo-50/50 dark:bg-slate-800/20 border border-dashed border-indigo-200 dark:border-slate-700 rounded-3xl p-6 shadow-sm flex flex-col items-center justify-center text-center group hover:bg-indigo-100/40 dark:hover:bg-slate-800/40 transition-colors cursor-pointer min-h-[400px]"
+              className="bg-brand-50/50 border border-dashed border-brand-200 rounded-3xl p-6 shadow-sm flex flex-col items-center justify-center text-center group hover:bg-brand-50 transition-colors cursor-pointer min-h-[400px]"
             >
-              <div className="w-16 h-16 bg-indigo-100 dark:bg-indigo-900/30 rounded-2xl flex items-center justify-center text-indigo-600 dark:text-indigo-400 mb-6 group-hover:scale-110 transition-transform">
+              <div className="w-16 h-16 bg-brand-100 rounded-2xl flex items-center justify-center text-brand-600 mb-6 group-hover:scale-110 transition-transform">
                 <Sparkles className="w-8 h-8" />
               </div>
-              <h3 className="font-black text-xl text-gray-900 dark:text-white mb-3">Tens uma História de Sucesso?</h3>
-              <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed max-w-[250px] mx-auto mb-8 font-medium">
+              <h3 className="font-black text-xl text-gray-900 mb-3">Tens uma História de Sucesso?</h3>
+              <p className="text-sm text-gray-600 leading-relaxed max-w-[250px] mx-auto mb-8 font-medium">
                 Incentiva a comunidade partilhando a tua evolução financeira. Cada pequeno passo motiva novos membros.
               </p>
-              <button className="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-black text-sm rounded-xl shadow-sm transition-all active:scale-95 cursor-pointer">
+              <button className="px-6 py-3 bg-brand-500 hover:bg-brand-600 text-white font-black text-sm rounded-xl shadow-sm transition-all active:scale-95 cursor-pointer">
                 Partilhar o meu percurso
               </button>
             </div>
@@ -274,11 +274,11 @@ export default function SuccessStories() {
       {/* ─── MODAL: VER RELATO COMPLETO ─── */}
       {selectedStory && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <div className="bg-white dark:bg-slate-900 border border-gray-150 dark:border-slate-800 rounded-[2.5rem] p-6 lg:p-8 w-full max-w-2xl shadow-2xl relative animate-in fade-in zoom-in-95 duration-200 flex flex-col max-h-[85vh]">
+          <div className="bg-white border border-gray-100 rounded-[2.5rem] p-6 lg:p-8 w-full max-w-2xl shadow-2xl relative animate-in fade-in zoom-in-95 duration-200 flex flex-col max-h-[85vh]">
             
             <button 
               onClick={() => setSelectedStory(null)}
-              className="absolute top-6 right-6 text-gray-400 hover:text-gray-600 dark:hover:text-white p-1 rounded-full hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors"
+              className="absolute top-6 right-6 text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-100 transition-colors"
             >
               <X className="w-5 h-5" />
             </button>
@@ -290,29 +290,29 @@ export default function SuccessStories() {
                   alt="" 
                   className="w-full h-full object-cover"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-slate-950/70 via-slate-950/20 to-transparent" />
-                <span className="absolute bottom-6 left-6 px-3 py-1 bg-indigo-600 text-white text-xs font-black uppercase rounded-lg">
+                <div className="absolute inset-0 bg-gradient-to-t from-gray-900/70 via-gray-900/20 to-transparent" />
+                <span className="absolute bottom-6 left-6 px-3 py-1 bg-brand-600 text-white text-xs font-black uppercase rounded-lg">
                   {selectedStory.category}
                 </span>
               </div>
 
               <div>
-                <h2 className="text-2xl lg:text-3xl font-black text-gray-900 dark:text-white mb-2 leading-tight">
+                <h2 className="text-2xl lg:text-3xl font-black text-gray-900 mb-2 leading-tight">
                   {selectedStory.title}
                 </h2>
                 <p className="text-xs text-gray-400 font-bold uppercase tracking-wider mb-4">
                   Por {selectedStory.authorName} • {selectedStory.authorLocation} • {new Date(selectedStory.createdAt).toLocaleDateString()}
                 </p>
-                <div className="text-gray-700 dark:text-gray-300 text-sm leading-relaxed whitespace-pre-wrap space-y-4">
+                <div className="text-gray-700 text-sm leading-relaxed whitespace-pre-wrap space-y-4">
                   {selectedStory.content}
                 </div>
               </div>
             </div>
 
-            <div className="pt-6 border-t border-gray-100 dark:border-slate-800/80 mt-4 flex justify-end shrink-0">
+            <div className="pt-6 border-t border-gray-100 mt-4 flex justify-end shrink-0">
               <button 
                 onClick={() => setSelectedStory(null)}
-                className="px-6 py-3 bg-gray-100 hover:bg-gray-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-300 font-black text-sm rounded-xl cursor-pointer"
+                className="px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-black text-sm rounded-xl cursor-pointer"
               >
                 Fechar
               </button>
@@ -324,22 +324,22 @@ export default function SuccessStories() {
       {/* ─── MODAL: FORMULÁRIO SUBMETER HISTÓRIA ─── */}
       {isSubmitModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <div className="bg-white dark:bg-slate-900 border border-gray-150 dark:border-slate-800 rounded-[2rem] p-6 lg:p-8 w-full max-w-lg shadow-2xl relative animate-in fade-in zoom-in-95 duration-200">
+          <div className="bg-white border border-gray-100 rounded-[2rem] p-6 lg:p-8 w-full max-w-lg shadow-2xl relative animate-in fade-in zoom-in-95 duration-200">
             <button 
               onClick={() => setIsSubmitModalOpen(false)}
-              className="absolute top-6 right-6 text-gray-400 hover:text-gray-600 dark:hover:text-white p-1 rounded-full hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors"
+              className="absolute top-6 right-6 text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-100 transition-colors"
             >
               <X className="w-5 h-5" />
             </button>
-            <h2 className="text-2xl font-black text-gray-900 dark:text-white mb-6 text-left tracking-tight">Partilhar Minha História</h2>
+            <h2 className="text-2xl font-black text-gray-900 mb-6 text-left tracking-tight">Partilhar Minha História</h2>
             <form onSubmit={handleSubmitStory} className="space-y-4 text-left">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-black text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">Categoria</label>
+                  <label className="block text-xs font-black text-gray-500 uppercase tracking-wider mb-2">Categoria</label>
                   <select 
                     value={newCategory}
                     onChange={(e) => setNewCategory(e.target.value)}
-                    className="w-full bg-gray-50 dark:bg-slate-950 border border-gray-150 dark:border-slate-800 p-3 rounded-xl text-sm font-bold text-gray-700 dark:text-gray-300 focus:outline-none focus:border-indigo-500"
+                    className="w-full bg-gray-50 border border-gray-200 p-3 rounded-xl text-sm font-bold text-gray-900 focus:outline-none focus:border-brand-500"
                   >
                     <option value="Poupança">Poupança</option>
                     <option value="Investimentos">Investimentos</option>
@@ -348,47 +348,47 @@ export default function SuccessStories() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-black text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">Província / Localização</label>
+                  <label className="block text-xs font-black text-gray-500 uppercase tracking-wider mb-2">Província / Localização</label>
                   <input 
                     type="text" 
                     value={newAuthorLocation}
                     onChange={(e) => setNewAuthorLocation(e.target.value)}
                     placeholder="Ex: Luanda, Benguela"
-                    className="w-full bg-gray-50 dark:bg-slate-950 border border-gray-150 dark:border-slate-800 p-3 rounded-xl text-sm font-bold text-gray-700 dark:text-gray-300 focus:outline-none focus:border-indigo-500 font-bold"
+                    className="w-full bg-gray-50 border border-gray-200 p-3 rounded-xl text-sm font-bold text-gray-900 focus:outline-none focus:border-brand-500 font-bold"
                     required
                   />
                 </div>
               </div>
               <div>
-                <label className="block text-xs font-black text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">Título do Relato</label>
+                <label className="block text-xs font-black text-gray-500 uppercase tracking-wider mb-2">Título do Relato</label>
                 <input 
                   type="text" 
                   value={newTitle}
                   onChange={(e) => setNewTitle(e.target.value)}
                   placeholder="Ex: Como formei meu fundo de emergência"
-                  className="w-full bg-gray-50 dark:bg-slate-950 border border-gray-150 dark:border-slate-800 p-3 rounded-xl text-sm font-bold text-gray-700 dark:text-gray-300 placeholder:text-gray-400 focus:outline-none focus:border-indigo-500"
+                  className="w-full bg-gray-50 border border-gray-200 p-3 rounded-xl text-sm font-bold text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-brand-500"
                   required
                 />
               </div>
               <div>
-                <label className="block text-xs font-black text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">Resumo Rápido (Frase curta)</label>
+                <label className="block text-xs font-black text-gray-500 uppercase tracking-wider mb-2">Resumo Rápido (Frase curta)</label>
                 <input 
                   type="text" 
                   value={newExcerpt}
                   onChange={(e) => setNewExcerpt(e.target.value)}
                   placeholder="Ex: Guardei meus primeiros 100.000 Kz em 6 meses organizando as despesas."
-                  className="w-full bg-gray-50 dark:bg-slate-950 border border-gray-150 dark:border-slate-800 p-3 rounded-xl text-sm font-bold text-gray-700 dark:text-gray-300 placeholder:text-gray-400 focus:outline-none focus:border-indigo-500"
+                  className="w-full bg-gray-50 border border-gray-200 p-3 rounded-xl text-sm font-bold text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-brand-500"
                   required
                 />
               </div>
               <div>
-                <label className="block text-xs font-black text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">História Completa</label>
+                <label className="block text-xs font-black text-gray-500 uppercase tracking-wider mb-2">História Completa</label>
                 <textarea 
                   rows={6}
                   value={newContent}
                   onChange={(e) => setNewContent(e.target.value)}
                   placeholder="Conte em pormenor a sua estratégia, dificuldades e metas alcançadas..."
-                  className="w-full bg-gray-50 dark:bg-slate-950 border border-gray-150 dark:border-slate-800 p-3 rounded-xl text-sm font-bold text-gray-700 dark:text-gray-300 placeholder:text-gray-400 focus:outline-none focus:border-indigo-500 resize-none leading-relaxed"
+                  className="w-full bg-gray-50 border border-gray-200 p-3 rounded-xl text-sm font-bold text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-brand-500 resize-none leading-relaxed"
                   required
                 />
               </div>
@@ -396,13 +396,13 @@ export default function SuccessStories() {
                 <button 
                   type="button" 
                   onClick={() => setIsSubmitModalOpen(false)}
-                  className="px-5 py-3 bg-gray-100 hover:bg-gray-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-300 font-black text-sm rounded-xl cursor-pointer transition-colors"
+                  className="px-5 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-black text-sm rounded-xl cursor-pointer transition-colors"
                 >
                   Cancelar
                 </button>
                 <button 
                   type="submit" 
-                  className="px-5 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-black text-sm rounded-xl shadow-sm cursor-pointer transition-all active:scale-95 flex items-center gap-2"
+                  className="px-5 py-3 bg-brand-500 hover:bg-brand-600 text-white font-black text-sm rounded-xl shadow-sm cursor-pointer transition-all active:scale-95 flex items-center gap-2"
                 >
                   <Sparkles className="w-4 h-4" />
                   Publicar Relato

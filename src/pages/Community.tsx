@@ -15,27 +15,27 @@ export default function Community() {
   const [activeTab, setActiveTab] = useState<TabType>('feed');
 
   return (
-    <PageTransition className="space-y-8 pb-20 relative">
+    <PageTransition className="space-y-8 pb-20 relative max-w-7xl mx-auto px-4 lg:px-8">
       {/* Header and Menu Selection */}
       <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-black text-gray-900 dark:text-white tracking-tight flex items-center gap-3">
-            <MessageSquare className="w-8 h-8 text-indigo-600" />
+          <h1 className="text-3xl font-black text-gray-900 tracking-tight flex items-center gap-3">
+            <MessageSquare className="w-8 h-8 text-brand-600" />
             Comunidade VukaPay
           </h1>
-          <p className="text-gray-555 dark:text-gray-400 mt-1">Conecte-se, aprenda e cresça junto com outros investidores angolanos.</p>
+          <p className="text-gray-500 mt-1 font-medium">Conecte-se, aprenda e cresça junto com outros investidores angolanos.</p>
         </div>
 
-        <div className="flex bg-white/85 dark:bg-slate-900/80 backdrop-blur border border-gray-150 dark:border-slate-800 p-1.5 rounded-2xl shadow-sm self-start overflow-x-auto w-full xl:w-auto">
+        <div className="flex bg-white border border-gray-200 p-1.5 rounded-2xl shadow-sm self-start overflow-x-auto w-full xl:w-auto scrollbar-hide">
           {(['feed', 'chats', 'groups', 'challenges', 'stories', 'downloads'] as TabType[]).map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
               className={cn(
-                "px-5 py-2.5 rounded-xl text-xs font-bold transition-all capitalize whitespace-nowrap cursor-pointer",
+                "px-5 py-2.5 rounded-xl text-sm font-bold transition-all capitalize whitespace-nowrap cursor-pointer",
                 activeTab === tab 
-                  ? "bg-gray-900 dark:bg-indigo-600 text-white shadow-md" 
-                  : "text-gray-500 dark:text-gray-400 hover:text-gray-950 dark:hover:text-white hover:bg-gray-100/50 dark:hover:bg-slate-800"
+                  ? "bg-gray-900 text-white shadow-md" 
+                  : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
               )}
             >
               {tab === 'feed' ? 'Fórum Geral' : 

@@ -463,32 +463,40 @@ export default function LicenseGuard({ children }: LicenseGuardProps) {
     const timer = setTimeout(() => {
       handleVideoEnded();
     }, 20000);
+
+    const vid = document.getElementById('intro-video') as HTMLVideoElement;
+    if (vid) {
+      vid.onended = handleVideoEnded;
+      vid.onerror = handleVideoEnded;
+      vid.onloadeddata = () => setVideoReady(true);
+      vid.oncanplay = () => setVideoReady(true);
+    }
+
     return () => clearTimeout(timer);
   }, [isVideoFinished]);
 
   if (!isVideoFinished) {
     return (
       <div className="fixed inset-0 z-[9999] bg-[#030712] flex items-center justify-center">
-        <video
-          src="/videos/intro.mp4"
-          autoPlay
-          playsInline
-          muted
-          className="w-full h-full object-cover pointer-events-none absolute inset-0"
-          onEnded={handleVideoEnded}
-          onError={handleVideoEnded}
-          onLoadedData={() => setVideoReady(true)}
-          onCanPlay={() => setVideoReady(true)}
+        <div 
+          className="w-full h-full absolute inset-0 pointer-events-none"
+          dangerouslySetInnerHTML={{
+            __html: `
+              <video 
+                autoplay 
+                muted 
+                playsinline 
+                class="w-full h-full object-cover"
+                id="intro-video"
+              >
+                <source src="/videos/intro.mp4" type="video/mp4" />
+              </video>
+            `
+          }}
         />
-        {/* Fallback loading while video loads */}
-        {!videoReady && (
-          <div className="relative z-10 flex flex-col items-center gap-4">
-            <div className="w-20 h-20 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-3xl flex items-center justify-center shadow-2xl shadow-indigo-500/30 animate-pulse">
-              <TrendingUp className="w-10 h-10 text-white" />
-            </div>
-            <p className="text-sm text-gray-400 animate-pulse">A iniciar VukaPay...</p>
-          </div>
-        )}
+        {/* Usamos um ref ou um effect no componentDidMount se precisarmos dos eventos no React, 
+            mas como o fallback handleVideoEnded() tem um timeout de 20s, vai prosseguir na mesma.
+            Para suportar onEnded e onLoadedData, ligaremos no useEffect via querySelector */}
         <button
           onClick={handleVideoEnded}
           className="absolute bottom-8 right-8 z-20 px-5 py-2.5 bg-black/60 hover:bg-black/80 text-white/80 hover:text-white text-xs font-bold rounded-xl backdrop-blur-md transition-all border border-white/10 shadow-lg"

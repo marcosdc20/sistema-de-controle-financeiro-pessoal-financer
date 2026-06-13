@@ -207,29 +207,29 @@ export default function Challenges() {
       
       {/* Header Dashboard Grid */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="md:col-span-2 bg-white dark:bg-slate-900 border border-gray-150 dark:border-slate-800 rounded-3xl p-8 flex flex-col justify-between shadow-sm text-left relative overflow-hidden">
+        <div className="md:col-span-2 bg-white border border-gray-100 rounded-3xl p-8 flex flex-col justify-between shadow-sm text-left relative overflow-hidden">
           <div className="relative z-10">
-            <h2 className="text-2xl lg:text-3xl font-black text-gray-900 dark:text-white mb-3 tracking-tight">Desafios de Poupança Colaborativa</h2>
-            <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed max-w-xl">
+            <h2 className="text-2xl lg:text-3xl font-black text-gray-900 mb-3 tracking-tight">Desafios de Poupança Colaborativa</h2>
+            <p className="text-sm text-gray-500 leading-relaxed max-w-xl font-medium">
               Transforme os seus hábitos financeiros num jogo saudável. Participe nas metas financeiras coletivas, acumule reputação XP e ganhe insígnias decorativas para o seu perfil VukaPay.
             </p>
           </div>
           <div className="flex items-center gap-2 mt-8 relative z-10">
-            <span className="text-xs bg-indigo-50 text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-400 px-3 py-1 rounded-full font-black uppercase tracking-wider">
+            <span className="text-xs bg-brand-50 text-brand-700 border border-brand-100 px-3 py-1 rounded-full font-black uppercase tracking-wider">
               Desafios Ativos Deste Mês
             </span>
           </div>
           <div className="absolute right-0 top-0 opacity-5 pointer-events-none translate-x-4 -translate-y-4">
-             <Target className="w-48 h-48" />
+             <Target className="w-48 h-48 text-brand-600" />
           </div>
         </div>
 
         {/* Rank HUD */}
-        <div className="bg-slate-900 text-white rounded-3xl p-8 flex flex-col justify-between shadow-lg relative overflow-hidden text-left">
-          <div className="absolute right-0 top-0 w-32 h-32 bg-indigo-500/20 rounded-full blur-2xl" />
+        <div className="bg-gray-900 text-white rounded-3xl p-8 flex flex-col justify-between shadow-lg relative overflow-hidden text-left border border-gray-800">
+          <div className="absolute right-0 top-0 w-32 h-32 bg-brand-500/20 rounded-full blur-2xl" />
           <div className="flex justify-between items-start z-10 mb-6">
             <Trophy className="w-8 h-8 text-amber-400" />
-            <span className="bg-white/10 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest text-indigo-200">
+            <span className="bg-white/10 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest text-brand-200">
               O seu Rank VukaPay
             </span>
           </div>
@@ -246,8 +246,8 @@ export default function Challenges() {
 
       {/* Active Challenges Progress Row */}
       <div>
-        <h3 className="text-lg font-black text-gray-900 dark:text-white mb-5 text-left flex items-center gap-2">
-          <Target className="w-5 h-5 text-indigo-600" /> Os Seus Desafios Ativos
+        <h3 className="text-lg font-black text-gray-900 mb-5 text-left flex items-center gap-2">
+          <Target className="w-5 h-5 text-brand-600" /> Os Seus Desafios Ativos
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           
@@ -259,45 +259,45 @@ export default function Challenges() {
                 key={ch.id}
                 onClick={() => handleToggleChallenge(ch.id, ch.xpReward)}
                 className={cn(
-                  "bg-white dark:bg-slate-900 border border-gray-150 dark:border-slate-800 rounded-3xl p-6 shadow-sm flex items-center gap-6 group hover:border-indigo-400 dark:hover:border-indigo-500 transition-all text-left cursor-pointer",
-                  isJoined && "border-indigo-600/30 bg-indigo-50/10 dark:bg-indigo-950/5"
+                  "bg-white border border-gray-100 rounded-3xl p-6 shadow-sm flex items-center gap-6 group hover:border-brand-100 hover:shadow-md transition-all text-left cursor-pointer",
+                  isJoined && "border-brand-500/30 bg-brand-50/30"
                 )}
               >
                 <div className="relative w-24 h-24 shrink-0 flex items-center justify-center">
                   <svg className="w-full h-full transform -rotate-90">
-                    <circle cx="48" cy="48" r="40" className="stroke-gray-100 dark:stroke-slate-800 fill-none" strokeWidth="8" />
+                    <circle cx="48" cy="48" r="40" className="stroke-gray-100 fill-none" strokeWidth="8" />
                     <circle 
                       cx="48" 
                       cy="48" 
                       r="40" 
-                      className={cn("fill-none transition-all duration-1000", isJoined ? "stroke-indigo-600" : "stroke-gray-300 dark:stroke-slate-700")} 
+                      className={cn("fill-none transition-all duration-1000", isJoined ? "stroke-brand-500" : "stroke-gray-300")} 
                       strokeWidth="8" 
                       strokeDasharray="251.2" 
                       strokeDashoffset={dashoffset} 
                       strokeLinecap="round" 
                     />
                   </svg>
-                  <span className="absolute text-lg font-black text-gray-900 dark:text-white">{ch.progressPercentage}%</span>
+                  <span className="absolute text-lg font-black text-gray-900">{ch.progressPercentage}%</span>
                 </div>
                 <div className="flex-1 text-left">
                   <div className="flex items-center gap-2 mb-2">
                     <span className={cn(
-                      "text-[10px] font-black uppercase px-2 py-0.5 rounded tracking-wider",
+                      "text-[10px] font-black uppercase px-2 py-0.5 rounded tracking-wider border",
                       ch.category === 'Urgente' 
-                        ? "bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-400" 
-                        : "bg-indigo-50 text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-400"
+                        ? "bg-rose-50 text-rose-700 border-rose-100" 
+                        : "bg-brand-50 text-brand-700 border-brand-100"
                     )}>
                       {ch.category}
                     </span>
-                    <span className="text-xs text-gray-500 dark:text-gray-400 font-bold">{ch.duration}</span>
+                    <span className="text-xs text-gray-400 font-bold">{ch.duration}</span>
                   </div>
-                  <h4 className="font-black text-base text-gray-900 dark:text-white mb-2 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+                  <h4 className="font-black text-base text-gray-900 mb-2 group-hover:text-brand-600 transition-colors">
                     {ch.title}
                   </h4>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed mb-3">{ch.description}</p>
+                  <p className="text-xs text-gray-500 leading-relaxed mb-3 font-medium">{ch.description}</p>
                   <span className={cn(
                     "text-xs font-black",
-                    isJoined ? "text-indigo-600 dark:text-indigo-400" : "text-gray-400"
+                    isJoined ? "text-brand-600" : "text-gray-400"
                   )}>
                     {isJoined ? '✓ Inscrito (+'+ch.xpReward+' XP)' : 'Clique para Aderir'}
                   </span>
@@ -313,42 +313,42 @@ export default function Challenges() {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         
         {/* Weekly Leaderboard (4 Cols) */}
-        <div className="lg:col-span-4 bg-white dark:bg-slate-900 border border-gray-150 dark:border-slate-800 rounded-3xl overflow-hidden shadow-sm">
-          <div className="p-5 bg-gray-50 dark:bg-slate-800/50 border-b border-gray-150 dark:border-slate-800 flex justify-between items-center">
-            <h4 className="font-black text-sm text-gray-900 dark:text-white uppercase tracking-widest text-left">Ranking da Rede</h4>
-            <Trophy className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+        <div className="lg:col-span-4 bg-white border border-gray-100 rounded-3xl overflow-hidden shadow-sm">
+          <div className="p-5 bg-gray-50 border-b border-gray-100 flex justify-between items-center">
+            <h4 className="font-black text-sm text-gray-900 uppercase tracking-widest text-left">Ranking da Rede</h4>
+            <Trophy className="w-5 h-5 text-brand-600" />
           </div>
-          <div className="divide-y divide-gray-100 dark:divide-slate-850">
+          <div className="divide-y divide-gray-50">
             {leaderboard.map((item, idx) => {
               const isCurrentUser = item.id === activeUserId;
               return (
                 <div 
                   key={item.id} 
                   className={cn(
-                    "p-4 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-slate-800/50 transition-colors", 
-                    isCurrentUser ? 'bg-indigo-50/50 dark:bg-indigo-950/10' : ''
+                    "p-4 flex items-center justify-between hover:bg-gray-50 transition-colors", 
+                    isCurrentUser ? 'bg-brand-50/50' : ''
                   )}
                 >
                   <div className="flex items-center gap-4 text-left">
-                    <span className={cn("w-6 text-sm font-black", isCurrentUser ? 'text-indigo-600 dark:text-indigo-400' : 'text-gray-400')}>
+                    <span className={cn("w-6 text-sm font-black", isCurrentUser ? 'text-brand-600' : 'text-gray-400')}>
                       {idx + 1}º
                     </span>
                     <div className={cn(
                       "w-10 h-10 rounded-full font-bold text-xs flex items-center justify-center border", 
                       isCurrentUser 
-                        ? "bg-indigo-600 text-white border-indigo-500" 
-                        : "bg-gray-100 text-gray-700 border-gray-200 dark:bg-slate-800 dark:text-gray-300 dark:border-slate-700"
+                        ? "bg-brand-500 text-white border-brand-500" 
+                        : "bg-gray-50 text-gray-700 border-gray-200"
                     )}>
                       {item.name.substring(0, 2).toUpperCase()}
                     </div>
                     <div>
-                      <p className={cn("text-sm font-black", isCurrentUser ? 'text-indigo-700 dark:text-indigo-400' : 'text-gray-900 dark:text-white')}>
+                      <p className={cn("text-sm font-black", isCurrentUser ? 'text-brand-700' : 'text-gray-900')}>
                         {item.name} {isCurrentUser && '(Você)'}
                       </p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 font-bold mt-0.5">{item.badge || '🎯 Guardião'}</p>
+                      <p className="text-xs text-gray-400 font-bold mt-0.5">{item.badge || '🎯 Guardião'}</p>
                     </div>
                   </div>
-                  <span className="text-xs font-black text-emerald-600 dark:text-emerald-400">{item.xp} XP</span>
+                  <span className="text-xs font-black text-emerald-600">{item.xp} XP</span>
                 </div>
               );
             })}
@@ -363,27 +363,27 @@ export default function Challenges() {
             return (
               <div 
                 key={ch.id}
-                className="bg-white dark:bg-slate-900 border border-gray-150 dark:border-slate-800 rounded-3xl overflow-hidden shadow-sm hover:border-indigo-400 dark:hover:border-indigo-500 transition-all flex flex-col justify-between group text-left"
+                className="bg-white border border-gray-100 rounded-3xl overflow-hidden shadow-sm hover:border-brand-200 hover:shadow-md transition-all flex flex-col justify-between group text-left"
               >
-                <div className="h-32 relative bg-gray-200 dark:bg-slate-800 overflow-hidden">
+                <div className="h-32 relative bg-gray-100 overflow-hidden">
                   <img 
                     src={ch.imageUrl} 
                     alt={ch.title} 
                     className="w-full h-full object-cover opacity-80 group-hover:scale-105 transition-transform duration-700"
                     referrerPolicy="no-referrer"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-                  <span className="absolute bottom-4 left-4 px-2.5 py-1 bg-emerald-600 text-white text-[10px] font-black rounded uppercase tracking-widest">
+                  <div className="absolute inset-0 bg-gradient-to-t from-gray-900/80 via-gray-900/20 to-transparent" />
+                  <span className="absolute bottom-4 left-4 px-2.5 py-1 bg-emerald-600 text-white text-[10px] font-black rounded uppercase tracking-widest shadow-sm">
                     {ch.category}
                   </span>
                 </div>
                 <div className="p-6 flex-1 flex flex-col justify-between">
                   <div className="mb-6">
-                    <h4 className="font-black text-lg text-gray-900 dark:text-white mb-2">{ch.title}</h4>
-                    <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed">{ch.description}</p>
+                    <h4 className="font-black text-lg text-gray-900 mb-2">{ch.title}</h4>
+                    <p className="text-sm text-gray-500 leading-relaxed font-medium">{ch.description}</p>
                   </div>
-                  <div className="flex items-center justify-between pt-4 border-t border-gray-100 dark:border-slate-800">
-                    <span className="text-xs text-gray-450 dark:text-gray-500 font-bold">
+                  <div className="flex items-center justify-between pt-4 border-t border-gray-100">
+                    <span className="text-xs text-gray-400 font-bold">
                       {ch.participantCount} poupadores
                     </span>
                     <button 
@@ -391,8 +391,8 @@ export default function Challenges() {
                       className={cn(
                         "px-4 py-2 rounded-xl text-xs font-black cursor-pointer border transition-all active:scale-95 shadow-sm",
                         isJoined
-                          ? "bg-gray-100 text-gray-600 border-gray-200 dark:bg-slate-850 dark:text-gray-300 dark:border-slate-700"
-                          : "bg-indigo-600 hover:bg-indigo-700 text-white border-transparent"
+                          ? "bg-gray-50 text-gray-500 border-gray-200"
+                          : "bg-brand-500 hover:bg-brand-600 text-white border-transparent"
                       )}
                     >
                       {isJoined ? 'Inscrito ✓' : 'Aderir (+'+ch.xpReward+' XP)'}

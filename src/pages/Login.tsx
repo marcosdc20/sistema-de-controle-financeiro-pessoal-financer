@@ -231,8 +231,25 @@ export default function Login() {
     loginWithGoogle();
   };
 
-  const handleForgotPassword = () => {
-    alert('Como o VukaPay armazena os dados localmente no seu computador (SQLite), as suas credenciais ficam salvas de forma encriptada localmente. Para gerir ou repor as suas definições de segurança, consulte a documentação oficial ou o e-mail de suporte.');
+  const handleForgotPassword = async () => {
+    if (!email.trim()) {
+      setLoginError('Por favor, introduza o seu e-mail acima antes de clicar em recuperar palavra-passe.');
+      return;
+    }
+    
+    try {
+      const { sendPasswordResetEmail } = await import('firebase/auth');
+      const { auth } = await import('@/lib/firebase');
+      await sendPasswordResetEmail(auth, email.trim());
+      alert('E-mail de recuperação enviado! Verifique a sua caixa de entrada (e a pasta de spam) para criar uma nova palavra-passe.');
+    } catch (err: any) {
+      console.error(err);
+      if (err.code === 'auth/user-not-found') {
+        setLoginError('Este e-mail não está registado.');
+      } else {
+        setLoginError('Erro ao enviar e-mail de recuperação. Tente novamente.');
+      }
+    }
   };
 
   // Helper translations

@@ -18,7 +18,7 @@ const firebaseConfig = {
   appId:             import.meta.env.VITE_FIREBASE_APP_ID as string,
 };
 
-import { getAuth } from 'firebase/auth';
+import { getAuth, setPersistence, browserLocalPersistence } from 'firebase/auth';
 import { getStorage } from 'firebase/storage';
 
 // ─── Inicialização singleton — evita re-inicialização em hot-reload ──────────
@@ -30,6 +30,9 @@ if (getApps().length === 0) {
 }
 
 const auth = getAuth(app);
+setPersistence(auth, browserLocalPersistence).catch((err) => {
+  console.error("Erro ao definir persistência do Firebase Auth:", err);
+});
 const storage = getStorage(app);
 
 // ─── Instância do Firestore com Suporte Offline ─────────────────────────────────

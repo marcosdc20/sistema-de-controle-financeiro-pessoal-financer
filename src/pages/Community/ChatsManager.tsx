@@ -451,29 +451,29 @@ export default function ChatsManager() {
   });
 
   return (
-    <PageTransition className="w-full max-w-7xl mx-auto h-[75vh] flex rounded-3xl overflow-hidden border border-gray-150 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-lg">
+    <PageTransition className="w-full max-w-7xl mx-auto h-[75vh] flex rounded-3xl overflow-hidden border border-gray-100 bg-white shadow-lg">
       
       {/* ─── PAINEL ESQUERDO: LISTA DE CHATS ─── */}
-      <aside className="w-full md:w-[350px] shrink-0 border-r border-gray-150 dark:border-slate-800 flex flex-col bg-gray-50/50 dark:bg-slate-900/50">
+      <aside className="w-full md:w-[350px] shrink-0 border-r border-gray-100 flex flex-col bg-gray-50/50">
         
         {/* Header Esquerdo */}
-        <div className="p-4 border-b border-gray-150 dark:border-slate-800 flex items-center justify-between bg-white dark:bg-slate-900">
+        <div className="p-4 border-b border-gray-100 flex items-center justify-between bg-white">
           <div className="flex items-center gap-3">
-            <img className="w-9 h-9 rounded-full object-cover border border-gray-100 dark:border-slate-800" src={activeUserAvatar} alt="" />
-            <span className="font-black text-sm text-gray-900 dark:text-white leading-tight">Os Meus Chats</span>
+            <img className="w-9 h-9 rounded-full object-cover border border-gray-100" src={activeUserAvatar} alt="" />
+            <span className="font-black text-sm text-gray-900 leading-tight">Os Meus Chats</span>
           </div>
           <div className="flex items-center gap-2">
             <button 
               onClick={() => setIsNewChatOpen(true)}
               title="Nova Conversa Privada"
-              className="p-2 text-gray-500 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-xl transition-colors cursor-pointer"
+              className="p-2 text-gray-400 hover:text-brand-600 hover:bg-gray-50 rounded-xl transition-colors cursor-pointer"
             >
               <User className="w-4 h-4" />
             </button>
             <button 
               onClick={() => setIsNewGroupOpen(true)}
               title="Criar Círculo/Grupo"
-              className="p-2 text-gray-500 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-xl transition-colors cursor-pointer"
+              className="p-2 text-gray-400 hover:text-brand-600 hover:bg-gray-50 rounded-xl transition-colors cursor-pointer"
             >
               <Users className="w-4 h-4" />
             </button>
@@ -481,52 +481,52 @@ export default function ChatsManager() {
         </div>
 
         {/* Barra de Pesquisa */}
-        <div className="p-3 border-b border-gray-150 dark:border-slate-800 bg-white dark:bg-slate-900">
-          <div className="relative flex items-center bg-gray-100 dark:bg-slate-950 px-3 py-2 rounded-xl">
+        <div className="p-3 border-b border-gray-100 bg-white">
+          <div className="relative flex items-center bg-gray-50 px-3 py-2 rounded-xl border border-gray-100">
             <Search className="w-4 h-4 text-gray-400 mr-2 shrink-0" />
             <input 
               type="text" 
               placeholder="Pesquisar conversas ou grupos..." 
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
-              className="bg-transparent border-none focus:outline-none w-full text-xs font-bold text-gray-700 dark:text-gray-300 placeholder:text-gray-400"
+              className="bg-transparent border-none focus:outline-none w-full text-xs font-bold text-gray-700 placeholder:text-gray-400"
             />
           </div>
         </div>
 
         {/* Lista de Conversas */}
-        <div className="flex-1 overflow-y-auto divide-y divide-gray-100 dark:divide-slate-850">
+        <div className="flex-1 overflow-y-auto divide-y divide-gray-50">
           {filteredChats.length === 0 ? (
             <div className="p-8 text-center text-gray-400">
               <MessageSquare className="w-8 h-8 text-gray-300 mx-auto mb-2" />
               <p className="text-xs font-bold">Nenhuma conversa ativa.</p>
-              <p className="text-[10px] text-gray-400 mt-1">Inicie um chat ou crie um grupo clicando nos ícones acima.</p>
+              <p className="text-[10px] text-gray-400 mt-1 font-medium">Inicie um chat ou crie um grupo clicando nos ícones acima.</p>
             </div>
           ) : (
             filteredChats.map((chat) => {
               const isActive = selectedChat?.id === chat.id;
               const isGroup = chat.type === 'group';
-              const info = isGroup ? { name: chat.name || 'Grupo', avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(chat.name || 'G')}&background=c7d2fe&color=3730a3` } : getPrivateChatInfo(chat);
+              const info = isGroup ? { name: chat.name || 'Grupo', avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(chat.name || 'G')}&background=0ea5e9&color=fff` } : getPrivateChatInfo(chat);
 
               return (
                 <div 
                   key={chat.id}
                   onClick={() => setSelectedChat(chat)}
                   className={cn(
-                    "p-4 flex items-center justify-between cursor-pointer transition-all hover:bg-gray-100/60 dark:hover:bg-slate-800/40 text-left",
-                    isActive ? "bg-indigo-50/50 dark:bg-indigo-950/10 border-l-4 border-indigo-600" : ""
+                    "p-4 flex items-center justify-between cursor-pointer transition-all hover:bg-gray-50 text-left",
+                    isActive ? "bg-brand-50/50 border-l-4 border-brand-500" : ""
                   )}
                 >
                   <div className="flex items-center gap-3 min-w-0">
                     <img 
                       src={info.avatar} 
                       alt="" 
-                      className="w-10 h-10 rounded-full object-cover shrink-0 border border-gray-100 dark:border-slate-800"
+                      className="w-10 h-10 rounded-full object-cover shrink-0 border border-gray-200 bg-white"
                       referrerPolicy="no-referrer"
                     />
                     <div className="min-w-0">
-                      <p className="text-xs font-black text-gray-900 dark:text-white truncate mb-0.5">{info.name}</p>
-                      <p className="text-[11px] text-gray-400 dark:text-gray-505 truncate font-medium max-w-[200px]">
+                      <p className="text-xs font-black text-gray-900 truncate mb-0.5">{info.name}</p>
+                      <p className="text-[11px] text-gray-500 truncate font-medium max-w-[200px]">
                         {chat.lastMessage || 'Nenhuma mensagem.'}
                       </p>
                     </div>
@@ -544,22 +544,22 @@ export default function ChatsManager() {
       </aside>
 
       {/* ─── PAINEL DIREITO: CONVERSA ATIVA ─── */}
-      <main className="flex-1 flex flex-col bg-gray-50/50 dark:bg-slate-900/30">
+      <main className="flex-1 flex flex-col bg-gray-50/30">
         {selectedChat ? (
           <>
             {/* Header da Conversa */}
-            <div className="p-4 border-b border-gray-150 dark:border-slate-800 flex items-center justify-between bg-white dark:bg-slate-900">
+            <div className="p-4 border-b border-gray-100 flex items-center justify-between bg-white">
               <div className="flex items-center gap-3 text-left">
                 <img 
-                  src={selectedChat.type === 'group' ? `https://ui-avatars.com/api/?name=${encodeURIComponent(selectedChat.name || 'G')}&background=c7d2fe&color=3730a3` : getPrivateChatInfo(selectedChat).avatar} 
+                  src={selectedChat.type === 'group' ? `https://ui-avatars.com/api/?name=${encodeURIComponent(selectedChat.name || 'G')}&background=0ea5e9&color=fff` : getPrivateChatInfo(selectedChat).avatar} 
                   alt="" 
-                  className="w-9 h-9 rounded-full object-cover border border-gray-100 dark:border-slate-800" 
+                  className="w-9 h-9 rounded-full object-cover border border-gray-200 bg-white" 
                 />
                 <div>
-                  <h3 className="text-xs font-black text-gray-900 dark:text-white leading-tight">
+                  <h3 className="text-xs font-black text-gray-900 leading-tight">
                     {selectedChat.type === 'group' ? selectedChat.name : getPrivateChatInfo(selectedChat).name}
                   </h3>
-                  <span className="text-[10px] text-gray-400 dark:text-gray-500 font-bold block mt-0.5">
+                  <span className="text-[10px] text-gray-500 font-bold block mt-0.5">
                     {selectedChat.type === 'group' ? `${selectedChat.members?.length} membros no círculo` : 'Conversa Privada Segura'}
                   </span>
                 </div>
@@ -570,8 +570,8 @@ export default function ChatsManager() {
             <div className="flex-1 overflow-y-auto p-4 space-y-4 flex flex-col scrollbar-thin">
               {messages.length === 0 ? (
                 <div className="my-auto text-center text-gray-400 py-10">
-                  <p className="text-xs font-bold">Envie a primeira mensagem para este canal.</p>
-                  <p className="text-[10px] text-gray-400 mt-1">Suporta texto, fotos, áudio e vídeo.</p>
+                  <p className="text-xs font-bold text-gray-500">Envie a primeira mensagem para este canal.</p>
+                  <p className="text-[10px] text-gray-400 mt-1 font-medium">Suporta texto, fotos, áudio e vídeo.</p>
                 </div>
               ) : (
                 messages.map((msg) => {
@@ -586,13 +586,13 @@ export default function ChatsManager() {
                       className={cn(
                         "max-w-[70%] flex flex-col text-left p-3.5 rounded-[1.5rem] relative",
                         isSelf 
-                          ? "bg-indigo-600 text-white rounded-tr-none self-end" 
-                          : "bg-white dark:bg-slate-800 text-gray-800 dark:text-gray-100 rounded-tl-none self-start border border-gray-150 dark:border-slate-850"
+                          ? "bg-brand-500 text-white rounded-tr-none self-end shadow-sm" 
+                          : "bg-white text-gray-800 rounded-tl-none self-start border border-gray-100 shadow-sm"
                       )}
                     >
                       {/* Remetente em grupos */}
                       {selectedChat.type === 'group' && !isSelf && (
-                        <span className="text-[9px] font-black text-indigo-500 dark:text-indigo-400 mb-1 uppercase tracking-wider block">
+                        <span className="text-[9px] font-black text-brand-600 mb-1 uppercase tracking-wider block">
                           @{msg.senderName}
                         </span>
                       )}
@@ -611,7 +611,7 @@ export default function ChatsManager() {
                       )}
 
                       {isAudio && msg.mediaUrl && (
-                        <div className="mb-2 rounded-xl overflow-hidden max-w-[280px] p-2 bg-slate-900/10 rounded-lg">
+                        <div className="mb-2 rounded-xl overflow-hidden max-w-[280px] p-2 bg-gray-50 border border-gray-100">
                           <audio src={msg.mediaUrl} controls className="w-full text-black" />
                         </div>
                       )}
@@ -620,7 +620,7 @@ export default function ChatsManager() {
                       <p className="text-sm font-medium leading-relaxed whitespace-pre-wrap">{msg.content}</p>
                       
                       {/* Timestamp */}
-                      <span className={cn("text-[8px] mt-1 block text-right font-medium opacity-70", isSelf ? "text-indigo-100" : "text-gray-400")}>
+                      <span className={cn("text-[8px] mt-1 block text-right font-bold opacity-70", isSelf ? "text-brand-100" : "text-gray-400")}>
                         {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                       </span>
                     </div>
@@ -631,13 +631,13 @@ export default function ChatsManager() {
             </div>
 
             {/* Input e Barra de Ações */}
-            <div className="p-4 border-t border-gray-150 dark:border-slate-800 bg-white dark:bg-slate-900 shrink-0">
+            <div className="p-4 border-t border-gray-100 bg-white shrink-0">
               
               {/* Indicador de processamento de mídia */}
               {isAttaching && (
-                <div className="mb-2 flex items-center gap-2 p-2 bg-indigo-50/50 dark:bg-indigo-950/20 border border-indigo-100 dark:border-indigo-900 rounded-xl">
-                  <div className="w-4 h-4 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
-                  <span className="text-xs text-indigo-700 dark:text-indigo-300 font-bold">{attachmentStatus}</span>
+                <div className="mb-2 flex items-center gap-2 p-2 bg-brand-50 border border-brand-100 rounded-xl">
+                  <div className="w-4 h-4 border-2 border-brand-500 border-t-transparent rounded-full animate-spin" />
+                  <span className="text-xs text-brand-700 font-bold">{attachmentStatus}</span>
                 </div>
               )}
 
@@ -672,7 +672,7 @@ export default function ChatsManager() {
                     type="button"
                     onClick={() => imageInputRef.current?.click()}
                     title="Enviar Imagem"
-                    className="p-2 text-gray-500 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-xl transition-colors cursor-pointer"
+                    className="p-2 text-gray-400 hover:text-brand-600 hover:bg-gray-50 rounded-xl transition-colors cursor-pointer"
                   >
                     <ImageIcon className="w-4 h-4" />
                   </button>
@@ -680,7 +680,7 @@ export default function ChatsManager() {
                     type="button"
                     onClick={() => videoInputRef.current?.click()}
                     title="Enviar Vídeo"
-                    className="p-2 text-gray-500 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-xl transition-colors cursor-pointer"
+                    className="p-2 text-gray-400 hover:text-brand-600 hover:bg-gray-50 rounded-xl transition-colors cursor-pointer"
                   >
                     <Video className="w-4 h-4" />
                   </button>
@@ -688,7 +688,7 @@ export default function ChatsManager() {
                     type="button"
                     onClick={() => audioInputRef.current?.click()}
                     title="Enviar Áudio/Música"
-                    className="p-2 text-gray-500 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-xl transition-colors cursor-pointer"
+                    className="p-2 text-gray-400 hover:text-brand-600 hover:bg-gray-50 rounded-xl transition-colors cursor-pointer"
                   >
                     <Music className="w-4 h-4" />
                   </button>
@@ -700,13 +700,13 @@ export default function ChatsManager() {
                   value={inputText}
                   onChange={e => setInputText(e.target.value)}
                   placeholder="Escreva uma mensagem..."
-                  className="flex-1 bg-gray-100 dark:bg-slate-950 border border-gray-150 dark:border-slate-850 p-3 rounded-2xl text-sm font-bold text-gray-700 dark:text-gray-300 focus:outline-none focus:border-indigo-500"
+                  className="flex-1 bg-gray-50 border border-gray-100 p-3 rounded-2xl text-sm font-bold text-gray-900 focus:outline-none focus:border-brand-500 placeholder:text-gray-400"
                 />
 
                 {/* Enviar */}
                 <button 
                   type="submit"
-                  className="p-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl cursor-pointer transition-all active:scale-95 shadow-sm"
+                  className="p-3 bg-brand-500 hover:bg-brand-600 text-white rounded-2xl cursor-pointer transition-all active:scale-95 shadow-sm"
                 >
                   <Send className="w-4 h-4" />
                 </button>
@@ -715,15 +715,15 @@ export default function ChatsManager() {
           </>
         ) : (
           /* Empty Chat Area */
-          <div className="flex-1 flex flex-col items-center justify-center p-8 text-center bg-gray-50/50 dark:bg-slate-950/20">
-            <div className="w-16 h-16 bg-indigo-50 dark:bg-indigo-950/40 rounded-3xl flex items-center justify-center text-indigo-600 dark:text-indigo-400 mb-6 border border-indigo-100 dark:border-indigo-900 shadow-sm">
+          <div className="flex-1 flex flex-col items-center justify-center p-8 text-center bg-gray-50">
+            <div className="w-16 h-16 bg-brand-50 rounded-3xl flex items-center justify-center text-brand-600 mb-6 border border-brand-100 shadow-sm">
               <MessageSquare className="w-8 h-8" />
             </div>
-            <h3 className="font-black text-xl text-gray-900 dark:text-white mb-2 leading-tight">VukaPay Conversas & Círculos</h3>
-            <p className="text-sm text-gray-550 dark:text-gray-400 max-w-sm leading-relaxed font-medium">
+            <h3 className="font-black text-xl text-gray-900 mb-2 leading-tight">VukaPay Conversas & Círculos</h3>
+            <p className="text-sm text-gray-500 max-w-sm leading-relaxed font-medium">
               Fale de forma privada com outros investidores ou crie círculos de poupança (Kixiquila) com sincronização em tempo real.
             </p>
-            <p className="text-xs text-gray-400 mt-4 bg-white dark:bg-slate-900 border border-gray-150 dark:border-slate-800 px-3 py-1 rounded-full font-bold">
+            <p className="text-xs text-brand-600 mt-4 bg-brand-50 border border-brand-100 px-3 py-1.5 rounded-full font-bold">
               Escolha uma conversa no painel esquerdo para começar.
             </p>
           </div>
@@ -733,32 +733,32 @@ export default function ChatsManager() {
       {/* ─── MODAL: NOVA CONVERSA PRIVADA ─── */}
       {isNewChatOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <div className="bg-white dark:bg-slate-900 border border-gray-150 dark:border-slate-800 rounded-[2rem] p-6 w-full max-w-md shadow-2xl relative animate-in fade-in zoom-in-95 duration-200">
+          <div className="bg-white border border-gray-100 rounded-[2rem] p-6 w-full max-w-md shadow-2xl relative animate-in fade-in zoom-in-95 duration-200">
             <button 
               onClick={() => setIsNewChatOpen(false)}
-              className="absolute top-6 right-6 text-gray-400 hover:text-gray-600 dark:hover:text-white p-1 rounded-full hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors"
+              className="absolute top-6 right-6 text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-100 transition-colors"
             >
               <X className="w-5 h-5" />
             </button>
-            <h2 className="text-xl font-black text-gray-900 dark:text-white mb-6 text-left tracking-tight">Nova Conversa Privada</h2>
+            <h2 className="text-xl font-black text-gray-900 mb-6 text-left tracking-tight">Nova Conversa Privada</h2>
             <div className="space-y-3 max-h-[350px] overflow-y-auto pr-1">
               {users.length === 0 ? (
-                <p className="text-xs text-gray-400 italic text-center py-6">Nenhum membro registado na comunidade.</p>
+                <p className="text-xs text-gray-400 font-medium text-center py-6">Nenhum membro registado na comunidade.</p>
               ) : (
                 users.map(u => (
                   <div 
                     key={u.id}
                     onClick={() => startPrivateChat(u)}
-                    className="p-3 bg-gray-50 dark:bg-slate-950 border border-gray-150 dark:border-slate-850 rounded-2xl flex items-center justify-between cursor-pointer hover:border-indigo-500 hover:bg-indigo-50/5 dark:hover:bg-slate-800/40 transition-all text-left"
+                    className="p-3 bg-gray-50 border border-gray-100 rounded-2xl flex items-center justify-between cursor-pointer hover:border-brand-500 hover:bg-brand-50/50 transition-all text-left"
                   >
                     <div className="flex items-center gap-3">
-                      <img className="w-9 h-9 rounded-full object-cover border border-gray-100 dark:border-slate-800" src={u.avatar} alt="" />
+                      <img className="w-9 h-9 rounded-full object-cover border border-gray-200 bg-white" src={u.avatar} alt="" />
                       <div>
-                        <p className="text-xs font-black text-gray-900 dark:text-white">@{u.name}</p>
-                        <span className="text-[9px] bg-indigo-50 text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-400 px-1 rounded font-bold uppercase">{u.badge || '🎯 Guardião'}</span>
+                        <p className="text-xs font-black text-gray-900">@{u.name}</p>
+                        <span className="text-[9px] bg-brand-50 text-brand-700 border border-brand-100 px-1 rounded font-bold uppercase mt-1 inline-block">{u.badge || '🎯 Guardião'}</span>
                       </div>
                     </div>
-                    <span className="text-[10px] text-indigo-600 dark:text-indigo-400 font-black">Conversar</span>
+                    <span className="text-[10px] text-brand-600 font-black">Conversar</span>
                   </div>
                 ))
               )}
@@ -770,42 +770,42 @@ export default function ChatsManager() {
       {/* ─── MODAL: CRIAR CÍRCULO / GRUPO ─── */}
       {isNewGroupOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <div className="bg-white dark:bg-slate-900 border border-gray-150 dark:border-slate-800 rounded-[2.5rem] p-6 lg:p-8 w-full max-w-lg shadow-2xl relative animate-in fade-in zoom-in-95 duration-200">
+          <div className="bg-white border border-gray-100 rounded-[2.5rem] p-6 lg:p-8 w-full max-w-lg shadow-2xl relative animate-in fade-in zoom-in-95 duration-200">
             <button 
               onClick={() => setIsNewGroupOpen(false)}
-              className="absolute top-6 right-6 text-gray-400 hover:text-gray-600 dark:hover:text-white p-1 rounded-full hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors"
+              className="absolute top-6 right-6 text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-100 transition-colors"
             >
               <X className="w-5 h-5" />
             </button>
-            <h2 className="text-xl font-black text-gray-900 dark:text-white mb-6 text-left tracking-tight">Criar Novo Círculo/Grupo</h2>
+            <h2 className="text-xl font-black text-gray-900 mb-6 text-left tracking-tight">Criar Novo Círculo/Grupo</h2>
             <form onSubmit={handleCreateGroup} className="space-y-4 text-left">
               <div>
-                <label className="block text-xs font-black text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">Nome do Círculo *</label>
+                <label className="block text-xs font-black text-gray-500 uppercase tracking-wider mb-2">Nome do Círculo *</label>
                 <input 
                   type="text" 
                   value={groupName}
                   onChange={e => setGroupName(e.target.value)}
                   placeholder="Ex: Investidores Luanda Sul"
-                  className="w-full bg-gray-50 dark:bg-slate-950 border border-gray-150 dark:border-slate-800 p-3 rounded-xl text-sm font-bold text-gray-700 dark:text-gray-300 focus:outline-none focus:border-indigo-500"
+                  className="w-full bg-gray-50 border border-gray-200 p-3 rounded-xl text-sm font-bold text-gray-900 focus:outline-none focus:border-brand-500 placeholder:text-gray-400"
                   required
                 />
               </div>
               <div>
-                <label className="block text-xs font-black text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">Descrição</label>
+                <label className="block text-xs font-black text-gray-500 uppercase tracking-wider mb-2">Descrição</label>
                 <input 
                   type="text" 
                   value={groupDesc}
                   onChange={e => setGroupDesc(e.target.value)}
                   placeholder="Ex: Grupo para partilhar rondas de Kixiquila."
-                  className="w-full bg-gray-50 dark:bg-slate-950 border border-gray-150 dark:border-slate-800 p-3 rounded-xl text-sm font-bold text-gray-700 dark:text-gray-300 focus:outline-none focus:border-indigo-500"
+                  className="w-full bg-gray-50 border border-gray-200 p-3 rounded-xl text-sm font-bold text-gray-900 focus:outline-none focus:border-brand-500 placeholder:text-gray-400"
                 />
               </div>
               <div>
-                <label className="block text-xs font-black text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">Selecionar Membros *</label>
+                <label className="block text-xs font-black text-gray-500 uppercase tracking-wider mb-2">Selecionar Membros *</label>
                 <div className="space-y-2 max-h-[180px] overflow-y-auto pr-1">
                   {users.length === 0 ? (
-                    <div className="p-4 bg-gray-50 dark:bg-slate-900 border border-gray-150 dark:border-slate-800 rounded-xl text-center">
-                      <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">
+                    <div className="p-4 bg-gray-50 border border-gray-100 rounded-xl text-center">
+                      <p className="text-xs text-gray-500 font-medium">
                         Nenhum utilizador encontrado na comunidade para adicionar ao grupo.
                       </p>
                     </div>
@@ -821,17 +821,17 @@ export default function ChatsManager() {
                             );
                           }}
                           className={cn(
-                            "p-2.5 bg-gray-50 dark:bg-slate-950 border rounded-xl flex items-center justify-between cursor-pointer hover:border-indigo-500 transition-all text-left",
-                            isSelected ? "border-indigo-600 bg-indigo-50/10 dark:bg-indigo-950/20" : "border-gray-150 dark:border-slate-850"
+                            "p-2.5 bg-gray-50 border rounded-xl flex items-center justify-between cursor-pointer hover:border-brand-500 transition-all text-left",
+                            isSelected ? "border-brand-500 bg-brand-50" : "border-gray-200"
                           )}
                         >
                           <div className="flex items-center gap-2">
-                            <img className="w-8 h-8 rounded-full object-cover border border-gray-100 dark:border-slate-800" src={u.avatar} alt="" />
-                            <span className="text-xs font-black text-gray-800 dark:text-gray-200">@{u.name}</span>
+                            <img className="w-8 h-8 rounded-full object-cover border border-gray-200 bg-white" src={u.avatar} alt="" />
+                            <span className="text-xs font-black text-gray-800">@{u.name}</span>
                           </div>
                           <div className={cn(
                             "w-4.5 h-4.5 rounded-md border flex items-center justify-center text-white text-[10px]",
-                            isSelected ? "bg-indigo-600 border-indigo-600" : "border-gray-300 bg-white dark:bg-slate-900 dark:border-slate-700"
+                            isSelected ? "bg-brand-500 border-brand-500" : "border-gray-300 bg-white"
                           )}>
                             {isSelected && <Check className="w-3 h-3" />}
                           </div>
@@ -845,13 +845,13 @@ export default function ChatsManager() {
                 <button 
                   type="button" 
                   onClick={() => setIsNewGroupOpen(false)}
-                  className="px-5 py-3 bg-gray-100 hover:bg-gray-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-300 font-black text-sm rounded-xl cursor-pointer"
+                  className="px-5 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-black text-sm rounded-xl cursor-pointer"
                 >
                   Cancelar
                 </button>
                 <button 
                   type="submit" 
-                  className="px-5 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-black text-sm rounded-xl shadow-sm cursor-pointer transition-all active:scale-95"
+                  className="px-5 py-3 bg-brand-500 hover:bg-brand-600 text-white font-black text-sm rounded-xl shadow-sm cursor-pointer transition-all active:scale-95"
                 >
                   Criar Círculo
                 </button>

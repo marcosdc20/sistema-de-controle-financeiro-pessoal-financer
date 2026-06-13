@@ -38,7 +38,7 @@ export default function DownloadsArea() {
       architecture: 'x64 (64-bit)',
       icon: WindowsIcon,
       color: 'from-blue-500 to-indigo-600',
-      tagColor: 'bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-400',
+      tagColor: 'bg-blue-50 text-blue-700',
       downloadUrl: '#download-windows-exe'
     },
     {
@@ -48,7 +48,7 @@ export default function DownloadsArea() {
       architecture: 'Universal (Apple Silicon M1/M2/M3 & Intel)',
       icon: AppleIcon,
       color: 'from-slate-800 to-slate-950',
-      tagColor: 'bg-slate-50 text-slate-700 dark:bg-slate-950/40 dark:text-slate-400',
+      tagColor: 'bg-slate-50 text-slate-700',
       downloadUrl: '#download-mac-dmg'
     },
     {
@@ -58,7 +58,7 @@ export default function DownloadsArea() {
       architecture: 'x64 (64-bit)',
       icon: LinuxIcon,
       color: 'from-orange-500 to-red-600',
-      tagColor: 'bg-orange-50 text-orange-700 dark:bg-orange-950/40 dark:text-orange-400',
+      tagColor: 'bg-orange-50 text-orange-700',
       downloadUrl: '#download-linux-deb'
     },
     {
@@ -68,7 +68,7 @@ export default function DownloadsArea() {
       architecture: 'ARM64-v8a',
       icon: AndroidIcon,
       color: 'from-emerald-500 to-teal-600',
-      tagColor: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400',
+      tagColor: 'bg-emerald-50 text-emerald-700',
       downloadUrl: '#download-android-apk'
     }
   ];
@@ -85,7 +85,7 @@ export default function DownloadsArea() {
       <section className="bg-gradient-to-r from-gray-900 via-slate-950 to-gray-900 border border-slate-800 rounded-3xl p-8 text-white relative overflow-hidden shadow-lg text-left">
         <div className="relative z-10 max-w-2xl">
           <div className="flex items-center gap-3 mb-4">
-            <span className="px-3 py-1 bg-indigo-600 text-white rounded-full text-xs font-black uppercase tracking-wider">
+            <span className="px-3 py-1 bg-brand-600 text-white rounded-full text-xs font-black uppercase tracking-wider">
               Último Lançamento
             </span>
             <span className="text-gray-400 text-xs font-bold">Compilado em {buildDate}</span>
@@ -107,14 +107,14 @@ export default function DownloadsArea() {
           return (
             <div 
               key={plat.name}
-              className="bg-white dark:bg-slate-900 border border-gray-150 dark:border-slate-850 rounded-3xl p-6 shadow-sm flex flex-col justify-between hover:border-indigo-400 dark:hover:border-indigo-500 hover:shadow-md transition-all text-left group"
+              className="bg-white border border-gray-100 rounded-3xl p-6 shadow-sm flex flex-col justify-between hover:border-brand-200 hover:shadow-md transition-all text-left group"
             >
               <div className="flex items-start gap-4">
                 <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${plat.color} flex items-center justify-center text-white shadow-md shrink-0 group-hover:scale-105 transition-transform`}>
                   <IconComponent className="w-6 h-6" />
                 </div>
                 <div className="space-y-1">
-                  <h3 className="text-base font-black text-gray-900 dark:text-white leading-tight">
+                  <h3 className="text-base font-black text-gray-900 leading-tight">
                     {plat.name}
                   </h3>
                   <div className="flex items-center gap-2 flex-wrap">
@@ -123,17 +123,17 @@ export default function DownloadsArea() {
                     </span>
                     <span className="text-xs text-gray-500 font-bold">{plat.size}</span>
                   </div>
-                  <p className="text-xs text-gray-400 dark:text-gray-505 font-medium pt-1">
+                  <p className="text-xs text-gray-400 font-medium pt-1">
                     Arquitetura: {plat.architecture}
                   </p>
                 </div>
               </div>
 
-              <div className="mt-6 pt-4 border-t border-gray-100 dark:border-slate-850 flex items-center justify-between">
-                <span className="text-[10px] text-gray-450 font-bold">SHA-256 Verificado</span>
+              <div className="mt-6 pt-4 border-t border-gray-100 flex items-center justify-between">
+                <span className="text-[10px] text-gray-400 font-bold">SHA-256 Verificado</span>
                 <button 
                   onClick={() => triggerDownload(plat.name)}
-                  className="px-5 py-2.5 bg-gray-900 hover:bg-gray-800 dark:bg-slate-800 dark:hover:bg-slate-700 text-white font-black text-xs rounded-xl flex items-center gap-2 shadow-sm transition-all active:scale-95 cursor-pointer"
+                  className="px-5 py-2.5 bg-gray-900 hover:bg-gray-800 text-white font-black text-xs rounded-xl flex items-center gap-2 shadow-sm transition-all active:scale-95 cursor-pointer"
                 >
                   <Download className="w-3.5 h-3.5" />
                   Descarregar

@@ -1,0 +1,48 @@
+name: Build Mac and Linux Releases
+
+# Só vai correr quando publicares uma nova release (lançamento) no GitHub via script
+on:
+  release:
+    types: [published]
+
+jobs:
+  build-tauri:
+    strategy:
+      fail-fast: false
+      matrix:
+        # Usa computadores (runners) do GitHub para compilar o código
+        platform: [macos-latest, ubuntu-22.04]
+
+    runs-on: ${{ matrix.platform }}
+    
+    steps:
+      - name: Baixar o código
+        uses: actions/checkout@v4
+
+      - name: Instalar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Instalar Dependências do Linux (Apenas no Ubuntu)
+        if: matrix.platform == 'ubuntu-22.04'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.0-dev libappindicator3-dev librsvg2-dev patchelf
+
+      - name: Instalar Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Instalar Dependências NPM
+        run: npm install
+
+      - name: Compilar e Anexar VukaPay à Release
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Chaves de Assinatura para o Updater funcionar (Mac/Linux)
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        with:
+          # Associa os novos ficheiros (.dmg e .AppImage) à Release exata que tu criaste no Windows
+          releaseId: ${{ github.event.release.id }}

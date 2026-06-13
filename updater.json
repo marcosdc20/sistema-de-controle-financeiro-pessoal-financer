@@ -1,10 +1,10 @@
 {
   "version": "1.1.4",
   "notes": "Nova versão do VukaPay (1.1.4) disponivel. Instala para receber as novas funcionalidades e correções.",
-  "pub_date": "2026-06-13T02:09:31Z",
+  "pub_date": "2026-06-13T03:46:28Z",
   "platforms": {
     "windows-x86_64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVTUEh6TVdRZXFBTW9rcklaTFJ5UnFDU1NXT2lia283dGwrbjRhWXl1UEg4Y01Rd2ZmRVJmSlpKVlJsZFdPUkNlV1g2QTBJaGFmN2MxL3ZIUTZlMlFTTnVFTzZhZmE0OUFvPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgxMzA5MTU1CWZpbGU6VnVrYVBheV8xLjEuNF94NjQtc2V0dXAuZXhlCkxacDZ2NTk2QlltaVEyaEYzMkpXMW1PRUwvZVZIU3Z6ZjF2bUkxZGhkZHJkZ2s3NU9kcmdKb0lCNkhBK0NTOFoyNmZwRCtHQUI5Y01nbFJ3S2NXakJ3PT0K",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVTUEh6TVdRZXFBTXJLRXFISWppOW1IVi9tTHp1ekh5WlR5VjN3NHR3U0VKT3BKcUpod3BhY3M3TXRzM0w4ZXM5SjZVTk9JUTFramdXTWxBVnZCdlJRMlNrQ2hkTnc4eEFZPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgxMzE3NTI2CWZpbGU6VnVrYVBheV8xLjEuNF94NjQtc2V0dXAuZXhlCjRrVU9yWFl3VktHRGlxaG40RGlSVk56T1dLUW9KVHpKT2hCMzZiZTZ4cTR2RTVlQ3E1MmtrWUJWampNbVo4NGlxNkZaZUZiMWNOdEhlekZ4ck8wMEN3PT0K",
       "url": "https://github.com/marcosdc20/sistema-de-controle-financeiro-pessoal-financer/releases/download/v1.1.4/VukaPay_1.1.4_x64-setup.exe"
     },
     "android-aarch64": {

@@ -1,7 +1,7 @@
 {
   "version": "1.1.6",
-  "notes": "Nova versão do VukaPay (1.1.6) disponivel. Instala para receber as novas funcionalidades e correções.",
-  "pub_date": "2026-06-14T21:20:30Z",
+  "notes": "Correções na verificação da licença, vídeo introdutório e sincronização de saldo da carteira VukaCoin.",
+  "pub_date": "2026-06-14T21:20:00Z",
   "platforms": {
     "windows-x86_64": {
       "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVTUEh6TVdRZXFBTW11UjIyUnpXdjJxVlFURnFJUzJ1RUNJdWhZL3hRNFdPVjJ6Y3BNOUdGU1B2L2tTa0l6R1ZRVnN0R3RyTVZnZ2tHZVRneDNsMmMrLytteUdlbmVOWndJPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgxNDY4MjQwCWZpbGU6VnVrYVBheV8xLjEuNl94NjQtc2V0dXAuZXhlCjB6M1h2NzBSenB4ZGZhZHNuZCtaN04wTzJSWmVRTTI0Wm1pcGdzQ285OFI4U2NzNW12SStQT29FY0JuMmcrWlgzdE1SMk1yZ0lTT2hsSXR3eTAyRUF3PT0K",

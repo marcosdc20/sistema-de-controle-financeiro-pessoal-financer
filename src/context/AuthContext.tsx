@@ -15,9 +15,12 @@ interface AuthContextType {
   user: { id: string; email: string; user_metadata?: { full_name?: string; avatar_url?: string }; isLocal?: boolean } | null;
   loading: boolean;
   authLoading: boolean;
+  requireLocalPasswordSetup: boolean;
+  setRequireLocalPasswordSetup: (v: boolean) => void;
   setAuthLoading: (loading: boolean) => void;
   signOut: () => Promise<void>;
-  loginAsLocal: () => void;
+  loginAsLocal: () => Promise<void>;
+  linkGuestToGoogle: () => Promise<void>;
   loginWithCredentials: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   registerWithCredentials: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   loginWithGoogle: () => void;
@@ -30,6 +33,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<{ id: string; email: string; user_metadata?: { full_name?: string; avatar_url?: string }; isLocal?: boolean } | null>(null);
   const [loading, setLoading] = useState(true);
   const [authLoading, setAuthLoading] = useState(false);
+  const [requireLocalPasswordSetup, setRequireLocalPasswordSetup] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -69,29 +73,62 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             const { getDatabase } = await import('@/database/db');
             const db = await getDatabase();
             const profiles = await db.select<any[]>('SELECT * FROM profiles WHERE id = $1', [userId]);
+            
             if (!profiles[0]) {
               await db.execute(
                 'INSERT INTO profiles (id, email, full_name, plan, role, created_at, vuka_coins, is_verified) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)',
                 [userId, tempUser.email, tempUser.user_metadata.full_name, 'free', 'user', new Date().toISOString(), 0, false]
               );
+              // Force password setup on first login
+              setRequireLocalPasswordSetup(true);
+            } else if (!profiles[0].password) {
+              setRequireLocalPasswordSetup(true);
             }
+            
             await recordSession(userId, isGoogle ? 'Google' : 'Email');
-            await syncUserToFirebase(tempUser);
+            
+            // Handshake & Security: Update last_sync_at and verify Admin Status
+            if (navigator.onLine) {
+              await db.execute('UPDATE profiles SET last_sync_at = ? WHERE id = ?', [Date.now(), userId]);
+              await verifyAdminBanStatus(userId);
+            }
           } catch (e) {
              console.error("Local profile creation error", e);
           }
           
+          // Dispara a sincronização em pano de fundo para não bloquear o loading/modo offline
+          syncUserToFirebase(tempUser).catch(err => console.error(err));
+          
           setLoading(false);
         } else {
-          // No Firebase session, check if it's a Local Guest session
+          // No Firebase session, check if it's a Local Guest session or Local Password session
           const savedUser = localStorage.getItem('vukapay_user');
           if (savedUser) {
             try {
               const parsed = JSON.parse(savedUser);
-              if (parsed.isLocal && parsed.id === 'local-user') {
+              if (parsed.id) {
+                // Time-bomb Check
+                const { getDatabase } = await import('@/database/db');
+                const db = await getDatabase();
+                const profiles = await db.select<any[]>('SELECT * FROM profiles WHERE id = $1', [parsed.id]);
+                if (profiles[0]) {
+                   const lastSync = profiles[0].last_sync_at;
+                   const fourteenDaysInMs = 14 * 24 * 60 * 60 * 1000;
+                   if (lastSync && Date.now() - lastSync > fourteenDaysInMs) {
+                      alert('Aviso de Segurança: Este dispositivo esteve offline por mais de 14 dias. Conecte-se à internet para sincronizar com o VukaPay Admin e continuar a usar offline.');
+                      await signOut();
+                      return;
+                   }
+                }
+
                 setUser(parsed);
                 setLoading(false);
                 touchSession(parsed.id).catch(err => console.error(err));
+                
+                // Em background, tenta autenticar no firebase se houver internet para handshake
+                if (navigator.onLine && !parsed.isLocal) {
+                   verifyAdminBanStatus(parsed.id).catch(console.error);
+                }
                 return;
               }
             } catch {}
@@ -164,21 +201,78 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const loginAsLocal = async () => {
+    // Generate true guest account
+    const guestId = 'guest_' + Date.now();
     const localUser = {
-      id: 'local-user',
-      email: 'local@vukapay.local',
-      user_metadata: { full_name: 'Usuário Local' },
+      id: guestId,
+      email: `${guestId}@vukapay.local`,
+      user_metadata: { full_name: 'Convidado (Offline)' },
       isLocal: true
     };
     localStorage.setItem('vukapay_user', JSON.stringify(localUser));
+    
+    try {
+      const { getDatabase } = await import('@/database/db');
+      const db = await getDatabase();
+      await db.execute(
+        'INSERT INTO profiles (id, email, full_name, plan, role, created_at, vuka_coins, is_verified, last_sync_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)',
+        [guestId, localUser.email, localUser.user_metadata.full_name, 'free', 'guest', new Date().toISOString(), 0, false, Date.now()]
+      );
+    } catch(err) {
+      console.error(err);
+    }
+    
     setUser(localUser);
-    await recordSession(localUser.id, 'Local');
+    setRequireLocalPasswordSetup(true); // Requisitar senha para o guest usar offline no futuro
+    await recordSession(localUser.id, 'Convidado');
   };
 
   const loginWithCredentials = async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
     const cleanEmail = email.trim().toLowerCase();
     
     try {
+      // 1. Verificação Híbrida Offline (SQLite First)
+      const { getDatabase } = await import('@/database/db');
+      // Hack: O db precisa de saber qual é o user id do ficheiro SQLite para abrir o correto, 
+      // mas se não soubermos, temos de procurar nos mapeamentos locais
+      const storedMapping = localStorage.getItem(`vukapay_google_mapping_${cleanEmail}`);
+      if (storedMapping) {
+         // Temporariamente definir o localstorage user para abrir a DB correta e validar
+         const tempUserObj = { id: storedMapping };
+         localStorage.setItem('vukapay_user', JSON.stringify(tempUserObj));
+         const db = await getDatabase();
+         const profiles = await db.select<any[]>('SELECT * FROM profiles WHERE id = $1', [storedMapping]);
+         
+         if (profiles[0] && profiles[0].password) {
+            // Verificar hash (Btoa fallback - DEVE USAR BCRYPT NUMA VERSAO FINAL)
+            const passwordHash = btoa(password);
+            if (profiles[0].password === passwordHash) {
+               // Acesso Local Concedido!
+               const fullUserObj = {
+                 id: storedMapping,
+                 email: cleanEmail,
+                 user_metadata: { full_name: profiles[0].full_name, avatar_url: profiles[0].avatar_url },
+                 isLocal: false
+               };
+               localStorage.setItem('vukapay_user', JSON.stringify(fullUserObj));
+               setUser(fullUserObj);
+               
+               // Background Firebase Auth Update se tiver internet
+               if (navigator.onLine) {
+                 signInWithEmailAndPassword(auth, cleanEmail, password).catch(e => console.log('Background auth sync ignored', e));
+               }
+               return { success: true };
+            } else {
+               return { success: false, error: 'Palavra-passe incorreta.' };
+            }
+         }
+      }
+
+      // 2. Se falhar o SQLite (porque nunca logou ou limpou cache), tentar Firebase Auth
+      if (!navigator.onLine) {
+         return { success: false, error: 'Sem internet e utilizador não encontrado localmente.' };
+      }
+
       try {
         // Tenta fazer login com o Firebase Auth
         await signInWithEmailAndPassword(auth, cleanEmail, password);
@@ -211,6 +305,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return loginWithCredentials(email, password);
   };
 
+  const linkGuestToGoogle = async () => {
+    // Processo futuro de ligar conta Guest ao Google Auth
+    alert('Esta funcionalidade irá exportar os dados do convidado para a sua conta Google (Em implementação).');
+    await signOut(); // Force relogin temporarily
+  };
+
   const loginWithGoogle = async () => {
     setAuthLoading(true);
     const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || '137020562847-hrfr6a59ejgrehssk6p8in6t3235lulf.apps.googleusercontent.com';
@@ -226,7 +326,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       try {
         const { invoke } = await import('@tauri-apps/api/core');
         await invoke('start_google_auth', { clientId, scope, state });
-        // Timeout de segurança de 5 minutos para limpar o loading caso o usuário cancele ou ocorra timeout no loopback
+        // Timeout de segurança de 5 minutos
         setTimeout(() => {
           setAuthLoading(false);
         }, 300000);
@@ -237,7 +337,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     } else {
       // Fluxo web padrão
-      const redirectUri = window.location.origin; // Em desenvolvimento: http://localhost:1420
+      const redirectUri = window.location.origin;
       const responseType = 'token id_token';
       const nonce = Math.random().toString(36).substring(2, 15);
 
@@ -259,11 +359,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       localStorage.setItem('google_access_token', accessToken);
 
       try {
-        // Authenticate with Firebase using the Google Token
-        // Firebase accepts accessToken when idToken is not easily available, or idToken
         const credential = GoogleAuthProvider.credential(idToken || null, accessToken);
         await signInWithCredential(auth, credential);
-        
         setAuthLoading(false);
         return true;
       } catch (err: any) {
@@ -280,6 +377,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const verifyAdminBanStatus = async (uid: string) => {
+    try {
+      const { db } = await import('@/lib/firebase');
+      const { doc, getDoc } = await import('firebase/firestore');
+      const docRef = doc(db, 'community_users', uid);
+      const snap = await getDoc(docRef);
+      if (snap.exists()) {
+         const data = snap.data();
+         if (data.status === 'blocked' || data.status === 'banned' || data.is_deleted === true) {
+            // Handshake Security: Conta foi banida pelo Admin. 
+            // Destruir cache local e forçar log out.
+            const { getDatabase } = await import('@/database/db');
+            const localDb = await getDatabase();
+            await localDb.execute("UPDATE profiles SET password = NULL WHERE id = ?", [uid]);
+            
+            alert('Acesso Negado: Esta conta foi desativada ou bloqueada pelo administrador do VukaPay.');
+            await signOut();
+         }
+      }
+    } catch (e) {
+      console.warn('Erro ao verificar status admin:', e);
+    }
+  };
+
   const signOut = async () => {
     try {
       await firebaseSignOut(auth);
@@ -290,12 +411,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ session: {}, user, loading, authLoading, setAuthLoading, signOut, loginAsLocal, loginWithCredentials, registerWithCredentials, loginWithGoogle, handleGoogleCallback }}>
+    <AuthContext.Provider value={{ session: {}, user, loading, authLoading, requireLocalPasswordSetup, setRequireLocalPasswordSetup, setAuthLoading, signOut, loginAsLocal, linkGuestToGoogle, loginWithCredentials, registerWithCredentials, loginWithGoogle, handleGoogleCallback }}>
       {children}
     </AuthContext.Provider>
   );
 }
-
 
 // Funções Auxiliares para Registro de Sessões de Login
 function getDeviceDetails(): string {
@@ -325,15 +445,11 @@ async function recordSession(userId: string, loginType: string) {
     const sessionId = crypto.randomUUID();
     const deviceName = getDeviceDetails();
     
-    // Desativar a flag de sessão atual nas sessões antigas
     await db.execute('UPDATE user_sessions SET is_current = 0 WHERE user_id = $1', [userId]);
-    
-    // Inserir nova sessão ativa
     await db.execute(
       'INSERT INTO user_sessions (id, user_id, device_name, login_type, is_current, last_active) VALUES ($1, $2, $3, $4, 1, CURRENT_TIMESTAMP)',
       [sessionId, userId, deviceName, loginType]
     );
-    console.log('[AuthContext] Sessão registrada com sucesso no SQLite:', deviceName);
   } catch (e) {
     console.error('[AuthContext] Falha ao registrar a sessão no banco:', e);
   }
@@ -343,8 +459,6 @@ async function touchSession(userId: string) {
   try {
     const { getDatabase } = await import('@/database/db');
     const db = await getDatabase();
-    
-    // Atualiza o last_active para a sessão ativa atual no banco
     await db.execute('UPDATE user_sessions SET last_active = CURRENT_TIMESTAMP WHERE user_id = $1 AND is_current = 1', [userId]);
   } catch (e) {
     console.error('[AuthContext] Falha ao atualizar timestamp da sessão:', e);
@@ -356,25 +470,23 @@ async function syncUserToFirebase(user: any) {
     const { db } = await import('@/lib/firebase');
     const { doc, getDoc, setDoc } = await import('firebase/firestore');
     
-    if (!user || user.id === 'local-user') return;
+    if (!user || user.id.startsWith('guest_') || user.id === 'local-user') return;
     
     const userRef = doc(db, 'community_users', user.id);
     const snap = await getDoc(userRef);
     if (!snap.exists()) {
       await setDoc(userRef, {
         name: user.user_metadata?.full_name || user.email.split('@')[0] || 'Utilizador VukaPay',
-        email: user.email,
+        email: user.email.toLowerCase(),
         xp: 100,
         badge: '🎯 Guardião',
         avatar: user.user_metadata?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.user_metadata?.full_name || user.email.split('@')[0])}&background=random`,
         is_deleted: false,
         created_at: Date.now()
       });
-      console.log('[AuthContext] Utilizador registrado e sincronizado no Firebase.');
     } else {
       const currentData = snap.data();
       if (currentData.is_deleted || currentData.deleted) {
-        // Reativar a conta se estava marcada como excluída
         await setDoc(userRef, {
           ...currentData,
           is_deleted: false,
@@ -382,11 +494,10 @@ async function syncUserToFirebase(user: any) {
           name: user.user_metadata?.full_name || currentData.name,
           avatar: user.user_metadata?.avatar_url || currentData.avatar
         }, { merge: true });
-        console.log('[AuthContext] Utilizador reativado e sincronizado no Firebase.');
       }
     }
   } catch (err) {
-    console.error('[syncUserToFirebase] Falha ao sincronizar utilizador no Firebase:', err);
+    console.error('[syncUserToFirebase] Falha:', err);
   }
 }
 

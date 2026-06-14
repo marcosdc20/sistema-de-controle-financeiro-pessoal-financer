@@ -37,6 +37,7 @@ import {
   Zap,
 } from 'lucide-react';
 import { useLicense } from '@/context/LicenseContext';
+import { useAuth } from '@/context/AuthContext';
 import PurchaseLicenseModal from './PurchaseLicenseModal';
 
 // ─── Constante ───────────────────────────────────────────────────────────────
@@ -100,6 +101,7 @@ function LoadingScreen() {
 
 function BlockedScreen({ phase }: { phase: 'trial_expired' | 'expired' | 'revoked' | 'error' | 'activating' }) {
   const { licenseState, activateLicenseKey } = useLicense();
+  const { user, signOut } = useAuth();
   const [licenseKey, setLicenseKey] = useState('');
   const [isActivating, setIsActivating] = useState(false);
   const [activationError, setActivationError] = useState<string | null>(null);
@@ -248,7 +250,7 @@ function BlockedScreen({ phase }: { phase: 'trial_expired' | 'expired' | 'revoke
               {showPurchaseModal && (
                 <PurchaseLicenseModal 
                   onClose={() => setShowPurchaseModal(false)} 
-                  userEmail={licenseState.clientEmail} 
+                  userEmail={licenseState.clientEmail || user?.email} 
                 />
               )}
 
@@ -304,6 +306,17 @@ function BlockedScreen({ phase }: { phase: 'trial_expired' | 'expired' | 'revoke
               </form>
             </>
           ) : null}
+
+          {/* Sair / Mudar de Conta */}
+          {user && (
+            <button
+              type="button"
+              onClick={() => signOut()}
+              className="w-full flex items-center justify-center gap-2 py-3 mt-4 bg-red-950/20 hover:bg-red-950/40 text-red-400 hover:text-red-300 font-bold rounded-2xl text-xs transition-all active:scale-[0.98] border border-red-900/30 cursor-pointer"
+            >
+              Mudar de Conta / Terminar Sessão
+            </button>
+          )}
         </div>
 
         {/* Footer */}
@@ -446,30 +459,47 @@ interface LicenseGuardProps {
 
 export default function LicenseGuard({ children }: LicenseGuardProps) {
   const { licenseState, isLoading } = useLicense();
+  const { user } = useAuth();
   const [bannerDismissed, setBannerDismissed] = useState(false);
   const [isVideoFinished, setIsVideoFinished] = useState(() => {
-    return localStorage.getItem('vukapay_intro_played') === 'true';
+    // sessionStorage é limpo quando a janela fecha → o vídeo aparece a cada abertura do app
+    return sessionStorage.getItem('vukapay_intro_played') === 'true';
   });
-  const [videoReady, setVideoReady] = useState(false);
+  const videoRef = React.useRef<HTMLVideoElement>(null);
 
   const handleVideoEnded = () => {
-    localStorage.setItem('vukapay_intro_played', 'true');
+    sessionStorage.setItem('vukapay_intro_played', 'true');
     setIsVideoFinished(true);
   };
 
-  // Safety timeout — if video doesn't end/load within 20s, skip automatically
+  // Safety timeout & programmatic play trigger
   useEffect(() => {
     if (isVideoFinished) return;
-    const timer = setTimeout(() => {
-      handleVideoEnded();
-    }, 20000);
 
-    const vid = document.getElementById('intro-video') as HTMLVideoElement;
+    // Timeout de segurança curto: se não começar a tocar em 6 segundos, salta
+    const timer = setTimeout(() => {
+      console.warn('[Video] Carregamento falhou ou demorou demasiado tempo, a saltar...');
+      handleVideoEnded();
+    }, 6000);
+
+    const vid = videoRef.current;
     if (vid) {
       vid.onended = handleVideoEnded;
-      vid.onerror = handleVideoEnded;
-      vid.onloadeddata = () => setVideoReady(true);
-      vid.oncanplay = () => setVideoReady(true);
+      vid.onerror = (e) => {
+        console.error('[Video] Erro na reprodução do vídeo:', e);
+        handleVideoEnded();
+      };
+
+      // Tenta reproduzir programaticamente para WebView2
+      vid.play()
+        .then(() => {
+          // Se tocou com sucesso, limpamos o timeout de falha rápida
+          clearTimeout(timer);
+        })
+        .catch((err) => {
+          console.warn('[Video] Autoplay bloqueado ou falha de codec:', err);
+          handleVideoEnded();
+        });
     }
 
     return () => clearTimeout(timer);
@@ -478,34 +508,29 @@ export default function LicenseGuard({ children }: LicenseGuardProps) {
   if (!isVideoFinished) {
     return (
       <div className="fixed inset-0 z-[9999] bg-[#030712] flex items-center justify-center">
-        <div 
-          className="w-full h-full absolute inset-0 pointer-events-none"
-          dangerouslySetInnerHTML={{
-            __html: `
-              <video 
-                autoplay 
-                muted 
-                playsinline 
-                class="w-full h-full object-cover"
-                id="intro-video"
-              >
-                <source src="/videos/intro.mp4" type="video/mp4" />
-              </video>
-            `
-          }}
-        />
-        {/* Usamos um ref ou um effect no componentDidMount se precisarmos dos eventos no React, 
-            mas como o fallback handleVideoEnded() tem um timeout de 20s, vai prosseguir na mesma.
-            Para suportar onEnded e onLoadedData, ligaremos no useEffect via querySelector */}
+        <video 
+          ref={videoRef}
+          muted 
+          playsInline 
+          className="w-full h-full object-cover bg-black"
+          id="intro-video"
+        >
+          <source src="/videos/intro.mp4" type="video/mp4" />
+        </video>
         <button
           onClick={handleVideoEnded}
-          className="absolute bottom-8 right-8 z-20 px-5 py-2.5 bg-black/60 hover:bg-black/80 text-white/80 hover:text-white text-xs font-bold rounded-xl backdrop-blur-md transition-all border border-white/10 shadow-lg"
+          className="absolute bottom-8 right-8 z-20 px-5 py-2.5 bg-black/60 hover:bg-black/80 text-white/80 hover:text-white text-xs font-bold rounded-xl backdrop-blur-md transition-all border border-white/10 shadow-lg cursor-pointer"
         >
           Pular Introdução →
         </button>
       </div>
     );
- }
+  }
+
+  // Se não há utilizador autenticado, renderizar children (para carregar a tela de Login)
+  if (!user) {
+    return <>{children}</>;
+  }
 
   // Fase de carregamento inicial (se o video acabar e ainda não estiver pronto)
   if (isLoading || licenseState.phase === 'loading') {

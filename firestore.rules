@@ -63,7 +63,23 @@ service cloud.firestore {
     match /community_users/{userId} {
       allow read: if request.auth != null;
       allow create: if request.auth != null && request.auth.uid == userId;
-      allow update, delete: if isAdmin() || (request.auth != null && request.auth.uid == userId);
+      allow update, delete: if isAdmin() || (request.auth != null && (request.auth.uid == userId || request.resource.data.diff(resource.data).affectedKeys().hasOnly(['vuka_coins'])));
+    }
+    match /vukacoin_transactions/{txId} {
+      allow read, create: if request.auth != null;
+    }
+    match /vukacoin_purchases/{purchaseId} {
+      allow create: if request.auth != null;
+      allow read, update, delete: if isAdmin();
+    }
+    match /vukacoin_rewards/{rewardId} {
+      allow read: if request.auth != null;
+      allow create, update, delete: if isAdmin();
+    }
+    match /marketplace_listings/{listingId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null;
+      allow update, delete: if isAdmin() || (request.auth != null && request.auth.uid == resource.data.sellerId);
     }
     match /community_chats/{chatId} {
       allow read, create: if request.auth != null;
@@ -81,6 +97,16 @@ service cloud.firestore {
     match /education_fundamentals/{fundamentalId} {
       allow read: if true;
       allow write: if isAdmin();
+    }
+
+    // ─── Coleção: users ──────────────────────────────────────────────────────
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // ─── Coleção: backups ────────────────────────────────────────────────────
+    match /backups/{backupId} {
+      allow write: if request.auth != null;
     }
 
     // ─── Todas as outras coleções: bloqueadas para não-admins ────────────────

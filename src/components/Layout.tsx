@@ -46,10 +46,10 @@ import HelpModal from '@/components/HelpModal';
 import CommandBar from '@/components/CommandBar';
 import BackupSyncManager from '@/components/BackupSyncManager';
 import AutoUpdater from '@/components/AutoUpdater';
-
+import { SetLocalPasswordModal } from '@/components/auth/SetLocalPasswordModal';
 
 export default function Layout({ children }: { children: React.ReactNode }) {
-  const { signOut, user } = useAuth();
+  const { signOut, user, requireLocalPasswordSetup, setRequireLocalPasswordSetup } = useAuth();
   const { 
     profile, 
     setIsTransactionModalOpen, 
@@ -107,6 +107,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isHelpOpen, setIsHelpOpen] = useState(false);
+  const [isWalletOpen, setIsWalletOpen] = useState(false);
   const [isCommandBarOpen, setIsCommandBarOpen] = useState(false);
   const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -136,6 +137,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     { icon: MessageSquare, label: 'Comunidade', path: '/community' },
     { icon: ShoppingBag, label: 'Marketplace', path: '/marketplace' },
     { icon: Store, label: 'VukaStore', path: '/vuka-store' },
+    { icon: Wallet, label: 'Carteira VukaCoin', path: '/vukacoins' },
   ];
 
   const bottomNavItems = [
@@ -187,6 +189,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         setIsNotificationsOpen(false);
         setIsProfileOpen(false);
         setIsHelpOpen(false);
+        setIsWalletOpen(false);
       }
 
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'h') {
@@ -518,6 +521,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   setIsNotificationsOpen(!isNotificationsOpen);
                   setIsProfileOpen(false);
                   setIsHelpOpen(false);
+                  setIsWalletOpen(false);
                 }}
                 className={cn(
                   "p-2.5 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-xl transition-all relative group",
@@ -583,6 +587,80 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               )}
             </div>
 
+            {/* Wallet Dropdown */}
+            <div className="relative">
+              <button
+                onClick={() => {
+                  setIsWalletOpen(!isWalletOpen);
+                  setIsNotificationsOpen(false);
+                  setIsProfileOpen(false);
+                  setIsHelpOpen(false);
+                }}
+                className={cn(
+                  "flex items-center gap-2 p-2 px-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-xl transition-all border border-gray-200 dark:border-slate-700 font-bold",
+                  isWalletOpen && "bg-gray-100 dark:bg-slate-800 border-amber-300 dark:border-amber-600 shadow-sm"
+                )}
+              >
+                <span className="text-lg">🪙</span>
+                <span>{profile?.vuka_coins || 0}</span>
+              </button>
+
+              {isWalletOpen && (
+                <>
+                  <div className="fixed inset-0 z-40" onClick={() => setIsWalletOpen(false)} />
+                  <div className="absolute right-0 mt-2 w-72 bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-gray-100 dark:border-slate-800 z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-200 origin-top-right">
+                    <div className="p-5 border-b border-gray-100 dark:border-slate-800 bg-gradient-to-br from-amber-50 to-orange-50 dark:from-slate-900 dark:to-slate-800 text-center relative overflow-hidden">
+                      <div className="absolute top-0 right-0 p-4 opacity-10 pointer-events-none">
+                        <Wallet className="w-24 h-24 text-amber-500" />
+                      </div>
+                      <h3 className="font-bold text-gray-900 dark:text-white mb-1 relative z-10">A Minha Carteira</h3>
+                      <div className="text-4xl font-black text-amber-600 dark:text-amber-400 my-3 relative z-10 flex items-center justify-center gap-2">
+                        {profile?.vuka_coins || 0} <span className="text-xl">VC</span>
+                      </div>
+                      <p className="text-xs font-semibold text-amber-700/70 dark:text-amber-500/70 relative z-10">
+                        VukaCoins Disponíveis
+                      </p>
+                    </div>
+                    
+                    <div className="p-2 space-y-1">
+                      <NavLink
+                        to="/vuka-store"
+                        onClick={() => setIsWalletOpen(false)}
+                        className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-amber-50 dark:hover:bg-slate-800 hover:text-amber-600 dark:hover:text-amber-400 transition-all text-left"
+                      >
+                        <ShoppingBag className="w-4 h-4" />
+                        Gastar na VukaStore
+                      </NavLink>
+                      <button
+                        onClick={() => { setIsWalletOpen(false); navigate('/vukacoins'); }}
+                        className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-indigo-50 dark:hover:bg-slate-800 hover:text-indigo-600 dark:hover:text-indigo-400 transition-all text-left"
+                      >
+                        <ArrowUpDown className="w-4 h-4" />
+                        Transferir VukaCoins
+                      </button>
+                      <button
+                        onClick={() => { setIsWalletOpen(false); navigate('/buy-vukacoins'); }}
+                        className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-emerald-50 dark:hover:bg-slate-800 hover:text-emerald-600 dark:hover:text-emerald-400 transition-all text-left"
+                      >
+                        <Plus className="w-4 h-4" />
+                        Comprar VukaCoins
+                      </button>
+                    </div>
+                    
+                    <div className="p-3 bg-gray-50 dark:bg-slate-950/60 border-t border-gray-100 dark:border-slate-800 text-center">
+                      <NavLink 
+                        to="/vukacoins"
+                        onClick={() => setIsWalletOpen(false)}
+                        className="text-xs font-bold text-amber-600 dark:text-amber-500 hover:text-amber-700 dark:hover:text-amber-400 transition-colors"
+                      >
+                        Ver Histórico de Transações
+                      </NavLink>
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+
             {/* Help Dropdown */}
             <div className="relative">
               <button
@@ -590,6 +668,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   setIsHelpOpen(!isHelpOpen);
                   setIsNotificationsOpen(false);
                   setIsProfileOpen(false);
+                  setIsWalletOpen(false);
                 }}
                 className={cn(
                   "p-2.5 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-xl transition-all hidden sm:block",
@@ -638,6 +717,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   setIsProfileOpen(!isProfileOpen);
                   setIsNotificationsOpen(false);
                   setIsHelpOpen(false);
+                  setIsWalletOpen(false);
                 }}
                 className={cn(
                   "p-1 rounded-full border-2 transition-all",
@@ -803,16 +883,22 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             </div>
           </div>
         )}
-        <HelpModal
-          isOpen={isHelpOpen}
-          onClose={() => setIsHelpOpen(false)}
-        />
-        <CommandBar
-          isOpen={isCommandBarOpen}
-          onClose={() => setIsCommandBarOpen(false)}
+        <HelpModal isOpen={isHelpOpen} onClose={() => setIsHelpOpen(false)} />
+        <CommandBar 
+          isOpen={isCommandBarOpen} 
+          onClose={() => setIsCommandBarOpen(false)} 
+          navigationItems={allNavItems}
         />
         <BackupSyncManager />
         <AutoUpdater />
+        
+        {requireLocalPasswordSetup && (
+          <SetLocalPasswordModal 
+            onSuccess={() => setRequireLocalPasswordSetup(false)} 
+            userEmail={user?.email} 
+            isGuest={user?.isLocal} 
+          />
+        )}
       </main>
     </div>
   );

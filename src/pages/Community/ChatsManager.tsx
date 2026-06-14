@@ -88,7 +88,7 @@ export default function ChatsManager() {
   // 1. Escutar conversas em tempo real
   useEffect(() => {
     const chatsCol = collection(db, 'community_chats');
-    const unsubscribe = onSnapshot(chatsCol, async (snapshot) => {
+    const unsubscribe = onSnapshot(chatsCol, (snapshot) => {
       const list: Chat[] = [];
       snapshot.forEach(docSnap => {
         const c = { id: docSnap.id, ...docSnap.data() } as Chat;
@@ -96,13 +96,7 @@ export default function ChatsManager() {
           list.push(c);
         }
       });
-
-      if (list.length === 0 && snapshot.empty) {
-        // Semear conversas iniciais se vazio geral
-        await seedInitialChats();
-      } else {
-        setChats(list.sort((a, b) => (b.lastMessageAt || 0) - (a.lastMessageAt || 0)));
-      }
+      setChats(list.sort((a, b) => (b.lastMessageAt || 0) - (a.lastMessageAt || 0)));
     });
 
     return () => unsubscribe();
@@ -150,90 +144,7 @@ export default function ChatsManager() {
     return () => unsubscribe();
   }, [selectedChat]);
 
-  // Semeador de Chats Iniciais
-  const seedInitialChats = async () => {
-    try {
-      // 1. Criar perfil fictício dos parceiros se não existirem
-      const mockUsers = [
-        { id: 'seed-carlos', name: 'Dr. Carlos Invest', avatar: 'https://ui-avatars.com/api/?name=Dr.+Carlos&background=c7d2fe&color=3730a3', xp: 850, badge: '🥈 Pro' },
-        { id: 'seed-mariana', name: 'Mariana Finanças', avatar: 'https://ui-avatars.com/api/?name=Mariana+Finanças&background=bbf7d0&color=166534', xp: 1200, badge: '🥇 Expert' }
-      ];
-      for (const mu of mockUsers) {
-        await setDoc(doc(db, 'community_users', mu.id), mu);
-      }
 
-      // 2. Criar chat do grupo "Círculo BODIVA"
-      const groupChatId = 'group-circulo-bodiva';
-      const groupData: Chat = {
-        id: groupChatId,
-        type: 'group',
-        name: 'Círculo BODIVA 📈',
-        description: 'Debate sobre compra e venda de ações e Obrigações do Tesouro na Bolsa de Angola.',
-        members: [activeUserId, 'seed-carlos', 'seed-mariana'],
-        lastMessage: 'Mariana partilhou um infográfico de investimentos.',
-        lastMessageAt: Date.now()
-      };
-      await setDoc(doc(db, 'community_chats', groupChatId), groupData);
-
-      // Enviar mensagens iniciais
-      const mCol = collection(db, `community_chats/${groupChatId}/messages`);
-      
-      await addDoc(mCol, {
-        senderId: 'seed-carlos',
-        senderName: 'Dr. Carlos Invest',
-        senderAvatar: 'https://ui-avatars.com/api/?name=Dr.+Carlos&background=c7d2fe&color=3730a3',
-        content: 'Olá parceiros! Criei este círculo para debatermos oportunidades na Bodiva.',
-        createdAt: Date.now() - 4 * 60 * 60 * 1000
-      });
-
-      await addDoc(mCol, {
-        senderId: 'seed-mariana',
-        senderName: 'Mariana Finanças',
-        senderAvatar: 'https://ui-avatars.com/api/?name=Mariana+Finanças&background=bbf7d0&color=166534',
-        content: 'Excelente iniciativa, Carlos! Vejam o gráfico de rendimentos das Obrigações do Tesouro Angolanas:',
-        mediaUrl: 'https://images.unsplash.com/photo-1551836022-d5d88e9218df?q=80&w=400&auto=format&fit=crop',
-        mediaType: 'image',
-        createdAt: Date.now() - 3.5 * 60 * 60 * 1000
-      });
-
-      // 3. Criar chat privado com Carlos
-      const privateChatId = `private_${activeUserId}_seed-carlos`;
-      const privateData: Chat = {
-        id: privateChatId,
-        type: 'private',
-        members: [activeUserId, 'seed-carlos'],
-        lastMessage: 'Tudo bem! Pode enviar o ficheiro do orçamento.',
-        lastMessageAt: Date.now() - 10 * 60 * 1000
-      };
-      await setDoc(doc(db, 'community_chats', privateChatId), privateData);
-
-      const pmCol = collection(db, `community_chats/${privateChatId}/messages`);
-      await addDoc(pmCol, {
-        senderId: 'seed-carlos',
-        senderName: 'Dr. Carlos Invest',
-        senderAvatar: 'https://ui-avatars.com/api/?name=Dr.+Carlos&background=c7d2fe&color=3730a3',
-        content: 'Olá! Precisas de ajuda para configurar a tua carteira de poupança familiar?',
-        createdAt: Date.now() - 30 * 60 * 1000
-      });
-      await addDoc(pmCol, {
-        senderId: activeUserId,
-        senderName: activeUserName,
-        senderAvatar: activeUserAvatar,
-        content: 'Sim, por favor. Queria saber se o Kixiquila de Luanda compensa mais do que o depósito a prazo.',
-        createdAt: Date.now() - 20 * 60 * 1000
-      });
-      await addDoc(pmCol, {
-        senderId: 'seed-carlos',
-        senderName: 'Dr. Carlos Invest',
-        senderAvatar: 'https://ui-avatars.com/api/?name=Dr.+Carlos&background=c7d2fe&color=3730a3',
-        content: 'Tudo bem! Pode enviar o ficheiro do orçamento.',
-        createdAt: Date.now() - 10 * 60 * 1000
-      });
-
-    } catch (e) {
-      console.error('Falha ao semear chats iniciais:', e);
-    }
-  };
 
   // Enviar mensagem de texto
   const handleSendMessage = async (e: React.FormEvent) => {

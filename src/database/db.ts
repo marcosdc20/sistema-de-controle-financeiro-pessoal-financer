@@ -614,6 +614,47 @@ async function initDatabaseInstance(db: IDatabase): Promise<void> {
       console.log('Migração para Versão 6 concluída.');
     }
 
+    // MIGRATION 7: Tabela de aulas descarregadas para estudo offline (Versão 7)
+    if (currentVersion < 7) {
+      console.log('Executando migração: Versão 7 (Aulas descarregadas offline)...');
+      await db.execute(`
+        CREATE TABLE IF NOT EXISTS downloaded_lessons (
+          id TEXT PRIMARY KEY,
+          course_id TEXT NOT NULL,
+          title TEXT NOT NULL,
+          content TEXT,
+          video_url TEXT,
+          local_video_base64 TEXT,
+          downloaded_at INTEGER NOT NULL
+        );
+      `);
+      await db.execute('PRAGMA user_version = 7;');
+      currentVersion = 7;
+      console.log('Migração para Versão 7 concluída.');
+    }
+
+    // MIGRATION 8: Controlo Offline e Associação com Firebase (Versão 8)
+    if (currentVersion < 8) {
+      console.log('Executando migração: Versão 8 (Sincronização Offline Firebase)...');
+      
+      const columnsToAdd = [
+        { name: 'last_sync_at', type: 'INTEGER' },
+        { name: 'firebase_uid', type: 'TEXT' }
+      ];
+
+      for (const col of columnsToAdd) {
+        try {
+          await db.execute(`ALTER TABLE profiles ADD COLUMN ${col.name} ${col.type};`);
+        } catch (e) {
+          console.log(`Coluna ${col.name} já existe em profiles ou erro ao adicionar:`, e);
+        }
+      }
+
+      await db.execute('PRAGMA user_version = 8;');
+      currentVersion = 8;
+      console.log('Migração para Versão 8 concluída.');
+    }
+
     // Preenche categorias padrões se estiverem vazias
     const existingCats = await db.select('SELECT count(*) as count FROM categories');
     const catCount = (existingCats as any)[0]?.count || 0;

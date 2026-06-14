@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="pt-AO">
+<head>
+  <meta charset="UTF-8">
+  <title>Modelos de Email VukaPay</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f4f5f7;
+      margin: 0;
+      padding: 20px;
+    }
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      background-color: #ffffff;
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+      border: 1px solid #e1e4e8;
+    }
+    .header {
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      padding: 30px 20px;
+      text-align: center;
+    }
+    .header h1 {
+      color: #ffffff;
+      margin: 0;
+      font-size: 26px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+    }
+    .content {
+      padding: 40px 30px;
+      color: #333333;
+      line-height: 1.6;
+    }
+    .content h2 {
+      font-size: 20px;
+      font-weight: 700;
+      margin-top: 0;
+      color: #111111;
+    }
+    .btn {
+      display: inline-block;
+      padding: 14px 28px;
+      background-color: #059669;
+      color: #ffffff !important;
+      text-decoration: none;
+      border-radius: 10px;
+      font-weight: bold;
+      font-size: 14px;
+      margin: 25px 0;
+      text-align: center;
+      box-shadow: 0 4px 10px rgba(5, 150, 105, 0.2);
+    }
+    .license-box {
+      background-color: #f0fdf4;
+      border: 1px dashed #10b981;
+      padding: 20px;
+      border-radius: 12px;
+      text-align: center;
+      margin: 25px 0;
+    }
+    .license-key {
+      font-family: monospace;
+      font-size: 20px;
+      font-weight: bold;
+      color: #047857;
+      letter-spacing: 2px;
+    }
+    .footer {
+      background-color: #f8fafc;
+      padding: 20px;
+      text-align: center;
+      font-size: 12px;
+      color: #64748b;
+      border-top: 1px solid #e2e8f0;
+    }
+    .footer a {
+      color: #059669;
+      text-decoration: none;
+      font-weight: bold;
+    }
+    .template-card {
+      border: 2px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 40px;
+      background-color: #fff;
+    }
+    .template-title {
+      font-size: 18px;
+      font-weight: bold;
+      margin-bottom: 10px;
+      color: #1e293b;
+      border-left: 4px solid #10b981;
+      padding-left: 10px;
+    }
+  </style>
+</head>
+<body>
+
+  <div style="max-width: 800px; margin: 0 auto; padding-bottom: 50px;">
+    <h1 style="color: #0f172a; font-size: 28px; font-weight: 800; text-align: center; margin-bottom: 30px;">
+      Modelos de Email Oficial VukaPay
+    </h1>
+    <p style="color: #475569; text-align: center; margin-bottom: 40px;">
+      Estes são os designs HTML profissionais para os seus emails. Copie o código fonte de cada um para configurar no Firebase Console ou no seu gerenciador de disparos de licença.
+    </p>
+
+    <!-- ==================== TEMPLATE 1: REDEFINIÇÃO DE SENHA ==================== -->
+    <div class="template-card">
+      <div class="template-title">1. Modelo de Redefinição de Senha (Firebase Console)</div>
+      <p style="color: #64748b; font-size: 13px; margin-bottom: 15px;">
+        <em>Instruções:</em> No Painel do Firebase, vá para <strong>Authentication</strong> &gt; <strong>Templates</strong> &gt; <strong>Password Reset</strong>. Mude para edição de HTML e cole o código abaixo. Use o remetente oficial: <strong>suporte.vukapay@gmail.com</strong>.
+      </p>
+      
+      <textarea style="width: 100%; height: 250px; font-family: monospace; font-size: 11px; padding: 10px; border-radius: 8px; border: 1px solid #cbd5e1; background-color: #f8fafc;" readonly>
+<!DOCTYPE html>
+<html lang="pt-AO">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Recuperar Palavra-passe - VukaPay</title>
+</head>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f4f5f7; margin: 0; padding: 20px;">
+  <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border: 1px solid #e1e4e8;">
+    <div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); padding: 30px 20px; text-align: center;">
+      <h1 style="color: #ffffff; margin: 0; font-size: 26px; font-weight: 800; letter-spacing: -0.5px;">VukaPay</h1>
+    </div>
+    <div style="padding: 40px 30px; color: #333333; line-height: 1.6;">
+      <h2 style="font-size: 20px; font-weight: 700; margin-top: 0; color: #111111;">Olá,</h2>
+      <p style="font-size: 15px; color: #4b5563;">Recebemos um pedido para redefinir a palavra-passe da sua conta VukaPay.</p>
+      <p style="font-size: 15px; color: #4b5563;">Para criar uma nova palavra-passe, clique no botão abaixo. Este link expira em breve por questões de segurança.</p>
+      
+      <div style="text-align: center;">
+        <a href="%LINK%" style="display: inline-block; padding: 14px 28px; background-color: #059669; color: #ffffff !important; text-decoration: none; border-radius: 10px; font-weight: bold; font-size: 14px; margin: 20px 0; text-align: center; box-shadow: 0 4px 10px rgba(5, 150, 105, 0.2);">Redefinir Palavra-passe</a>
+      </div>
+      
+      <p style="font-size: 14px; color: #6b7280; margin-top: 25px;">Se não solicitou esta alteração, pode ignorar este e-mail com segurança. A sua palavra-passe atual permanecerá ativa.</p>
+      
+      <hr style="border: 0; border-top: 1px solid #e5e7eb; margin: 30px 0;">
+      <p style="font-size: 12px; color: #9ca3af; line-height: 1.4;">Se tiver dificuldades em clicar no botão, copie e cole o seguinte link no seu navegador:<br>
+      <a href="%LINK%" style="color: #059669; word-break: break-all;">%LINK%</a></p>
+    </div>
+    <div style="background-color: #f8fafc; padding: 20px; text-align: center; font-size: 12px; color: #64748b; border-top: 1px solid #e2e8f0;">
+      <p style="margin: 0 0 8px 0;">VukaPay — O seu controle financeiro pessoal, à medida de Angola.</p>
+      <p style="margin: 0;">Dúvidas? Contacte-nos através de <a href="mailto:suporte.vukapay@gmail.com" style="color: #059669; text-decoration: none; font-weight: bold;">suporte.vukapay@gmail.com</a></p>
+    </div>
+  </div>
+</body>
+</html>
+      </textarea>
+    </div>
+
+    <!-- ==================== TEMPLATE 2: ENVIO DE LICENÇA ==================== -->
+    <div class="template-card">
+      <div class="template-title">2. Modelo de Envio de Licença (VukaPay Premium)</div>
+      <p style="color: #64748b; font-size: 13px; margin-bottom: 15px;">
+        <em>Instruções:</em> Use este design para enviar as chaves de licença geradas aos seus clientes. Substitua as tags `%CLIENT_NAME%`, `%PLAN_NAME%` e `%LICENSE_KEY%` correspondentes.
+      </p>
+      
+      <textarea style="width: 100%; height: 250px; font-family: monospace; font-size: 11px; padding: 10px; border-radius: 8px; border: 1px solid #cbd5e1; background-color: #f8fafc;" readonly>
+<!DOCTYPE html>
+<html lang="pt-AO">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sua Licença VukaPay Premium</title>
+</head>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f4f5f7; margin: 0; padding: 20px;">
+  <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border: 1px solid #e1e4e8;">
+    <div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); padding: 30px 20px; text-align: center;">
+      <h1 style="color: #ffffff; margin: 0; font-size: 26px; font-weight: 800; letter-spacing: -0.5px;">VukaPay Premium</h1>
+    </div>
+    <div style="padding: 40px 30px; color: #333333; line-height: 1.6;">
+      <h2 style="font-size: 20px; font-weight: 700; margin-top: 0; color: #111111;">Obrigado por adquirir o VukaPay!</h2>
+      <p style="font-size: 15px; color: #4b5563;">Olá, %CLIENT_NAME%,</p>
+      <p style="font-size: 15px; color: #4b5563;">Confirmamos o seu pagamento e a sua chave de licença premium <strong>(%PLAN_NAME%)</strong> está ativa e pronta para ser utilizada.</p>
+      
+      <div style="background-color: #f0fdf4; border: 1px dashed #10b981; padding: 20px; border-radius: 12px; text-align: center; margin: 25px 0;">
+        <p style="margin: 0 0 10px 0; font-size: 12px; text-transform: uppercase; color: #047857; font-weight: bold; letter-spacing: 1px;">Chave de Licença Premium</p>
+        <div style="font-family: monospace; font-size: 22px; font-weight: bold; color: #047857; letter-spacing: 2px;">%LICENSE_KEY%</div>
+      </div>
+      
+      <h3 style="font-size: 16px; font-weight: 700; color: #111111; margin-top: 30px; margin-bottom: 10px;">Como ativar a sua licença?</h3>
+      <ol style="font-size: 14px; color: #4b5563; padding-left: 20px; margin-bottom: 25px;">
+        <li style="margin-bottom: 8px;">Abra a aplicação VukaPay no seu computador.</li>
+        <li style="margin-bottom: 8px;">Na tela de bloqueio de licença ou em <strong>Configurações &gt; Licenciamento</strong>, insira a chave acima.</li>
+        <li style="margin-bottom: 8px;">Clique em <strong>Ativar VukaPay</strong>. A sua aplicação será desbloqueada instantaneamente.</li>
+      </ol>
+
+      <div style="background-color: #faf5ff; border: 1px solid #e9d5ff; border-radius: 12px; padding: 15px; margin-bottom: 25px;">
+        <p style="margin: 0; font-size: 13px; color: #6b21a8; font-weight: 600;">⚠️ Importante:</p>
+        <p style="margin: 5px 0 0 0; font-size: 12px; color: #6b21a8; opacity: 0.9;">Guarde esta chave em local seguro. Ela é intransmissível e permite atualizações oficiais para o plano correspondente.</p>
+      </div>
+      
+      <hr style="border: 0; border-top: 1px solid #e5e7eb; margin: 30px 0;">
+      <p style="font-size: 13px; color: #6b7280; text-align: center;">Se tiver qualquer dúvida ou precisar de auxílio na ativação, responda a este email ou contacte-nos no WhatsApp de Suporte.</p>
+    </div>
+    <div style="background-color: #f8fafc; padding: 20px; text-align: center; font-size: 12px; color: #64748b; border-top: 1px solid #e2e8f0;">
+      <p style="margin: 0 0 8px 0;">VukaPay — Controle Financeiro Pessoal 100% Offline e Privado.</p>
+      <p style="margin: 0;">Email de Suporte: <a href="mailto:suporte.vukapay@gmail.com" style="color: #059669; text-decoration: none; font-weight: bold;">suporte.vukapay@gmail.com</a></p>
+    </div>
+  </div>
+</body>
+</html>
+      </textarea>
+    </div>
+
+  </div>
+
+</body>
+</html>

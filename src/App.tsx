@@ -26,6 +26,8 @@ import Candonga from '@/pages/Candonga';
 import MesadaFamiliar from '@/pages/MesadaFamiliar';
 import Marketplace from '@/pages/Marketplace';
 import VukaStore from '@/pages/VukaStore';
+import VukaCoinWallet from '@/pages/VukaCoinWallet';
+import BuyVukaCoins from '@/pages/BuyVukaCoins';
 import { useAuth } from '@/context/AuthContext';
 import AppSecurityGuard from '@/components/AppSecurityGuard';
 
@@ -76,6 +78,8 @@ export default function App() {
       <Route path="/mesada-familiar" element={isAuthenticated ? <ProtectedLayout><MesadaFamiliar /></ProtectedLayout> : <Navigate to="/login" replace />} />
       <Route path="/marketplace" element={isAuthenticated ? <ProtectedLayout><Marketplace /></ProtectedLayout> : <Navigate to="/login" replace />} />
       <Route path="/vuka-store" element={isAuthenticated ? <ProtectedLayout><VukaStore /></ProtectedLayout> : <Navigate to="/login" replace />} />
+      <Route path="/vukacoins" element={isAuthenticated ? <ProtectedLayout><VukaCoinWallet /></ProtectedLayout> : <Navigate to="/login" replace />} />
+      <Route path="/buy-vukacoins" element={isAuthenticated ? <ProtectedLayout><BuyVukaCoins /></ProtectedLayout> : <Navigate to="/login" replace />} />
 
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

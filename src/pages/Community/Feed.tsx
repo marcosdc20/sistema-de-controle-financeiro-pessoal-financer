@@ -84,37 +84,32 @@ export default function Feed() {
   const activeUserName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Utilizador VukaPay';
   const activeUserAvatar = user?.user_metadata?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(activeUserName)}&background=random`;
 
-  // 1. Escutar posts em tempo real + Seeding se vazio
+  // 1. Escutar posts em tempo real
   useEffect(() => {
     const postsCol = collection(db, 'community_posts');
     const q = query(postsCol, orderBy('createdAt', 'desc'));
 
-    const unsubscribe = onSnapshot(q, async (snapshot) => {
-      if (snapshot.empty) {
-        // Se a base de dados estiver vazia, semeamos posts mock iniciais
-        await seedInitialPosts();
-      } else {
-        const fetchedPosts: Post[] = snapshot.docs.map(d => {
-          const data = d.data();
-          const rawLikes = data.likes;
-          const likesArray = Array.isArray(rawLikes) ? rawLikes : (data.likedBy && Array.isArray(data.likedBy) ? data.likedBy : []);
-          return {
-            id: d.id,
-            title: data.title || '',
-            content: data.content || '',
-            category: data.category || 'Geral',
-            authorId: data.authorId || 'admin',
-            authorName: data.authorName || data.author || 'VukaPay Suporte',
-            authorAvatar: data.authorAvatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(data.authorName || data.author || 'VukaPay')}&background=059669&color=fff`,
-            createdAt: data.createdAt || data.created_at || Date.now(),
-            likes: likesArray,
-            likesCount: typeof rawLikes === 'number' ? rawLikes : (data.likesCount ?? likesArray.length),
-            commentsCount: data.commentsCount || 0
-          } as Post;
-        });
-        setPosts(fetchedPosts);
-        setLoadingPosts(false);
-      }
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const fetchedPosts: Post[] = snapshot.docs.map(d => {
+        const data = d.data();
+        const rawLikes = data.likes;
+        const likesArray = Array.isArray(rawLikes) ? rawLikes : (data.likedBy && Array.isArray(data.likedBy) ? data.likedBy : []);
+        return {
+          id: d.id,
+          title: data.title || '',
+          content: data.content || '',
+          category: data.category || 'Geral',
+          authorId: data.authorId || 'admin',
+          authorName: data.authorName || data.author || 'VukaPay Suporte',
+          authorAvatar: data.authorAvatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(data.authorName || data.author || 'VukaPay')}&background=059669&color=fff`,
+          createdAt: data.createdAt || data.created_at || Date.now(),
+          likes: likesArray,
+          likesCount: typeof rawLikes === 'number' ? rawLikes : (data.likesCount ?? likesArray.length),
+          commentsCount: data.commentsCount || 0
+        } as Post;
+      });
+      setPosts(fetchedPosts);
+      setLoadingPosts(false);
     });
 
     return () => unsubscribe();
@@ -161,8 +156,8 @@ export default function Feed() {
       } else {
         setDoc(challengeRef, {
           title: "30 Dias Sem Gastos Supérfluos",
-          participants: ['seed-user-1', 'seed-user-2'],
-          participantCount: 1240
+          participants: [],
+          participantCount: 0
         });
       }
     });
@@ -191,67 +186,7 @@ export default function Feed() {
     return () => unsubscribe();
   }, [selectedPost]);
 
-  // Função de Seeding de posts
-  const seedInitialPosts = async () => {
-    try {
-      const seedData = [
-        {
-          title: "Estratégias de Dividendos para 2026: O que esperar?",
-          content: "Com a recente mudança na taxa Selic/BNA, muitos investidores estão migrando para fundos imobiliários e ações focadas em renda passiva. Aqui está minha análise dos setores mais promissores para o próximo semestre na BODIVA...",
-          category: "Investimentos",
-          authorId: "seed-ricardo",
-          authorName: "Ricardo Invest",
-          authorAvatar: "https://ui-avatars.com/api/?name=Ricardo+Invest&background=c7d2fe&color=3730a3",
-          createdAt: Date.now() - 2 * 60 * 60 * 1000,
-          likes: [],
-          likesCount: 124,
-          commentsCount: 2
-        },
-        {
-          title: "Como quitei meu financiamento imobiliário em 5 anos",
-          content: "A estratégia foi simples: amortização constante e uso inteligente de fundos de rendimento. Vou detalhar a planilha que usei para priorizar os pagamentos mensais sem comprometer a qualidade de vida familiar em Luanda.",
-          category: "Sucesso",
-          authorId: "seed-ana",
-          authorName: "Ana Poupança",
-          authorAvatar: "https://ui-avatars.com/api/?name=Ana+Poupança&background=bbf7d0&color=166534",
-          createdAt: Date.now() - 5 * 60 * 60 * 1000,
-          likes: [],
-          likesCount: 382,
-          commentsCount: 1
-        }
-      ];
 
-      for (const post of seedData) {
-        const postRef = await addDoc(collection(db, 'community_posts'), post);
-        if (post.authorId === 'seed-ricardo') {
-          await addDoc(collection(db, `community_posts/${postRef.id}/comments`), {
-            content: "Ótima análise, Ricardo! Acredito que o setor financeiro e de energia serão os mais resilientes.",
-            authorId: "user-carlos",
-            authorName: "Dr. Carlos Invest",
-            authorAvatar: "https://ui-avatars.com/api/?name=Dr.+Carlos&background=random",
-            createdAt: Date.now() - 1.5 * 60 * 60 * 1000
-          });
-          await addDoc(collection(db, `community_posts/${postRef.id}/comments`), {
-            content: "Também estou de olho nos REITs angolanos em desenvolvimento.",
-            authorId: "user-mariana",
-            authorName: "Mariana Finanças",
-            authorAvatar: "https://ui-avatars.com/api/?name=Mariana+Finanças&background=random",
-            createdAt: Date.now() - 1 * 60 * 60 * 1000
-          });
-        } else {
-          await addDoc(collection(db, `community_posts/${postRef.id}/comments`), {
-            content: "Parabéns, Ana! Esse depoimento me inspira muito a focar na amortização também.",
-            authorId: "user-carlos",
-            authorName: "Dr. Carlos Invest",
-            authorAvatar: "https://ui-avatars.com/api/?name=Dr.+Carlos&background=random",
-            createdAt: Date.now() - 4 * 60 * 60 * 1000
-          });
-        }
-      }
-    } catch (e) {
-      console.error('Falha ao semear posts iniciais no Firestore:', e);
-    }
-  };
 
   // Enviar novo post
   const handleCreatePost = async (e: React.FormEvent) => {

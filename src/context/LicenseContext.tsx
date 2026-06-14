@@ -35,6 +35,7 @@ import {
   clearLocalLicense,
   OFFLINE_GRACE_PERIOD_MS,
 } from '@/services/licenseService';
+import { useAuth } from '@/context/AuthContext';
 
 // ─── Tipos do Contexto ───────────────────────────────────────────────────────
 
@@ -75,6 +76,7 @@ const LicenseContext = createContext<LicenseContextValue | undefined>(undefined)
 // ─── Provider ───────────────────────────────────────────────────────────────
 
 export function LicenseProvider({ children }: { children: React.ReactNode }) {
+  const { user } = useAuth();
   const [licenseState, setLicenseState] = useState<LicenseState>(initialState);
   const [isLoading, setIsLoading] = useState(true);
   const sqliteDbRef = useRef<Database | null>(null);
@@ -183,172 +185,303 @@ export function LicenseProvider({ children }: { children: React.ReactNode }) {
       const { timestamp: serverTime, isOnline } = await getServerTimestamp();
       const db = await getSqliteDb();
 
-      // ── Fase 1: Verifica licença paga no SQLite local ────────────────────
-      if (db) {
-        const localLicense = await readLocalLicense(db, hwId);
-
-        if (localLicense) {
-          // Existe licença local válida e não adulterada
-
-          // Verifica expiração local primeiro
-          if (localLicense.expires_at && localLicense.expires_at < serverTime) {
-            setLicenseState({
-              ...initialState,
-              phase:          'expired',
-              hardwareId:     hwId,
-              licenseKey:     localLicense.license_key,
-              clientEmail:    localLicense.client_email,
-              planType:       localLicense.plan_type,
-              licenseExpiresAt: localLicense.expires_at,
-              errorMessage:   'A sua licença expirou. Renove para continuar.',
-            });
-            setIsLoading(false);
-            return;
-          }
-
-          // Verifica se ficou muito tempo sem internet
-          const daysSinceVerify = (serverTime - localLicense.last_verified_at) / (24 * 60 * 60 * 1000);
-
-          if (!isOnline && daysSinceVerify > 7) {
-            setLicenseState({
-              ...initialState,
-              phase:           'offline_warning',
-              hardwareId:      hwId,
-              licenseKey:      localLicense.license_key,
-              clientEmail:     localLicense.client_email,
-              planType:        localLicense.plan_type,
-              offlineDaysCount: Math.floor(daysSinceVerify),
-              lastVerifiedAt:  localLicense.last_verified_at,
-            });
-            setIsLoading(false);
-            return;
-          }
-
-          // Faz ping no Firestore se online
-          if (isOnline) {
-            const { status } = await pingLicenseStatus(localLicense.license_key);
-
-            if (status === 'revoked') {
-              await clearLocalLicense(db);
-              setLicenseState({
-                ...initialState,
-                phase:        'revoked',
-                hardwareId:   hwId,
-                errorMessage: 'A sua licença foi revogada. Contacte o suporte.',
-              });
-              setIsLoading(false);
-              return;
-            }
-
-            if (status === 'expired') {
-              setLicenseState({
-                ...initialState,
-                phase:           'expired',
-                hardwareId:      hwId,
-                licenseKey:      localLicense.license_key,
-                clientEmail:     localLicense.client_email,
-                planType:        localLicense.plan_type,
-                licenseExpiresAt: localLicense.expires_at,
-                errorMessage:    'A sua licença expirou. Renove para continuar.',
-              });
-              setIsLoading(false);
-              return;
-            }
-
-            // Status 'active' → atualiza timestamp de verificação
-            if (status === 'active') {
-              await updateLocalVerificationTimestamp(db, serverTime);
-            }
-          }
-
-          // Licença válida — liberta o app
+      // ── Fase Anti-Burla de Relógio ─────────────────────────────────────────
+      const lastUsageStr = localStorage.getItem('vukapay_last_usage_time');
+      const now = Date.now();
+      if (lastUsageStr) {
+        const lastUsage = parseInt(lastUsageStr, 10);
+        if (now < lastUsage - 3600000) {
           setLicenseState({
             ...initialState,
-            phase:           'active',
-            hardwareId:      hwId,
-            licenseKey:      localLicense.license_key,
-            clientEmail:     localLicense.client_email,
-            planType:        localLicense.plan_type,
-            licenseExpiresAt: localLicense.expires_at,
-            lastVerifiedAt:  serverTime,
+            phase:        'error',
+            hardwareId:   hwId,
+            errorMessage: 'Alteração de hora detetada! Por favor, ajuste a data e hora do seu computador para o horário correto.',
           });
           setIsLoading(false);
           return;
         }
       }
+      localStorage.setItem('vukapay_last_usage_time', String(now));
 
-      // ── Fase 2: Sem licença local — verifica Trial ───────────────────────
-
-      // Primeiro verifica o cache local do trial (para offline)
-      const localTrial = checkLocalTrialValidity();
-
-      if (localTrial.hasLocalTrial) {
-        if (!isOnline) {
-          // Usa dados locais offline
-          const trialPartialState = computeTrialState(
-            localTrial.expiresAt!,
-            serverTime
-          );
-          setLicenseState({ ...initialState, hardwareId: hwId, ...trialPartialState });
-          setIsLoading(false);
-          return;
-        }
-
-        // Online: verifica no Firestore para obter timestamp oficial
-        const firestoreTrial = await checkTrialStatus(hwId).catch(() => null);
-
-        if (firestoreTrial) {
-          const trialPartialState = computeTrialState(firestoreTrial.expires_at, serverTime);
-          setLicenseState({ ...initialState, hardwareId: hwId, ...trialPartialState });
-          setIsLoading(false);
-          return;
-        }
-      }
-
-      // Sem trial local — verifica no Firestore (primeiro boot ou novo device)
-      if (isOnline) {
-        const firestoreTrial = await checkTrialStatus(hwId).catch(() => null);
-
-        if (firestoreTrial) {
-          // Trial já existe no Firestore (outro boot anterior online)
-          saveTrialLocally(firestoreTrial);
-          const trialPartialState = computeTrialState(firestoreTrial.expires_at, serverTime);
-          setLicenseState({ ...initialState, hardwareId: hwId, ...trialPartialState });
-          setIsLoading(false);
-          return;
-        }
-
-        // Primeiro boot verdadeiro — cria trial
-        const newTrial = await createTrialRecord(hwId, serverTime);
-        saveTrialLocally(newTrial);
-
+      // Se não há utilizador logado, estamos no ecrã de login.
+      if (!user) {
         setLicenseState({
           ...initialState,
-          phase:              'trial_active',
-          hardwareId:         hwId,
-          planType:           'free_trial',
-          trialDaysRemaining: 7,
-          trialExpiresAt:     newTrial.expires_at,
+          phase: 'active', // Permite renderizar a tela de login
+          hardwareId: hwId,
         });
         setIsLoading(false);
         return;
       }
 
-      // Offline e sem dados locais de trial ou licença
-      // Verifica se há dados no localStorage (pode estar em modo degraded)
+      const isGuest = user.isLocal || (user.email && user.email.endsWith('@vukapay.local'));
+      const currentUserEmail = user.email ? user.email.trim().toLowerCase() : '';
+
+      // ── Caso A: Utilizador é Convidado (Guest) ─────────────────────────────
+      if (isGuest) {
+        const localTrial = checkLocalTrialValidity();
+
+        if (localTrial.hasLocalTrial) {
+          if (!isOnline) {
+            const trialPartialState = computeTrialState(localTrial.expiresAt!, serverTime);
+            setLicenseState({ ...initialState, phase: trialPartialState.phase || 'trial_expired', hardwareId: hwId, ...trialPartialState });
+            setIsLoading(false);
+            return;
+          }
+
+          const firestoreTrial = await checkTrialStatus(hwId).catch(() => null);
+          if (firestoreTrial) {
+            const trialPartialState = computeTrialState(firestoreTrial.expires_at, serverTime);
+            setLicenseState({ ...initialState, phase: trialPartialState.phase || 'trial_expired', hardwareId: hwId, ...trialPartialState });
+            setIsLoading(false);
+            return;
+          }
+        }
+
+        if (isOnline) {
+          const firestoreTrial = await checkTrialStatus(hwId).catch(() => null);
+          if (firestoreTrial) {
+            saveTrialLocally(firestoreTrial);
+            const trialPartialState = computeTrialState(firestoreTrial.expires_at, serverTime);
+            setLicenseState({ ...initialState, phase: trialPartialState.phase || 'trial_expired', hardwareId: hwId, ...trialPartialState });
+            setIsLoading(false);
+            return;
+          }
+
+          const newTrial = await createTrialRecord(hwId, serverTime);
+          saveTrialLocally(newTrial);
+          setLicenseState({
+            ...initialState,
+            phase:              'trial_active',
+            hardwareId:         hwId,
+            planType:           'free_trial',
+            trialDaysRemaining: 7,
+            trialExpiresAt:     newTrial.expires_at,
+          });
+          setIsLoading(false);
+          return;
+        }
+
+        // Offline sem trial
+        if (localTrial.hasLocalTrial) {
+          const trialPartialState = computeTrialState(localTrial.expiresAt!, serverTime);
+          setLicenseState({ ...initialState, phase: trialPartialState.phase || 'trial_expired', hardwareId: hwId, ...trialPartialState });
+        } else {
+          setLicenseState({
+            ...initialState,
+            phase:        'trial_expired',
+            hardwareId:   hwId,
+            planType:     'free_trial',
+            errorMessage: 'Conexão necessária para iniciar o período de teste.',
+          });
+        }
+        setIsLoading(false);
+        return;
+      }
+
+      // ── Caso B: Utilizador Registado (E-mail / Google) ──────────────────────
+      
+      // Passo 1: Ler do SQLite local primeiro (mais rápido e tolerante a falhas)
+      let localLicense = null;
+      if (db) {
+        localLicense = await readLocalLicense(db, hwId);
+      }
+
+      let licenseDataToUse = null;
+      let licenseKeyToUse = null;
+
+      if (localLicense && localLicense.client_email.trim().toLowerCase() === currentUserEmail) {
+        // Encontrado localmente! Vamos tentar validar online de forma direta pelo ID (Key)
+        licenseKeyToUse = localLicense.license_key;
+        
+        if (isOnline) {
+          try {
+            const { validateLicense } = await import('@/services/licenseService');
+            const onlineLicense = await validateLicense(licenseKeyToUse);
+            if (onlineLicense) {
+              licenseDataToUse = onlineLicense;
+              
+              // Sincronizar qualquer mudança online para o offline
+              if (db && onlineLicense.status === 'active') {
+                await saveLicenseLocally(db, { ...onlineLicense, hardware_id: hwId }, hwId);
+              }
+            }
+          } catch (err) {
+            console.warn('[License Context] Erro ao validar chave online, mantendo dados locais.', err);
+          }
+        }
+        
+        // Se a validação online falhou, usamos os dados locais
+        if (!licenseDataToUse) {
+           licenseDataToUse = {
+             status: 'active', // Assumido ativo se não pudemos verificar e estava offline
+             client_email: localLicense.client_email,
+             plan_type: localLicense.plan_type,
+             hardware_id: hwId,
+             expires_at: localLicense.expires_at,
+             last_verified_at: localLicense.last_verified_at
+           };
+        }
+      } else if (isOnline && currentUserEmail) {
+        // Passo 2: Se não há licença local, tenta buscar no Firestore por email
+        try {
+          const { collection, query, where, getDocs, doc, updateDoc } = await import('firebase/firestore');
+          const { db: firestoreDb } = await import('@/lib/firebase');
+          
+          const licensesCol = collection(firestoreDb, 'licenses');
+          const q = query(licensesCol, where('client_email', '==', currentUserEmail));
+          const snap = await getDocs(q);
+          
+          if (!snap.empty) {
+            const licenseDoc = snap.docs[0];
+            licenseDataToUse = licenseDoc.data();
+            licenseKeyToUse = licenseDoc.id;
+            
+            // Vincular HWID automaticamente se estiver null (restaurando em novo PC após reset)
+            if (licenseDataToUse.hardware_id === null) {
+              await updateDoc(doc(firestoreDb, 'licenses', licenseDoc.id), { hardware_id: hwId });
+              licenseDataToUse.hardware_id = hwId;
+            }
+            
+            // Grava localmente o cache
+            if (db) {
+              await saveLicenseLocally(db, { id: licenseDoc.id, ...licenseDataToUse, hardware_id: hwId } as any, hwId);
+            }
+          }
+        } catch (err) {
+          console.warn('[License Context] Falha ao fazer query por email:', err);
+        }
+      }
+
+      // Passo 3: Avaliar os dados obtidos (Online ou Offline)
+      if (licenseDataToUse && licenseKeyToUse) {
+         // Validar status
+         if (licenseDataToUse.status === 'revoked') {
+           if (db) await clearLocalLicense(db);
+           setLicenseState({
+             ...initialState,
+             phase:        'revoked',
+             hardwareId:   hwId,
+             clientEmail:  currentUserEmail,
+             errorMessage: 'A sua licença foi revogada pelo administrador.',
+           });
+           setIsLoading(false);
+           return;
+         }
+
+         if (licenseDataToUse.status === 'expired' || (licenseDataToUse.expires_at && licenseDataToUse.expires_at < serverTime)) {
+           setLicenseState({
+             ...initialState,
+             phase:        'expired',
+             hardwareId:   hwId,
+             licenseKey:   licenseKeyToUse,
+             clientEmail:  currentUserEmail,
+             planType:     licenseDataToUse.plan_type,
+             licenseExpiresAt: licenseDataToUse.expires_at,
+             errorMessage: 'A sua licença expirou. Renove para continuar.',
+           });
+           setIsLoading(false);
+           return;
+         }
+
+         // Validar hardware_id (se está ativado noutro PC)
+         if (licenseDataToUse.hardware_id !== null && licenseDataToUse.hardware_id !== hwId) {
+           setLicenseState({
+             ...initialState,
+             phase:        'error',
+             hardwareId:   hwId,
+             clientEmail:  currentUserEmail,
+             errorMessage: 'Esta chave de licença já está ativada noutro computador. Contacte o suporte para redefinição.',
+           });
+           setIsLoading(false);
+           return;
+         }
+         
+         // Validar tempo offline limite
+         if (!isOnline && licenseDataToUse.last_verified_at) {
+            const daysSinceVerify = (serverTime - licenseDataToUse.last_verified_at) / (24 * 60 * 60 * 1000);
+            if (daysSinceVerify > 7) {
+              setLicenseState({
+                ...initialState,
+                phase:           'offline_warning',
+                hardwareId:      hwId,
+                licenseKey:      licenseKeyToUse,
+                clientEmail:     currentUserEmail,
+                planType:        licenseDataToUse.plan_type,
+                offlineDaysCount: Math.floor(daysSinceVerify),
+                lastVerifiedAt:  licenseDataToUse.last_verified_at,
+              });
+              setIsLoading(false);
+              return;
+            }
+         }
+
+         // Licença Válida!
+         setLicenseState({
+           ...initialState,
+           phase:            'active',
+           hardwareId:       hwId,
+           licenseKey:       licenseKeyToUse,
+           clientEmail:      currentUserEmail,
+           planType:         licenseDataToUse.plan_type,
+           licenseExpiresAt: licenseDataToUse.expires_at,
+           lastVerifiedAt:   serverTime,
+         });
+         setIsLoading(false);
+         return;
+      }
+
+      // 3. Fallback: Sem licença paga, verificar se o trial local ainda está ativo para este e-mail
+      const localTrial = checkLocalTrialValidity();
       if (localTrial.hasLocalTrial) {
         const trialPartialState = computeTrialState(localTrial.expiresAt!, serverTime);
-        setLicenseState({ ...initialState, hardwareId: hwId, ...trialPartialState });
-      } else {
-        // Primeiro boot totalmente offline — trial_expired para não deixar passar
         setLicenseState({
           ...initialState,
-          phase:        'trial_expired',
+          phase:        trialPartialState.phase || 'trial_expired',
           hardwareId:   hwId,
-          planType:     'free_trial',
-          errorMessage: 'Conexão necessária para iniciar o período de teste.',
+          clientEmail:  currentUserEmail,
+          ...trialPartialState,
         });
+      } else {
+        // Se estiver online, cria o trial para este dispositivo
+        if (isOnline) {
+          const firestoreTrial = await checkTrialStatus(hwId).catch(() => null);
+          if (firestoreTrial) {
+            saveTrialLocally(firestoreTrial);
+            const trialPartialState = computeTrialState(firestoreTrial.expires_at, serverTime);
+            setLicenseState({
+              ...initialState,
+              phase:        trialPartialState.phase || 'trial_expired',
+              hardwareId:   hwId,
+              clientEmail:  currentUserEmail,
+              ...trialPartialState,
+            });
+          } else {
+            const newTrial = await createTrialRecord(hwId, serverTime);
+            saveTrialLocally(newTrial);
+            setLicenseState({
+              ...initialState,
+              phase:              'trial_active',
+              hardwareId:         hwId,
+              clientEmail:        currentUserEmail,
+              planType:           'free_trial',
+              trialDaysRemaining: 7,
+              trialExpiresAt:     newTrial.expires_at,
+            });
+          }
+        } else {
+          // Totalmente offline e sem licença/trial
+          setLicenseState({
+            ...initialState,
+            phase:        'trial_expired',
+            hardwareId:   hwId,
+            clientEmail:  currentUserEmail,
+            planType:     'free_trial',
+            errorMessage: 'Conexão à internet necessária para validar a sua conta.',
+          });
+        }
       }
+
     } catch (error) {
       console.error('[LicenseContext] Erro no boot sequence:', error);
       setLicenseState({
@@ -359,9 +492,9 @@ export function LicenseProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setIsLoading(false);
     }
-  }, [getHardwareId, getSqliteDb]);
+  }, [getHardwareId, getSqliteDb, user]);
 
-  // Executa o boot sequence na montagem do componente
+  // Executa o boot sequence na montagem e sempre que o utilizador muda
   useEffect(() => {
     runBootSequence();
   }, [runBootSequence]);
@@ -372,16 +505,14 @@ export function LicenseProvider({ children }: { children: React.ReactNode }) {
   const activateLicenseKey = useCallback(
     async (licenseKey: string): Promise<ActivationResult> => {
       const hwId = hardwareIdRef.current || (await getHardwareId());
-
-      // Guarda o estado anterior para poder restaurar em caso de falha
       const previousState = licenseState;
 
       setLicenseState((prev) => ({ ...prev, phase: 'activating', errorMessage: null }));
 
-      const result = await activateLicense(licenseKey, hwId);
+      const userEmail = user?.email || '';
+      const result = await activateLicense(licenseKey, hwId, userEmail);
 
       if (!result.success || !result.license) {
-        // Restaura o estado anterior em vez de forçar trial_expired
         setLicenseState({
           ...previousState,
           errorMessage: result.message || 'Falha na ativação.',
@@ -421,7 +552,7 @@ export function LicenseProvider({ children }: { children: React.ReactNode }) {
 
       return result;
     },
-    [getHardwareId, getSqliteDb, licenseState]
+    [getHardwareId, getSqliteDb, licenseState, user]
   );
 
   /**

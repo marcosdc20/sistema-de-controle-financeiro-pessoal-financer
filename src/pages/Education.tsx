@@ -4,7 +4,7 @@ import {
   BookOpen, Play, Award, Lock, ArrowRight, TrendingUp,
   AlertTriangle, CheckCircle2, Calculator, Lightbulb,
   GraduationCap, Target, Wallet, Brain, Coins, BarChart3,
-  X, ChevronRight, Check, ShieldCheck, PieChart
+  X, ChevronRight, Check, ShieldCheck, PieChart, Download, RefreshCw
 } from 'lucide-react';
 import PageTransition from '@/components/PageTransition';
 import { cn } from '@/lib/utils';
@@ -12,17 +12,24 @@ import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { FUNDAMENTALS, COURSES, Fundamental, Course, Lesson } from '@/data/education';
 import { db } from '@/lib/firebase';
 import { collection, onSnapshot, doc, setDoc } from 'firebase/firestore';
+import { getDatabase } from '@/database/db';
 
 type Tab = 'overview' | 'fundamentals' | 'courses' | 'simulators';
 
 export default function Education() {
   const { accounts, transactions, investments, loans, budgets, goals, getRate } = useFinance();
   const [activeTab, setActiveTab] = useState<Tab>('overview');
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
 
   // Firestore Synchronized States
   const [courses, setCourses] = useState<Course[]>([]);
   const [fundamentals, setFundamentals] = useState<Fundamental[]>([]);
   const [loadingContent, setLoadingContent] = useState(true);
+
+  // Offline Lessons State (SQLite)
+  const [downloadedLessonIds, setDownloadedLessonIds] = useState<string[]>([]);
+  const [downloadedLessons, setDownloadedLessons] = useState<any[]>([]);
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
 
   // Content Viewing State
   const [selectedFundamental, setSelectedFundamental] = useState<Fundamental | null>(null);
@@ -34,13 +41,44 @@ export default function Education() {
     return saved ? JSON.parse(saved) : [];
   });
 
-  // 1. Sync Content with Firestore and Auto-Seed
+  // Escuta conexão online/offline
   useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+
+  // Carrega as lições descarregadas no SQLite local
+  useEffect(() => {
+    const loadOfflineLessons = async () => {
+      try {
+        const localDb = await getDatabase();
+        const rows = await localDb.select<any[]>('SELECT * FROM downloaded_lessons');
+        setDownloadedLessons(rows || []);
+        setDownloadedLessonIds((rows || []).map(r => r.id));
+      } catch (err) {
+        console.error('Erro ao ler lições offline do SQLite:', err);
+      }
+    };
+    loadOfflineLessons();
+  }, [isOnline]);
+
+  // 1. Sync Content with Firestore and Auto-Seed (apenas se estiver online)
+  useEffect(() => {
+    if (!isOnline) {
+      setLoadingContent(false);
+      return;
+    }
+
     let unsubscribeCourses: () => void;
     let unsubscribeFundamentals: () => void;
 
     const setupListeners = async () => {
-      // Seed validation only once to avoid loops with onSnapshot
       try {
         const { getDocs } = await import('firebase/firestore');
         const coursesSnap = await getDocs(collection(db, 'education_courses'));
@@ -84,7 +122,100 @@ export default function Education() {
       if (unsubscribeCourses) unsubscribeCourses();
       if (unsubscribeFundamentals) unsubscribeFundamentals();
     };
-  }, []);
+  }, [isOnline]);
+
+  // Função para descarregar aula para offline (converte vídeo para Base64)
+  const handleDownloadLesson = async (lesson: Lesson, courseId: string) => {
+    setDownloadingId(lesson.id);
+    try {
+      let base64Video = '';
+      if (lesson.videoUrl) {
+        const isIframe = lesson.videoUrl.includes('youtube.com') || 
+                         lesson.videoUrl.includes('youtu.be') || 
+                         lesson.videoUrl.includes('vimeo.com');
+        if (isIframe) {
+          console.log('[Download Offline] Vídeo é um iframe (Youtube/Vimeo). Baixando apenas textos da aula.');
+        } else {
+          try {
+            const res = await fetch(lesson.videoUrl);
+            if (!res.ok) throw new Error('Erro na resposta do download.');
+            const blob = await res.blob();
+            base64Video = await new Promise<string>((resolve, reject) => {
+              const reader = new FileReader();
+              reader.onloadend = () => resolve(reader.result as string);
+              reader.onerror = reject;
+              reader.readAsDataURL(blob);
+            });
+          } catch (videoErr) {
+            console.warn('[Download Offline] Falha ao baixar vídeo em base64. A aula será guardada sem vídeo:', videoErr);
+          }
+        }
+      }
+
+      const localDb = await getDatabase();
+      await localDb.execute(
+        `INSERT INTO downloaded_lessons (id, course_id, title, content, video_url, local_video_base64, downloaded_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7)
+         ON CONFLICT(id) DO UPDATE SET
+           title = EXCLUDED.title,
+           content = EXCLUDED.content,
+           video_url = EXCLUDED.video_url,
+           local_video_base64 = EXCLUDED.local_video_base64,
+           downloaded_at = EXCLUDED.downloaded_at`,
+        [lesson.id, courseId, lesson.title, lesson.content || '', lesson.videoUrl || '', base64Video, Date.now()]
+      );
+
+      setDownloadedLessonIds(prev => [...prev, lesson.id]);
+      
+      // Se offline, atualiza a lista exibida imediatamente
+      if (!isOnline) {
+        const rows = await localDb.select<any[]>('SELECT * FROM downloaded_lessons');
+        setDownloadedLessons(rows || []);
+      }
+      
+      alert('Aula descarregada com sucesso para estudo offline!');
+    } catch (err) {
+      console.error('Erro ao guardar aula offline:', err);
+      alert('Ocorreu um erro ao guardar a aula localmente.');
+    } finally {
+      setDownloadingId(null);
+    }
+  };
+
+  // Reconstrói a estrutura dos cursos virtuais no modo offline
+  const offlineCourses = useMemo(() => {
+    const groups: Record<string, any[]> = {};
+    downloadedLessons.forEach(lesson => {
+      if (!groups[lesson.course_id]) {
+        groups[lesson.course_id] = [];
+      }
+      groups[lesson.course_id].push({
+        id: lesson.id,
+        title: lesson.title,
+        content: lesson.content,
+        videoUrl: lesson.local_video_base64 || lesson.video_url,
+        duration: 'Acesso Offline'
+      });
+    });
+
+    return Object.entries(groups).map(([courseId, modules]) => {
+      const realCourse = COURSES.find(c => c.id === courseId);
+      return {
+        id: courseId,
+        title: realCourse?.title || `Curso (${courseId})`,
+        description: realCourse?.description || 'Conteúdo descarregado para visualização offline.',
+        image: realCourse?.image || '📚',
+        level: realCourse?.level || 'Qualquer',
+        duration: realCourse?.duration || 'Completo',
+        modules: modules
+      } as Course;
+    });
+  }, [downloadedLessons]);
+
+  const displayedCourses = isOnline ? courses : offlineCourses;
+  const displayedFundamentals = isOnline 
+    ? (fundamentals.length > 0 ? fundamentals : FUNDAMENTALS) 
+    : FUNDAMENTALS;
 
   // Update selectedLesson when selectedCourse changes
   useEffect(() => {
@@ -585,12 +716,45 @@ export default function Education() {
                 <X className="w-5 h-5 text-gray-500" />
               </button>
             </div>
-            
             {selectedLesson ? (
               <div className="flex-1 overflow-y-auto p-6 md:p-8 space-y-6">
-                <div>
-                  <h2 className="text-xl md:text-2xl font-black text-gray-950">{selectedLesson.title}</h2>
-                  <p className="text-xs text-gray-400 mt-1">Duração estimada: {selectedLesson.duration}</p>
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div>
+                    <h2 className="text-xl md:text-2xl font-black text-gray-950">{selectedLesson.title}</h2>
+                    <p className="text-xs text-gray-400 mt-1">Duração estimada: {selectedLesson.duration}</p>
+                  </div>
+                  {isOnline && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDownloadLesson(selectedLesson, selectedCourse.id);
+                      }}
+                      disabled={downloadedLessonIds.includes(selectedLesson.id) || downloadingId === selectedLesson.id}
+                      className={cn(
+                        "px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 border transition-all self-start sm:self-auto",
+                        downloadedLessonIds.includes(selectedLesson.id)
+                          ? "bg-emerald-50 text-emerald-600 border-emerald-100 cursor-default"
+                          : "bg-white text-gray-700 hover:bg-gray-50 border-gray-200 cursor-pointer active:scale-95"
+                      )}
+                    >
+                      {downloadingId === selectedLesson.id ? (
+                        <>
+                          <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                          <span>A descarregar...</span>
+                        </>
+                      ) : downloadedLessonIds.includes(selectedLesson.id) ? (
+                        <>
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+                          <span>Guardado Offline</span>
+                        </>
+                      ) : (
+                        <>
+                          <Download className="w-3.5 h-3.5" />
+                          <span>Descarregar para Offline</span>
+                        </>
+                      )}
+                    </button>
+                  )}
                 </div>
 
                 {/* Video Player Section */}
@@ -727,6 +891,14 @@ export default function Education() {
           </div>
         ) : (
           <>
+            {!isOnline && (
+              <div className="bg-amber-500/10 border border-amber-500/20 text-amber-500 p-4 rounded-2xl flex items-center gap-3 text-xs mb-6">
+                <AlertTriangle className="w-5 h-5 shrink-0 animate-pulse" />
+                <div>
+                  <span className="font-bold">Modo Offline Ativo.</span> Você está visualizando apenas os cursos e lições descarregados localmente.
+                </div>
+              </div>
+            )}
             {activeTab === 'overview' && (
               <div className="space-y-8 animate-in fade-in duration-300">
                 {/* Smart Tips */}
@@ -780,10 +952,10 @@ export default function Education() {
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                   <div className="lg:col-span-2 space-y-6">
                     <h2 className="text-base font-bold text-gray-950">Continuar Aprendendo</h2>
-                    {courses.length > 0 && (
+                    {displayedCourses.length > 0 && (
                       <div
                         onClick={() => {
-                          const course = courses.find(c => c.id === 'invest-angola') || courses[0];
+                          const course = displayedCourses.find(c => c.id === 'invest-angola') || displayedCourses[0];
                           if (course) {
                             setSelectedCourse(course);
                           }
@@ -791,15 +963,15 @@ export default function Education() {
                         className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm flex flex-col sm:flex-row gap-6 items-center group cursor-pointer hover:shadow-md transition-all"
                       >
                         <div className="w-20 h-20 bg-emerald-100 rounded-2xl flex items-center justify-center text-4xl group-hover:scale-105 transition-transform">
-                          {courses.find(c => c.id === 'invest-angola')?.image || courses[0].image}
+                          {displayedCourses.find(c => c.id === 'invest-angola')?.image || displayedCourses[0].image}
                         </div>
                         <div className="flex-1">
                           <div className="flex justify-between items-start mb-2">
-                            <h3 className="font-bold text-gray-950 text-base">{courses.find(c => c.id === 'invest-angola')?.title || courses[0].title}</h3>
+                            <h3 className="font-bold text-gray-950 text-base">{displayedCourses.find(c => c.id === 'invest-angola')?.title || displayedCourses[0].title}</h3>
                             <span className="text-[10px] font-bold bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-lg border border-emerald-100">Recomendado</span>
                           </div>
                           <p className="text-gray-500 text-xs mb-4 leading-relaxed">
-                            {courses.find(c => c.id === 'invest-angola')?.description || courses[0].description}
+                            {displayedCourses.find(c => c.id === 'invest-angola')?.description || displayedCourses[0].description}
                           </p>
                           <div className="w-full bg-gray-100 h-1.5 rounded-full overflow-hidden">
                             <div className="bg-emerald-500 h-full w-1/3" />
@@ -842,7 +1014,7 @@ export default function Education() {
 
             {activeTab === 'fundamentals' && (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-in fade-in duration-300">
-                {fundamentals.map((item) => {
+                {displayedFundamentals.map((item) => {
                   const Icon = {
                     Wallet, TrendingUp, AlertTriangle, Coins, BarChart3, Brain, ShieldCheck, PieChart
                   }[item.icon] || BookOpen;
@@ -866,7 +1038,7 @@ export default function Education() {
 
             {activeTab === 'courses' && (
               <div className="space-y-6 animate-in fade-in duration-300">
-                {courses.map((course) => (
+                {displayedCourses.map((course) => (
                   <div
                     key={course.id}
                     onClick={() => setSelectedCourse(course)}

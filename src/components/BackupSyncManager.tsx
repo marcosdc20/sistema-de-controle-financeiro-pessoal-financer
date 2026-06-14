@@ -1,15 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { exportDatabaseToJson, importDatabaseFromJson } from '@/database/db';
+import { getDatabase, exportDatabaseToJson, importDatabaseFromJson } from '@/database/db';
 import { uploadBackupToCloud, downloadBackupFromCloud } from '@/services/firebaseBackup';
-import { Cloud, CloudLightning, CloudOff, RefreshCw, X, CheckCircle, Wifi, AlertTriangle, ShieldCheck, Lock } from 'lucide-react';
+import { Cloud, CloudLightning, CloudOff, RefreshCw, X, CheckCircle, Wifi, AlertTriangle, ShieldCheck, Lock, Download, Database } from 'lucide-react';
 
 export default function BackupSyncManager() {
   const { user } = useAuth();
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [showPrompt, setShowPrompt] = useState(false);
+  const [showRestorePrompt, setShowRestorePrompt] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const [syncStatus, setSyncStatus] = useState<'idle' | 'success' | 'error'>('idle');
+  const [cloudBackupContent, setCloudBackupContent] = useState<string | null>(null);
   const [lastBackup, setLastBackup] = useState<string | null>(
     localStorage.getItem('vukapay_last_backup')
   );
@@ -35,6 +37,40 @@ export default function BackupSyncManager() {
       window.removeEventListener('offline', handleOffline);
     };
   }, [user]);
+
+  // Efeito para detectar se a base de dados local está vazia e se existe backup na nuvem para restaurar
+  useEffect(() => {
+    const checkRestoreNeeded = async () => {
+      if (!user || user.isLocal || !isOnline) return;
+
+      // Verifica se o utilizador já decidiu ignorar ou começar do zero neste dispositivo
+      const ignoreRestore = localStorage.getItem(`vukapay_ignore_restore_${user.id}`);
+      if (ignoreRestore === 'true') return;
+
+      try {
+        const db = await getDatabase();
+        // Verifica contas e transações para determinar se é uma instalação limpa
+        const accounts = await db.select<any[]>('SELECT count(*) as count FROM accounts');
+        const transactions = await db.select<any[]>('SELECT count(*) as count FROM transactions');
+        const accCount = accounts[0]?.count || 0;
+        const txCount = transactions[0]?.count || 0;
+
+        if (accCount === 0 && txCount === 0) {
+          console.log('[BackupSyncManager] Instalação vazia detectada. Procurando backup na nuvem...');
+          const backupJson = await downloadBackupFromCloud();
+          if (backupJson) {
+            console.log('[BackupSyncManager] Backup encontrado na nuvem!');
+            setCloudBackupContent(backupJson);
+            setShowRestorePrompt(true);
+          }
+        }
+      } catch (err) {
+        console.error('[BackupSyncManager] Erro ao verificar estado do banco local:', err);
+      }
+    };
+
+    checkRestoreNeeded();
+  }, [user, isOnline]);
 
   const handleBackup = async () => {
     setIsSyncing(true);
@@ -77,7 +113,6 @@ export default function BackupSyncManager() {
       const backupJson = await downloadBackupFromCloud();
       if (backupJson) {
         await importDatabaseFromJson(backupJson);
-        // Recarrega os dados reiniciando a instância de conexão se necessário
         alert('Backup restaurado com sucesso! A aplicação será atualizada.');
         window.location.reload();
       } else {
@@ -89,6 +124,29 @@ export default function BackupSyncManager() {
     } finally {
       setIsSyncing(false);
     }
+  };
+
+  const handleRestoreFromPrompt = async () => {
+    if (!cloudBackupContent) return;
+    setIsSyncing(true);
+    try {
+      await importDatabaseFromJson(cloudBackupContent);
+      alert('Sincronização concluída! Os seus dados financeiros foram restaurados com sucesso.');
+      setShowRestorePrompt(false);
+      window.location.reload();
+    } catch (error) {
+      console.error('Erro ao aplicar backup da nuvem:', error);
+      alert('Erro ao restaurar dados. Tente fazer o restauro manual.');
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
+  const handleIgnoreRestore = () => {
+    if (user) {
+      localStorage.setItem(`vukapay_ignore_restore_${user.id}`, 'true');
+    }
+    setShowRestorePrompt(false);
   };
 
   // Se o usuário estiver no modo offline/convidado, exibe apenas indicador local
@@ -218,6 +276,56 @@ export default function BackupSyncManager() {
                 Agora Não
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Restauro de Backup para Nova Instalação */}
+      {showRestorePrompt && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-in fade-in duration-300">
+          <div className="w-full max-w-lg bg-gray-900 border border-gray-800 rounded-3xl p-8 shadow-2xl animate-in zoom-in-95 duration-300 relative overflow-hidden text-center">
+            <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-emerald-500 via-teal-500 to-indigo-600 animate-pulse" />
+            
+            <div className="mx-auto w-16 h-16 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl flex items-center justify-center mb-6">
+              <Database className="w-8 h-8 text-emerald-400" />
+            </div>
+
+            <h3 className="text-xl font-bold text-white mb-2">Restaurar os seus Dados da Nuvem?</h3>
+            <p className="text-gray-400 text-sm leading-relaxed mb-6">
+              Detectamos que esta é uma nova instalação limpa no seu dispositivo, mas você possui um backup com histórico financeiro salvo na sua conta Google / VukaPay. Deseja sincronizar e restaurar os seus dados agora?
+            </p>
+
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              <button
+                onClick={handleRestoreFromPrompt}
+                disabled={isSyncing}
+                className="flex-1 py-3.5 px-5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold rounded-2xl text-xs flex items-center justify-center gap-2 transition-all shadow-lg shadow-emerald-900/30 active:scale-95 disabled:opacity-50"
+              >
+                {isSyncing ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                    <span>A Restaurar...</span>
+                  </>
+                ) : (
+                  <>
+                    <Download className="w-4 h-4" />
+                    <span>Restaurar Dados da Nuvem</span>
+                  </>
+                )}
+              </button>
+
+              <button
+                onClick={handleIgnoreRestore}
+                disabled={isSyncing}
+                className="py-3.5 px-5 bg-gray-800 hover:bg-gray-700 text-gray-300 font-bold rounded-2xl text-xs transition-all active:scale-95 disabled:opacity-50"
+              >
+                Começar do Zero
+              </button>
+            </div>
+
+            <p className="text-[10px] text-gray-500 mt-4">
+              Nota: Pode efetuar o restauro ou backup manualmente a qualquer momento através do indicador de nuvem.
+            </p>
           </div>
         </div>
       )}

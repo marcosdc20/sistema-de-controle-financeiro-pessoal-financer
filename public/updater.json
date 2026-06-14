@@ -5,10 +5,10 @@
   "platforms": {
     "windows-x86_64": {
       "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVTUEh6TVdRZXFBTWtRamg5REc0bWpNanRPQm9VR3hncHBES01qRFJ0ZnZMcllNUjZOaFBPOVRJem5EbG9aS0piTDMzRldER3BibTJYYnBHeUI1V1B1STA3Q0dYUjFYbkE0PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgxMzg4OTMzCWZpbGU6VnVrYVBheV8xLjEuNV94NjQtc2V0dXAuZXhlCkJEa0xnZ0NrdFRVbG03S0RKeUp3c2ZOZ3BDSHBOMTBudUtsNUNKSFdLdFl1UnBvejh2TktFQ1VuS1Q3c1Bnb0Rmelk5ZjJGaHQ3QitzWUJ6K3hWQkNBPT0K",
-      "url": "https://github.com/marcosdc20/sistema-de-controle-financeiro-pessoal-financer/releases/download/v1.1.5/VukaPay_1.1.5_x64-setup.exe"
+      "url": "https://firebasestorage.googleapis.com/v0/b/controle-financeiro-pess-45a60.appspot.com/o/updates%2FVukaPay_x64-setup.exe?alt=media"
     },
     "android-aarch64": {
-      "url": "https://github.com/marcosdc20/sistema-de-controle-financeiro-pessoal-financer/releases/download/v1.1.5/app-universal-release.apk"
+      "url": "https://firebasestorage.googleapis.com/v0/b/controle-financeiro-pess-45a60.appspot.com/o/updates%2Fapp-universal-release.apk?alt=media"
     }
   }
 }

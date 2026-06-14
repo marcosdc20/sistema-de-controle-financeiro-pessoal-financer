@@ -38,6 +38,7 @@ import {
 } from 'recharts';
 import AIAdvisor from '@/components/AIAdvisor';
 import PageTransition from '@/components/PageTransition';
+import { LinkGoogleBanner } from '@/components/auth/LinkGoogleBanner';
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -328,8 +329,10 @@ export default function Dashboard() {
         </div>
       ) : (
         <>
+          <LinkGoogleBanner />
           {/* Header Section */}
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+
             <div>
               <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Dashboard</h1>
               <p className="text-gray-500 mt-1">Visão geral completa das suas finanças.</p>

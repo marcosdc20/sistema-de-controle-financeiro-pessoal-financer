@@ -53,65 +53,17 @@ export default function SuccessStories() {
     const storiesCol = collection(db, 'community_stories');
     const q = query(storiesCol, orderBy('createdAt', 'desc'));
 
-    const unsubscribe = onSnapshot(q, async (snapshot) => {
-      if (snapshot.empty) {
-        await seedInitialStories();
-      } else {
-        const fetchedStories: Story[] = snapshot.docs.map(d => ({
-          id: d.id,
-          ...d.data()
-        } as Story));
-        setStories(fetchedStories);
-        setLoading(false);
-      }
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const fetchedStories: Story[] = snapshot.docs.map(d => ({
+        id: d.id,
+        ...d.data()
+      } as Story));
+      setStories(fetchedStories);
+      setLoading(false);
     });
 
     return () => unsubscribe();
   }, []);
-
-  // Semeador de Histórias
-  const seedInitialStories = async () => {
-    try {
-      const seedStories = [
-        {
-          title: "De Dívidas a Investidora: A Jornada de Mariana",
-          excerpt: "Como a Mariana eliminou as suas dívidas e passou a investir mensalmente.",
-          content: "Nunca imaginei que em 24 meses eu sairia de um saldo negativo acumulado para construir um fundo de emergência robusto e diversificar em Kixiquilas familiares. O VukaPay ajudou-me a ver exatamente para onde o meu dinheiro desaparecia...\n\nComecei registrando rigorosamente todas as minhas saídas de caixa diárias. Em seguida, estabeleci limites rígidos para compras não-essenciais e criei uma regra de poupança automatizada assim que recebia o meu ordenado. Hoje, sinto-me 100% no controle da minha vida financeira.",
-          authorName: "Mariana Costa",
-          authorLocation: "Luanda",
-          imageUrl: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?q=80&w=800&auto=format&fit=crop",
-          category: "Destaque do Mês",
-          createdAt: Date.now() - 3 * 24 * 60 * 60 * 1000 // 3 days ago
-        },
-        {
-          title: "Estratégias de Dividendos",
-          excerpt: "Como o Ricardo estruturou a sua carteira de dividendos e ações locais.",
-          content: "Como o Ricardo planeou as suas poupanças e controlou as ações da BODIVA para obter independência financeira real a longo prazo.\n\nA chave foi a constância: todos os meses, sem exceção, reservei 20% das minhas receitas para comprar ações e títulos locais de alto rendimento. Acompanhar os proventos na minha carteira de investimentos no VukaPay serviu de combustível para me manter disciplinado.",
-          authorName: "Ricardo Dividends",
-          authorLocation: "Benguela",
-          imageUrl: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=400&auto=format&fit=crop",
-          category: "Aposentadoria Precoce",
-          createdAt: Date.now() - 5 * 24 * 60 * 60 * 1000 // 5 days ago
-        },
-        {
-          title: "Escalando com Caixa Positivo",
-          excerpt: "Como o João separou as contas pessoais das empresariais com sucesso.",
-          content: "Separar as contas pessoais das empresariais foi o segredo. João revela como estruturou o fluxo do seu negócio local.\n\nDurante muito tempo, confundi o caixa da minha empresa com a minha conta pessoal, o que quase levou o negócio à falência. Ao usar o VukaPay para gerir as minhas despesas pessoais e definir um salário fixo (pró-labore), recuperei a previsibilidade e a liquidez necessárias para reinvestir na empresa.",
-          authorName: "João Business",
-          authorLocation: "Huambo",
-          imageUrl: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=400&auto=format&fit=crop",
-          category: "Gestão de Negócios",
-          createdAt: Date.now() - 7 * 24 * 60 * 60 * 1000 // 7 days ago
-        }
-      ];
-
-      for (const story of seedStories) {
-        await addDoc(collection(db, 'community_stories'), story);
-      }
-    } catch (e) {
-      console.error('Falha ao semear histórias iniciais:', e);
-    }
-  };
 
   // Submeter história
   const handleSubmitStory = async (e: React.FormEvent) => {

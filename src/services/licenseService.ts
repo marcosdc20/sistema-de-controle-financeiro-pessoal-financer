@@ -256,7 +256,8 @@ export async function validateLicense(licenseKey: string): Promise<FirestoreLice
  */
 export async function activateLicense(
   licenseKey: string,
-  hardwareId: string
+  hardwareId: string,
+  userEmail: string
 ): Promise<ActivationResult> {
   const normalizedKey = licenseKey.trim().toUpperCase();
 
@@ -266,6 +267,15 @@ export async function activateLicense(
 
     if (!license) {
       return { success: false, errorCode: 'NOT_FOUND', message: 'Chave de licença não encontrada.' };
+    }
+
+    // Verifica e-mail associado à licença
+    if (license.client_email.trim().toLowerCase() !== userEmail.trim().toLowerCase()) {
+      return {
+        success: false,
+        errorCode: 'UNKNOWN',
+        message: `Esta chave de licença está vinculada ao e-mail ${license.client_email}. Para a ativar, inicie sessão com a conta correspondente.`,
+      };
     }
 
     // 2. Verifica status
@@ -282,7 +292,7 @@ export async function activateLicense(
       return {
         success: false,
         errorCode: 'ALREADY_ACTIVATED',
-        message: 'Esta chave já está ativada noutro computador. Contacte o suporte para transferência.',
+        message: 'Esta chave já está ativada noutro computador. Contacte o suporte para redefinição de hardware.',
       };
     }
 

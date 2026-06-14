@@ -5,6 +5,7 @@ import { AuthProvider } from '@/context/AuthContext';
 import { LicenseProvider } from '@/context/LicenseContext';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import LicenseGuard from '@/components/LicenseGuard';
+import AutoUpdater from '@/components/AutoUpdater';
 import { initDatabase } from '@/database/db';
 import App from './App.tsx';
 import './index.css';
@@ -27,15 +28,17 @@ initDatabase()
            * ANTES do AuthProvider processar a sessão do utilizador.
            * Ordem: LicenseGuard → AuthProvider → FinanceProvider → App
            */}
-          <LicenseProvider>
-            <LicenseGuard>
-              <AuthProvider>
+          <AuthProvider>
+            <LicenseProvider>
+              <LicenseGuard>
                 <FinanceProvider>
                   <App />
                 </FinanceProvider>
-              </AuthProvider>
-            </LicenseGuard>
-          </LicenseProvider>
+              </LicenseGuard>
+              {/* AutoUpdater fica fora do LicenseGuard para verificar atualizações mesmo na tela de ativação */}
+              <AutoUpdater />
+            </LicenseProvider>
+          </AuthProvider>
         </BrowserRouter>
       </ErrorBoundary>
     );

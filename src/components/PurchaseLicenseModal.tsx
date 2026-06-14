@@ -3,8 +3,7 @@ import {
   X, Zap, CreditCard, UploadCloud, ChevronRight, ArrowLeft, 
   CheckCircle2, Shield, AlertCircle, Smartphone, Building2, Loader2
 } from 'lucide-react';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
-import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { collection, addDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 
 interface PurchaseLicenseModalProps {
@@ -51,6 +50,15 @@ export default function PurchaseLicenseModal({ onClose, userEmail }: PurchaseLic
     }
   };
 
+  const fileToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = (error) => reject(error);
+    });
+  };
+
   const handleSubmit = async () => {
     if (!receiptFile) { setError('Faça o upload do comprovativo para continuar.'); return; }
     
@@ -58,21 +66,23 @@ export default function PurchaseLicenseModal({ onClose, userEmail }: PurchaseLic
     setError('');
 
     try {
-      const storage = getStorage();
-      const filename = `receipts/${Date.now()}_${receiptFile.name}`;
-      const storageRef = ref(storage, filename);
-      
-      await uploadBytes(storageRef, receiptFile);
-      const url = await getDownloadURL(storageRef);
+      const base64Data = await fileToBase64(receiptFile);
+
+      // Mapeamento do método de pagamento para os termos esperados pelo Admin
+      const paymentMethodMap: Record<string, string> = {
+        atlantico: 'bank_transfer',
+        express: 'express',
+        paypay: 'paypay'
+      };
 
       await addDoc(collection(db, 'payment_proofs'), {
-        email,
-        phone,
-        plan,
-        method,
-        receiptUrl: url,
+        client_email: email.trim().toLowerCase(),
+        whatsapp: phone.trim(),
+        plan_type: plan,
+        payment_method: paymentMethodMap[method || 'atlantico'] || 'bank_transfer',
+        proof_base64: base64Data,
         status: 'pending',
-        created_at: serverTimestamp()
+        created_at: Date.now()
       });
 
       setSuccess(true);

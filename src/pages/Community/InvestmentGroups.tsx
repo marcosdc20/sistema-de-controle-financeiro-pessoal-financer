@@ -69,7 +69,7 @@ export default function InvestmentGroups() {
           description: "Discussões profundas sobre fundos imobiliários locais, incorporação, rendas prediais urbanas e cálculo de taxas de rentabilidade de ativos de alto padrão.",
           category: "Destaque Oficial",
           members: [],
-          memberCount: 2400,
+          memberCount: 0,
           returnEstimate: "8.5% a.a.",
           riskProfile: "Moderado"
         },
@@ -78,7 +78,7 @@ export default function InvestmentGroups() {
           title: "Cripto & Web3",
           description: "Análise fundamentalista de ativos de Web3, custódia fria (cold wallets) e estratégias avançadas de DeFi.",
           members: [],
-          memberCount: 154,
+          memberCount: 0,
           primaryAsset: "BTC / ETH",
           sentiment: "Otimista"
         },
@@ -87,14 +87,14 @@ export default function InvestmentGroups() {
           title: "Mercado de Capitais",
           description: "Análise de ações locais na BODIVA, ações globais de alto rendimento de dividendos e fundos mútuos.",
           members: [],
-          memberCount: 380
+          memberCount: 0
         },
         {
           id: 'fire',
           title: "Aposentadoria Precoce (FIRE)",
           description: "Estratégias de reservas a longo prazo e contas poupança de juros compostos para independência financeira.",
           members: [],
-          memberCount: 189,
+          memberCount: 0,
           progressPercentage: 67
         }
       ];

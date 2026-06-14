@@ -771,7 +771,8 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
         security_question: profData.security_question,
         security_answer: profData.security_answer,
         recovery_email: profData.recovery_email,
-        pin_code: profData.pin_code
+        pin_code: profData.pin_code,
+        vuka_coins: Number(profData.vuka_coins || 0)
       });
 
       let prefsData = prefs?.[0];
@@ -1034,6 +1035,8 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
                 // 1. Mark as claimed in Firebase immediately to prevent race conditions
                 try {
                   await updateDoc(doc(firestoreDb, 'vukacoin_rewards', change.doc.id), { claimed: true });
+                  const { increment } = await import('firebase/firestore');
+                  await updateDoc(doc(firestoreDb, 'community_users', user.id), { vuka_coins: increment(amount) });
                   
                   // 2. Add to Local SQLite DB
                   setProfile(prev => {
@@ -1041,7 +1044,8 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
                     const newCoins = currentCoins + amount;
                     // Persist to local DB
                     getDatabase().then(localDb => {
-                      updateRow(localDb, 'profiles', user.id, { vuka_coins: newCoins }).catch(e => console.error('Erro ao atualizar SQLite com VukaCoins', e));
+                      localDb.execute('UPDATE profiles SET vuka_coins = COALESCE(vuka_coins, 0) + $1 WHERE id = $2', [amount, user.id])
+                        .catch(e => console.error('Erro ao atualizar SQLite com VukaCoins', e));
                     });
                     return { ...prev, vuka_coins: newCoins };
                   });
@@ -1065,6 +1069,45 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
     };
     
     listenForRewards();
+    return () => unsubscribe();
+  }, [user]);
+
+  // Firebase Listener to synchronize VukaCoin balance from Firestore to SQLite
+  useEffect(() => {
+    if (!user || user.id === 'local-user') return;
+    
+    let unsubscribe = () => {};
+    
+    const listenToProfileSync = async () => {
+      try {
+        const { doc, onSnapshot } = await import('firebase/firestore');
+        const { db: firestoreDb } = await import('../lib/firebase');
+        
+        const userRef = doc(firestoreDb, 'community_users', user.id);
+        
+        unsubscribe = onSnapshot(userRef, async (docSnap) => {
+          if (docSnap.exists()) {
+            const data = docSnap.data();
+            const firestoreCoins = typeof data.vuka_coins === 'number' ? data.vuka_coins : 0;
+            
+            // Check current SQLite coins
+            const localDb = await getDatabase();
+            const result = await localDb.select<any[]>('SELECT vuka_coins FROM profiles WHERE id = $1', [user.id]);
+            const localCoins = result.length > 0 ? (result[0].vuka_coins || 0) : 0;
+            
+            if (firestoreCoins !== localCoins) {
+              console.log(`[VukaCoin Sync] Sincronizando saldo do Firestore (${firestoreCoins} VC) para SQLite (${localCoins} VC)`);
+              await localDb.execute('UPDATE profiles SET vuka_coins = $1 WHERE id = $2', [firestoreCoins, user.id]);
+              setProfile(prev => prev ? { ...prev, vuka_coins: firestoreCoins } : prev);
+            }
+          }
+        });
+      } catch (err) {
+        console.warn('Erro ao iniciar sincronizador do perfil do Firestore:', err);
+      }
+    };
+    
+    listenToProfileSync();
     return () => unsubscribe();
   }, [user]);
 
@@ -2016,13 +2059,27 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
   };
 
   const addVukaCoins = async (amount: number, reason: string) => {
-    if (!user || !profile) return;
+    if (!user) return;
+    const numericAmount = Number(amount);
+    if (isNaN(numericAmount) || numericAmount <= 0) return;
     try {
-      const currentCoins = profile.vuka_coins || 0;
-      await updateProfile({ vuka_coins: currentCoins + amount });
+      const db = await getDatabase();
+      await db.execute('UPDATE profiles SET vuka_coins = COALESCE(vuka_coins, 0) + $1 WHERE id = $2', [numericAmount, user.id]);
+      await refreshData();
+      
+      // Sincronizar com Firestore
+      try {
+        const { doc, updateDoc, increment } = await import('firebase/firestore');
+        const { db: firestoreDb } = await import('../lib/firebase');
+        const userRef = doc(firestoreDb, 'community_users', user.id);
+        await updateDoc(userRef, { vuka_coins: increment(numericAmount) });
+      } catch (e) {
+        console.error('Erro ao sincronizar moedas ganhas com o Firestore:', e);
+      }
+
       addNotification({
         title: 'VukaCoins Recebidos! 🪙',
-        desc: `Ganhaste ${amount} VukaCoins por: ${reason}`,
+        desc: `Ganhaste ${numericAmount} VukaCoins por: ${reason}`,
         type: 'success'
       });
     } catch (error) {
@@ -2031,10 +2088,15 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
   };
 
   const spendVukaCoins = async (amount: number, reason: string): Promise<boolean> => {
-    if (!user || !profile) return false;
+    if (!user) return false;
+    const numericAmount = Number(amount);
+    if (isNaN(numericAmount) || numericAmount <= 0) return false;
     try {
-      const currentCoins = profile.vuka_coins || 0;
-      if (currentCoins < amount) {
+      const db = await getDatabase();
+      const result = await db.select<any[]>('SELECT vuka_coins FROM profiles WHERE id = $1', [user.id]);
+      const currentCoins = result.length > 0 ? Number(result[0].vuka_coins || 0) : 0;
+
+      if (currentCoins < numericAmount) {
         addNotification({
           title: 'Saldo Insuficiente',
           desc: `Não tens VukaCoins suficientes para ${reason}.`,
@@ -2042,10 +2104,22 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
         });
         return false;
       }
-      await updateProfile({ vuka_coins: currentCoins - amount });
+      await db.execute('UPDATE profiles SET vuka_coins = COALESCE(vuka_coins, 0) - $1 WHERE id = $2', [numericAmount, user.id]);
+      await refreshData();
+      
+      // Sincronizar com Firestore
+      try {
+        const { doc, updateDoc, increment } = await import('firebase/firestore');
+        const { db: firestoreDb } = await import('../lib/firebase');
+        const userRef = doc(firestoreDb, 'community_users', user.id);
+        await updateDoc(userRef, { vuka_coins: increment(-numericAmount) });
+      } catch (e) {
+        console.error('Erro ao sincronizar moedas gastas com o Firestore:', e);
+      }
+
       addNotification({
         title: 'VukaCoins Gastos',
-        desc: `Usaste ${amount} VukaCoins em: ${reason}`,
+        desc: `Usaste ${numericAmount} VukaCoins em: ${reason}`,
         type: 'info'
       });
       return true;

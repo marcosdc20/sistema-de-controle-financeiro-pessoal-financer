@@ -28,16 +28,11 @@ if (Test-Path $tauriPath) {
     Write-Host "✓ tauri.conf.json atualizado para a versão $newVersion" -ForegroundColor Green
 }
 
-# 3. Atualizar DownloadModal.tsx na pasta vukapay-docs
-$docsModalPath = "../vukapay-docs/src/components/DownloadModal.tsx"
-if (Test-Path $docsModalPath) {
-    $content = Get-Content $docsModalPath -Raw
-    $content = $content -replace "const APP_VERSION = '[0-9]+\.[0-9]+\.[0-9]+';", "const APP_VERSION = '$newVersion';"
-    $content | Set-Content $docsModalPath
-    Write-Host "✓ DownloadModal.tsx (vukapay-docs) atualizado para a versão $newVersion" -ForegroundColor Green
-}
+# 3. Nota: DownloadAppModal.tsx busca a versao dinamicamente do updater.json
+# Nao e necessario atualizar manualmente — o Firebase serve sempre a versao atual.
+Write-Host "  Nota: DownloadAppModal.tsx busca a versao automaticamente do Firebase." -ForegroundColor DarkGray
 
-Write-Host "`nPróximos passos recomendados:" -ForegroundColor Cyan
-Write-Host "1. Faça commit das alterações: git commit -am 'bump: versao $newVersion'"
-Write-Host "2. Envie para o GitHub: git push"
-Write-Host "3. Crie e envie a tag para o build automático: git tag v$newVersion; git push origin v$newVersion"
+Write-Host "`nProximos passos recomendados:" -ForegroundColor Cyan
+Write-Host "1. Executa o build:   .\build-release.ps1"
+Write-Host "2. Publica:           .\publish-firebase.ps1"
+Write-Host "3. Commit no GitHub:  git commit -am 'bump: versao $newVersion' && git push"

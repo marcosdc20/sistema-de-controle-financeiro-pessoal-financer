@@ -105,8 +105,8 @@ export default function Challenges() {
           title: "30 Dias Sem Gastos Supérfluos",
           description: "Economizar 50.000 Kz em entretenimento e saídas supérfluas neste ciclo.",
           category: "Urgente",
-          participants: ['seed-user-1', 'seed-user-2'],
-          participantCount: 1240,
+          participants: [],
+          participantCount: 0,
           duration: "9 dias",
           progressPercentage: 70,
           xpReward: 150
@@ -116,8 +116,8 @@ export default function Challenges() {
           title: "Reserva de Emergência",
           description: "Meta: 500.000 Kz aplicados em conta poupança líquida até ao fim do ano.",
           category: "Em progresso",
-          participants: ['seed-user-1'],
-          participantCount: 852,
+          participants: [],
+          participantCount: 0,
           duration: "Meta Anual",
           progressPercentage: 30,
           xpReward: 250
@@ -128,7 +128,7 @@ export default function Challenges() {
           description: "Alcance os seus primeiros 10.000 Kz em dividendos e retornos de investimentos este mês na BODIVA.",
           category: "Renda Passiva",
           participants: [],
-          participantCount: 1210,
+          participantCount: 0,
           duration: "Mensal",
           xpReward: 300,
           imageUrl: "https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?q=80&w=400&auto=format&fit=crop"
@@ -139,7 +139,7 @@ export default function Challenges() {
           description: "Quite uma despesa antiga ou empréstimo pendente local este mês para recuperar fôlego financeiro real.",
           category: "Dívida Zero",
           participants: [],
-          participantCount: 850,
+          participantCount: 0,
           duration: "Mensal",
           xpReward: 200,
           imageUrl: "https://images.unsplash.com/photo-1580519542036-c47de6196ba5?q=80&w=400&auto=format&fit=crop"

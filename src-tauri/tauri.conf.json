@@ -1,7 +1,7 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
   "productName": "VukaPay",
-  "version": "1.1.5",
+  "version": "1.1.6",
   "identifier": "com.vukapay.app",
   "build": {
     "frontendDist": "../dist",
@@ -27,7 +27,7 @@
     "active": true,
     "licenseFile": "./windows/license.txt",
     "createUpdaterArtifacts": true,
-    "targets": ["nsis", "msi", "dmg", "deb", "appimage"],
+    "targets": ["nsis", "msi"],
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",
@@ -56,7 +56,9 @@
     "updater": {
       "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDMyODBFQTQxMTYzMzFGOEYKUldTUEh6TVdRZXFBTW1jZ1NjaFdocE9maEhHUS9ITW5BVHN3cGpCd1JDZFhQejc4YUpYQU0yUWgK",
       "endpoints": [
-        "https://raw.githubusercontent.com/marcosdc20/sistema-de-controle-financeiro-pessoal-financer/main/updater.json"
+        "https://raw.githubusercontent.com/marcosdc20/sistema-de-controle-financeiro-pessoal-financer/main/updater.json",
+        "https://vukapay.visualsoftware.dev/updater.json",
+        "https://controle-financeiro-pess-45a60.web.app/updater.json"
       ]
     }
   }

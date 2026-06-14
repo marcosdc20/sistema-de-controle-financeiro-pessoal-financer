@@ -336,6 +336,11 @@ export default function Settings() {
     localStorage.getItem('vukapay_last_backup')
   );
 
+  const [isDriveSyncing, setIsDriveSyncing] = useState(false);
+  const [driveLastBackup, setDriveLastBackup] = useState<string | null>(
+    localStorage.getItem('vukapay_drive_last_backup')
+  );
+
   const handleCloudBackup = async () => {
     setIsCloudSyncing(true);
     try {
@@ -409,6 +414,48 @@ export default function Settings() {
     }
   };
 
+  const handleDriveBackup = async () => {
+    setIsDriveSyncing(true);
+    try {
+      const { uploadBackupToDrive } = await import('@/services/googleDrive');
+      const jsonStr = await exportDatabase();
+      const success = await uploadBackupToDrive(jsonStr);
+      if (success) {
+        const nowStr = new Date().toLocaleString('pt-AO');
+        localStorage.setItem('vukapay_drive_last_backup', nowStr);
+        setDriveLastBackup(nowStr);
+        showToast('Cópia de segurança enviada para o Google Drive!');
+      } else {
+        showToast('Falha no upload para o Google Drive. Verifique permissões.', 'error');
+      }
+    } catch (err) {
+      console.error(err);
+      showToast('Erro ao realizar backup no Google Drive.', 'error');
+    } finally {
+      setIsDriveSyncing(false);
+    }
+  };
+
+  const handleDriveRestore = async () => {
+    if (!window.confirm('ATENÇÃO: Restaurar o backup do Google Drive irá SOBRESCREVER todos os seus dados locais atuais. Prosseguir?')) return;
+    setIsDriveSyncing(true);
+    try {
+      const { downloadBackupFromDrive } = await import('@/services/googleDrive');
+      const jsonStr = await downloadBackupFromDrive();
+      if (jsonStr) {
+        await importDatabase(jsonStr);
+        showToast('Base de dados restaurada do Drive com sucesso! A reiniciar...');
+        setTimeout(() => window.location.reload(), 1500);
+      } else {
+        showToast('Nenhum backup encontrado no Google Drive.', 'error');
+      }
+    } catch (err) {
+      console.error(err);
+      showToast('Erro ao restaurar backup do Google Drive.', 'error');
+    } finally {
+      setIsDriveSyncing(false);
+    }
+  };
 
 
   // local toast notification
@@ -2525,7 +2572,7 @@ export default function Settings() {
               </h2>
 
               <div className="space-y-6">
-                {/* Backup na Nuvem (Google Drive) */}
+                {/* Backup na Nuvem (Firebase) */}
                 <div className="flex flex-col gap-4 p-6 bg-slate-50 rounded-3xl border border-gray-100">
                   <div className="flex items-start justify-between">
                     <div className="flex items-center gap-3">
@@ -2533,8 +2580,8 @@ export default function Settings() {
                         <Cloud className="w-5 h-5 text-indigo-650" />
                       </div>
                       <div>
-                        <h3 className="font-semibold text-gray-905">Backup Seguro na Nuvem (Google Drive)</h3>
-                        <p className="text-xs text-gray-500 mt-0.5">Salve suas finanças de forma criptografada no seu Google Drive</p>
+                        <h3 className="font-semibold text-gray-905">Backup Cloud Infinito (Firebase)</h3>
+                        <p className="text-xs text-gray-500 mt-0.5">Sem limites de espaço. Requer login.</p>
                       </div>
                     </div>
                     {user && !user.isLocal ? (
@@ -2551,12 +2598,7 @@ export default function Settings() {
                   {user && !user.isLocal ? (
                     <div className="grid gap-3 mt-2">
                       <div className="flex items-center justify-between p-3.5 bg-white rounded-xl border border-gray-100 text-xs">
-                        <span className="text-gray-500">Conta Google ativa:</span>
-                        <span className="font-semibold text-gray-800">{user.email}</span>
-                      </div>
-
-                      <div className="flex items-center justify-between p-3.5 bg-white rounded-xl border border-gray-100 text-xs">
-                        <span className="text-gray-500">Última sincronização na nuvem:</span>
+                        <span className="text-gray-500">Última sincronização no Firebase:</span>
                         <span className="font-semibold text-gray-800">{cloudLastBackup || 'Nenhuma'}</span>
                       </div>
 
@@ -2567,7 +2609,7 @@ export default function Settings() {
                           className="flex-1 min-w-[140px] flex items-center justify-center gap-2 py-2.5 px-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-all disabled:opacity-50 active:scale-[0.98] shadow-md shadow-indigo-600/10 cursor-pointer"
                         >
                           {isCloudSyncing ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Cloud className="w-3.5 h-3.5" />}
-                          Sincronizar Agora
+                          Sincronizar no Firebase
                         </button>
 
                         <button
@@ -2576,31 +2618,77 @@ export default function Settings() {
                           className="flex-1 min-w-[140px] flex items-center justify-center gap-2 py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition-all disabled:opacity-50 active:scale-[0.98] shadow-md shadow-emerald-600/10 cursor-pointer"
                         >
                           <RefreshCw className="w-3.5 h-3.5" />
-                          Restaurar da Nuvem
+                          Restaurar
                         </button>
-
+                        
                         <button
                           onClick={handleCloudExtract}
                           disabled={isCloudSyncing}
                           className="flex-1 min-w-[140px] flex items-center justify-center gap-2 py-2.5 px-4 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-xs font-semibold transition-all disabled:opacity-50 active:scale-[0.98] border border-gray-200 cursor-pointer"
                         >
                           <Download className="w-3.5 h-3.5" />
-                          Extrair Backup (.json)
+                          Extrair Ficheiro (.json)
                         </button>
                       </div>
                     </div>
                   ) : (
                     <div className="p-4 bg-amber-500/5 rounded-xl border border-amber-500/10 text-xs leading-relaxed mt-2">
                       <p className="text-gray-600">
-                        Você está no <strong>Modo Convidado/Local</strong>. Para ativar backups automáticos na nuvem e proteger suas finanças contra perda física do dispositivo, conecte-se com sua conta Google.
+                        Você está no <strong>Modo Convidado/Local</strong>. Conecte-se com sua conta Google para backups.
                       </p>
                       <button
                         onClick={loginWithGoogle}
                         className="mt-3 inline-flex items-center gap-1.5 py-2 px-4 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-xl text-xs transition-all active:scale-[0.97] cursor-pointer"
                       >
-                        <Cloud className="w-3.5 h-3.5" /> Vincular Conta Google
+                        <Cloud className="w-3.5 h-3.5" /> Fazer Login / Registar
                       </button>
                     </div>
+                  )}
+                </div>
+
+                {/* Backup Pessoal (Google Drive) */}
+                <div className="flex flex-col gap-4 p-6 bg-slate-50 rounded-3xl border border-gray-100">
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center">
+                        <Save className="w-5 h-5 text-emerald-600" />
+                      </div>
+                      <div>
+                        <h3 className="font-semibold text-gray-905">Backup no seu Google Drive Pessoal</h3>
+                        <p className="text-xs text-gray-500 mt-0.5">Mantenha uma cópia no seu próprio Drive (Limitado pelo seu armazenamento).</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {user && !user.isLocal ? (
+                    <div className="grid gap-3 mt-2">
+                      <div className="flex items-center justify-between p-3.5 bg-white rounded-xl border border-gray-100 text-xs">
+                        <span className="text-gray-500">Última sincronização no Drive:</span>
+                        <span className="font-semibold text-gray-800">{driveLastBackup || 'Nenhuma'}</span>
+                      </div>
+
+                      <div className="flex flex-wrap gap-3 mt-2">
+                        <button
+                          onClick={handleDriveBackup}
+                          disabled={isDriveSyncing}
+                          className="flex-1 min-w-[140px] flex items-center justify-center gap-2 py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition-all disabled:opacity-50 active:scale-[0.98] shadow-md shadow-emerald-600/10 cursor-pointer"
+                        >
+                          {isDriveSyncing ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
+                          Salvar no Drive
+                        </button>
+
+                        <button
+                          onClick={handleDriveRestore}
+                          disabled={isDriveSyncing}
+                          className="flex-1 min-w-[140px] flex items-center justify-center gap-2 py-2.5 px-4 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-xs font-bold transition-all disabled:opacity-50 active:scale-[0.98] border border-gray-200 cursor-pointer"
+                        >
+                          <RefreshCw className="w-3.5 h-3.5" />
+                          Restaurar do Drive
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-xs text-gray-500">Faça login para utilizar o backup no Google Drive.</p>
                   )}
                 </div>
 
